@@ -73,8 +73,19 @@ router.post('/submit', authMiddleware, async (req: AuthRequest, res: Response): 
         est_correcte,
         bonne_reponse_id: q.correct_reponse_id || '',
         xp,
+        temps_ms: answer.temps_ms,
       };
     });
+
+    // Enregistre l'historique des réponses (pour le mode Muraja'ah et les stats)
+    for (const d of answers_detail) {
+      if (!questionsMap.has(d.question_id)) continue;
+      await pool.query(
+        `INSERT INTO historique_reponses (user_id, question_id, reponse_id, est_correcte, temps_ms, partie_id)
+         VALUES ($1, $2, $3, $4, $5, $6)`,
+        [user_id, d.question_id, d.reponse_id, d.est_correcte, d.temps_ms, body.partie_id || null]
+      );
+    }
 
     const score = Math.round((correct_count / answers.length) * 100);
 
@@ -126,6 +137,41 @@ router.post('/submit', authMiddleware, async (req: AuthRequest, res: Response): 
       return;
     }
     console.error('Submit quiz error:', err);
+    res.status(500).json({ success: false, error: 'Erreur serveur' });
+  }
+});
+
+// GET /api/quiz/mistakes — questions dont la dernière réponse de l'utilisateur était fausse
+// (mode Muraja'ah : révision des erreurs non encore corrigées)
+router.get('/mistakes', authMiddleware, async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const user_id = req.user!.id;
+    const limit = Math.min(Number(req.query.limit) || 10, 50);
+
+    const query = `
+      WITH derniere_reponse AS (
+        SELECT DISTINCT ON (h.question_id)
+          h.question_id, h.est_correcte, h.created_at
+        FROM historique_reponses h
+        WHERE h.user_id = $1
+        ORDER BY h.question_id, h.created_at DESC
+      )
+      SELECT q.*, json_agg(json_build_object(
+        'id', r.id, 'texte_fr', r.texte_fr, 'texte_ar', r.texte_ar, 'est_correcte', r.est_correcte
+      ) ORDER BY r.id) AS reponses
+      FROM derniere_reponse d
+      JOIN questions q ON q.id = d.question_id AND q.statut = 'valide'
+      LEFT JOIN reponses r ON r.question_id = q.id
+      WHERE d.est_correcte = false
+      GROUP BY q.id, d.created_at
+      ORDER BY d.created_at DESC
+      LIMIT $2
+    `;
+
+    const result = await pool.query(query, [user_id, limit]);
+    res.json({ success: true, data: result.rows });
+  } catch (err) {
+    console.error('Get mistakes error:', err);
     res.status(500).json({ success: false, error: 'Erreur serveur' });
   }
 });

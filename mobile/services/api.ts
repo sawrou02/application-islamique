@@ -56,6 +56,9 @@ export const quizApi = {
     partie_id?: string;
     answers: Array<{ question_id: string; reponse_id: string; temps_ms: number }>;
   }) => api.post<{ success: boolean; data: QuizResult }>('/quiz/submit', data),
+
+  getMistakes: (limit = 10) =>
+    api.get<{ success: boolean; data: Question[] }>('/quiz/mistakes', { params: { limit } }),
 };
 
 // Rooms

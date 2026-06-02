@@ -39,6 +39,8 @@ export const useQuizStore = create<QuizState>((set, get) => ({
       let response;
       if (config.mode === 'quotidien') {
         response = await questionsApi.getDailyQuestions();
+      } else if (config.mode === 'murajaah') {
+        response = await quizApi.getMistakes(config.nb_questions);
       } else {
         response = await questionsApi.getQuestions({
           domaine: config.domaine,

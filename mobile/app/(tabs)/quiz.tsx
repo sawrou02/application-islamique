@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import {
-  View, Text, ScrollView, TouchableOpacity, StyleSheet,
+  View, Text, ScrollView, TouchableOpacity, StyleSheet, Alert,
 } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -41,9 +41,18 @@ export default function QuizSelection() {
         temps_par_question: 30,
       };
       await startQuiz(config);
+      if (useQuizStore.getState().questions.length === 0) {
+        Alert.alert(
+          'Aucune question',
+          selectedMode === 'murajaah'
+            ? "Vous n'avez aucune erreur à réviser. Continuez à jouer pour en accumuler !"
+            : 'Aucune question disponible pour ces critères.',
+        );
+        return;
+      }
       router.push({ pathname: '/quiz/[mode]', params: { mode: selectedMode } });
     } catch {
-      // handle error
+      Alert.alert('Erreur', 'Impossible de charger les questions. Vérifiez votre connexion.');
     } finally {
       setIsLoading(false);
     }
