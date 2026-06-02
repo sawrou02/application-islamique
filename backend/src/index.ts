@@ -13,6 +13,8 @@ import roomsRoutes from './routes/rooms';
 import usersRoutes from './routes/users';
 import leaderboardRoutes from './routes/leaderboard';
 import badgesRoutes from './routes/badges';
+import duelsRoutes from './routes/duels';
+import signalementsRoutes from './routes/signalements';
 import { setupSocket } from './socket';
 
 const app = express();
@@ -42,6 +44,8 @@ app.use('/api/rooms', roomsRoutes);
 app.use('/api/users', usersRoutes);
 app.use('/api/leaderboard', leaderboardRoutes);
 app.use('/api/badges', badgesRoutes);
+app.use('/api/duels', duelsRoutes);
+app.use('/api/signalements', signalementsRoutes);
 
 // Socket.io
 setupSocket(io);

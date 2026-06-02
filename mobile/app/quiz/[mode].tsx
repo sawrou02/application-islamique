@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import {
-  View, Text, TouchableOpacity, StyleSheet, Animated, Dimensions,
+  View, Text, TouchableOpacity, StyleSheet, Animated, Dimensions, Pressable,
 } from 'react-native';
 import { router } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -200,6 +200,17 @@ export default function ActiveQuiz() {
           {question.explication && !question.dalil_texte_fr && (
             <Text style={styles.dalilFr}>{question.explication}</Text>
           )}
+          {/* Signaler cette question */}
+          <Pressable
+            style={styles.signalerBtn}
+            onPress={() => router.push({
+              pathname: '/quiz/signaler',
+              params: { question_id: question.id, question_fr: question.texte_fr },
+            })}
+          >
+            <Ionicons name="flag-outline" size={13} color={COLORS.textLight} />
+            <Text style={styles.signalerText}>Signaler une erreur</Text>
+          </Pressable>
         </Animated.View>
       )}
 
@@ -278,6 +289,11 @@ const styles = StyleSheet.create({
   },
   dalilFr: { fontSize: 13, color: COLORS.textSecondary, fontStyle: 'italic', marginBottom: 4 },
   dalilRef: { fontSize: 12, color: COLORS.textLight, fontWeight: '500' },
+  signalerBtn: {
+    flexDirection: 'row', alignItems: 'center', gap: 4,
+    marginTop: 10, alignSelf: 'flex-start',
+  },
+  signalerText: { fontSize: 11, color: COLORS.textLight },
   nextButton: {
     margin: 16, backgroundColor: COLORS.primary,
     borderRadius: 14, paddingVertical: 16,

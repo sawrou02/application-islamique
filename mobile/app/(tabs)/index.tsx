@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import {
   View, Text, ScrollView, TouchableOpacity, StyleSheet, Dimensions,
 } from 'react-native';
@@ -7,7 +7,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuthStore } from '../../store/authStore';
 import { COLORS } from '../../constants/colors';
-import { DOMAINS, MOTIVATION_HADITHS, LEVELS } from '../../constants/islamic';
+import { DOMAINS, MOTIVATION_HADITHS, LEVELS, getTodayEvent } from '../../constants/islamic';
 
 const { width } = Dimensions.get('window');
 
@@ -16,6 +16,7 @@ export default function HomeScreen() {
   const [hadithIndex] = useState(Math.floor(Math.random() * MOTIVATION_HADITHS.length));
   const hadith = MOTIVATION_HADITHS[hadithIndex];
   const level = LEVELS.find(l => l.id === (user?.niveau || 1)) || LEVELS[0];
+  const todayEvent = getTodayEvent();
 
   const xpForNextLevel = [0, 500, 2000, 5000, 10000, 20000, 999999];
   const currentXp = user?.xp_total || 0;
@@ -71,10 +72,31 @@ export default function HomeScreen() {
           </View>
         </View>
 
+        {/* Événement islamique du jour */}
+        {todayEvent && (
+          <TouchableOpacity
+            style={[styles.eventCard, { borderLeftColor: todayEvent.color }]}
+            onPress={() => router.push({
+              pathname: '/(tabs)/quiz',
+              params: { presetDomain: todayEvent.quizDomaine },
+            })}
+            activeOpacity={0.85}
+          >
+            <Text style={styles.eventIcon}>{todayEvent.icon}</Text>
+            <View style={styles.eventContent}>
+              <Text style={styles.eventLabel}>Événement du jour</Text>
+              <Text style={styles.eventName}>{todayEvent.name}</Text>
+              <Text style={styles.eventNameAr}>{todayEvent.nameAr}</Text>
+              <Text style={styles.eventDesc}>{todayEvent.description}</Text>
+            </View>
+            <Ionicons name="chevron-forward" size={18} color={todayEvent.color} />
+          </TouchableOpacity>
+        )}
+
         {/* Daily Challenge */}
         <TouchableOpacity
           style={styles.dailyCard}
-          onPress={() => router.push({ pathname: '/quiz/[mode]', params: { mode: 'quotidien' } })}
+          onPress={() => router.push({ pathname: '/(tabs)/quiz', params: { presetMode: 'quotidien' } })}
           activeOpacity={0.85}
         >
           <View style={styles.dailyLeft}>
@@ -147,11 +169,7 @@ const styles = StyleSheet.create({
   },
   levelText: { fontSize: 14, color: '#FFFFFF', fontWeight: 'bold' },
   levelTextFr: { fontSize: 10, color: 'rgba(255,255,255,0.8)', marginTop: 2 },
-  statsRow: {
-    flexDirection: 'row',
-    gap: 10,
-    marginBottom: 16,
-  },
+  statsRow: { flexDirection: 'row', gap: 10, marginBottom: 16 },
   statCard: {
     flex: 1,
     backgroundColor: COLORS.surface,
@@ -178,6 +196,27 @@ const styles = StyleSheet.create({
   progressXp: { fontSize: 12, fontWeight: '600', color: COLORS.primary },
   progressBar: { height: 8, backgroundColor: COLORS.border, borderRadius: 4, overflow: 'hidden' },
   progressFill: { height: '100%', backgroundColor: COLORS.primary, borderRadius: 4 },
+  eventCard: {
+    backgroundColor: COLORS.surface,
+    borderRadius: 14,
+    padding: 14,
+    marginBottom: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    borderLeftWidth: 4,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 6,
+    elevation: 3,
+  },
+  eventIcon: { fontSize: 32 },
+  eventContent: { flex: 1 },
+  eventLabel: { fontSize: 10, fontWeight: '700', color: COLORS.textLight, textTransform: 'uppercase', marginBottom: 2 },
+  eventName: { fontSize: 15, fontWeight: 'bold', color: COLORS.text },
+  eventNameAr: { fontSize: 13, color: COLORS.arabicText, textAlign: 'right' },
+  eventDesc: { fontSize: 12, color: COLORS.textSecondary, marginTop: 2 },
   dailyCard: {
     backgroundColor: COLORS.primary,
     borderRadius: 16,

@@ -91,6 +91,27 @@ export const leaderboardApi = {
     api.get<{ success: boolean; data: LeaderboardEntry[] }>('/leaderboard', { params }),
 };
 
+// Duels
+export const duelsApi = {
+  createDuel: (config: Partial<{ domaine: string; niveau: number | string; nb_questions: number; temps_par_question: number }>) =>
+    api.post<{ success: boolean; data: { id: string; invite_token: string; code_salle: string } }>('/duels', { config }),
+
+  acceptDuel: (token: string) =>
+    api.post<{ success: boolean; data: unknown }>('/duels/accept', { token }),
+
+  getMyDuels: () =>
+    api.get<{ success: boolean; data: unknown[] }>('/duels/my'),
+
+  getDuel: (id: string) =>
+    api.get<{ success: boolean; data: unknown }>(`/duels/${id}`),
+};
+
+// Signalements
+export const signalementsApi = {
+  signaler: (data: { question_id: string; motif: string; detail?: string }) =>
+    api.post<{ success: boolean; message: string }>('/signalements', data),
+};
+
 // Badges
 export const badgesApi = {
   getAllBadges: () =>

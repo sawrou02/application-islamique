@@ -81,3 +81,112 @@ export const QUIZ_MODES = [
     color: '#4A148C',
   },
 ];
+
+export interface CalendarEvent {
+  id: string;
+  name: string;
+  nameAr: string;
+  icon: string;
+  color: string;
+  description: string;
+  quizDomaine?: string;
+  /** Hijri month number (1=Muharram…12=Dhul Hijjah) */
+  hijriMonth?: number;
+  /** Which Gregorian week day triggers the event: 5 = Friday */
+  weekDay?: number;
+  /** Special keys to detect in application logic */
+  key: string;
+}
+
+export const CALENDAR_EVENTS: CalendarEvent[] = [
+  {
+    id: 'ramadan',
+    key: 'ramadan',
+    name: 'Ramadan',
+    nameAr: 'رَمَضَان',
+    icon: '🌙',
+    color: '#1A237E',
+    description: 'Quiz Ramadan — 1 thème/jour, badges exclusifs',
+    quizDomaine: 'fiqh',
+    hijriMonth: 9,
+  },
+  {
+    id: 'dhul_hijjah',
+    key: 'dhul_hijjah',
+    name: 'Dhul Hijjah',
+    nameAr: 'ذو الحِجَّة',
+    icon: '🕋',
+    color: '#4A148C',
+    description: 'Fiqh du Hajj — vertus des 10 premiers jours',
+    quizDomaine: 'fiqh',
+    hijriMonth: 12,
+  },
+  {
+    id: 'muharram',
+    key: 'muharram',
+    name: 'Muharram',
+    nameAr: 'مُحَرَّم',
+    icon: '🗓️',
+    color: '#01579B',
+    description: 'Quiz Sirah & Hijra — enseignements d\'Achoura',
+    quizDomaine: 'sirah',
+    hijriMonth: 1,
+  },
+  {
+    id: 'rabi_awwal',
+    key: 'rabi_awwal',
+    name: "Rabi' Al-Awwal",
+    nameAr: 'رَبِيع الأَوَّل',
+    icon: '🌹',
+    color: '#2E7D32',
+    description: 'Quiz Sirah Nabawiyya — vie du Prophète SAW',
+    quizDomaine: 'sirah',
+    hijriMonth: 3,
+  },
+  {
+    id: 'jumuah',
+    key: 'jumuah',
+    name: "Défi Al-Jumu'ah",
+    nameAr: 'تَحَدِّي الجُمُعَة',
+    icon: '🕌',
+    color: '#1B5E20',
+    description: "Questions sur Sourate Al-Kahf et Salat Al-Jumu'ah",
+    quizDomaine: 'tafsir',
+    weekDay: 5,
+  },
+  {
+    id: 'shaban',
+    key: 'shaban',
+    name: "Sha'ban",
+    nameAr: 'شَعبَان',
+    icon: '⭐',
+    color: '#E65100',
+    description: 'Préparation Ramadan — Fiqh du jeûne',
+    quizDomaine: 'fiqh',
+    hijriMonth: 8,
+  },
+];
+
+/**
+ * Returns the active calendar event for today (if any).
+ * Uses day-of-week for Friday, and a simple Hijri month estimator otherwise.
+ */
+export function getTodayEvent(): CalendarEvent | null {
+  const today = new Date();
+  const dayOfWeek = today.getDay(); // 0=Sun, 5=Fri
+
+  // Friday override takes priority
+  const friday = CALENDAR_EVENTS.find(e => e.weekDay === 5);
+  if (dayOfWeek === 5 && friday) return friday;
+
+  // Approximate current Hijri month
+  // Epoch: 1 Muharram 1446H = 7 July 2024
+  const HIJRI_EPOCH = new Date('2024-07-07').getTime();
+  const HIJRI_MONTH_MS = 29.53059 * 24 * 3600 * 1000;
+  const diffMs = today.getTime() - HIJRI_EPOCH;
+  if (diffMs < 0) return null;
+  const totalHijriMonths = Math.floor(diffMs / HIJRI_MONTH_MS);
+  const hijriMonth = (totalHijriMonths % 12) + 1;
+
+  return CALENDAR_EVENTS.find(e => e.hijriMonth === hijriMonth) ?? null;
+}
