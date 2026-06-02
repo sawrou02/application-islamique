@@ -2,12 +2,7 @@ import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 
 export interface AuthRequest extends Request {
-  user?: {
-    id: string;
-    email: string;
-    pseudo: string;
-    niveau: number;
-  };
+  user?: { id: string; email: string; pseudo: string };
 }
 
 export function authMiddleware(req: AuthRequest, res: Response, next: NextFunction): void {
@@ -18,15 +13,13 @@ export function authMiddleware(req: AuthRequest, res: Response, next: NextFuncti
     return;
   }
 
-  const token = authHeader.split(' ')[1];
+  const token = authHeader.substring(7);
 
   try {
-    const secret = process.env.JWT_SECRET || 'default_secret';
-    const decoded = jwt.verify(token, secret) as {
+    const decoded = jwt.verify(token, process.env.JWT_SECRET as string) as {
       id: string;
       email: string;
       pseudo: string;
-      niveau: number;
     };
     req.user = decoded;
     next();
