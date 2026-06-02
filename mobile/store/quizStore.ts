@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { Question, QuizConfig, PlayerAnswer, QuizResult } from '../types';
-import { questionsApi, quizApi } from '../services/api';
+import { questionsApi, quizApi, srsApi } from '../services/api';
 
 interface QuizState {
   config: QuizConfig | null;
@@ -41,6 +41,17 @@ export const useQuizStore = create<QuizState>((set, get) => ({
         response = await questionsApi.getDailyQuestions();
       } else if (config.mode === 'murajaah') {
         response = await quizApi.getMistakes(config.nb_questions);
+      } else if (config.mode === 'talallum') {
+        // Mode Ta'allum : priorité aux cartes SRS échues, sinon nouvelles questions
+        response = await srsApi.getDue(config.nb_questions);
+        if (response.data.data.length === 0) {
+          response = await questionsApi.getQuestions({
+            domaine: config.domaine,
+            niveau: typeof config.niveau === 'number' ? config.niveau : undefined,
+            madhab: config.madhab,
+            limit: config.nb_questions,
+          });
+        }
       } else {
         response = await questionsApi.getQuestions({
           domaine: config.domaine,
@@ -99,6 +110,20 @@ export const useQuizStore = create<QuizState>((set, get) => ({
           temps_ms: a.temps_ms,
         })),
       });
+
+      // Mode Ta'allum : reprogramme chaque question via le SRS
+      const { config } = get();
+      if (config?.mode === 'talallum' && response.data.data.answers_detail) {
+        await Promise.all(
+          response.data.data.answers_detail.map((d) => {
+            // qualité : 0 = faux, 2 = correct, 3 = correct & rapide (< 5s)
+            const answer = answers.find(a => a.question_id === d.question_id);
+            const quality = !d.est_correcte ? 0 : (answer && answer.temps_ms < 5000 ? 3 : 2);
+            return srsApi.review(d.question_id, quality).catch(() => {});
+          })
+        );
+      }
+
       set({ result: response.data.data, status: 'finished' });
     } catch {
       set({ status: 'finished' });

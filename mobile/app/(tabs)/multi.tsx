@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import {
-  View, Text, TextInput, TouchableOpacity, StyleSheet, Alert,
+  View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, ScrollView,
 } from 'react-native';
 import { router } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -53,7 +53,7 @@ export default function MultiScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
-      <View style={styles.content}>
+      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         {/* Header */}
         <View style={styles.header}>
           <Text style={styles.bismillah}>بِسْمِ اللَّهِ</Text>
@@ -109,24 +109,43 @@ export default function MultiScreen() {
           </TouchableOpacity>
         </View>
 
-        {/* Mode Halaqat Info */}
-        <View style={styles.infoCard}>
-          <Text style={styles.infoIcon}>🕌</Text>
-          <View style={styles.infoTextContainer}>
-            <Text style={styles.infoTitle}>Mode Halaqat</Text>
-            <Text style={styles.infoDesc}>
-              Apprenez ensemble en groupe, comme dans les cercles de connaissance islamique traditionnels.
-            </Text>
+        <Text style={styles.sectionTitle}>Autres modes</Text>
+
+        {/* Tournoi */}
+        <TouchableOpacity
+          style={styles.navCard}
+          onPress={() => router.push('/multi/tournoi')}
+          activeOpacity={0.85}
+        >
+          <Text style={styles.navIcon}>🏆</Text>
+          <View style={styles.navTextContainer}>
+            <Text style={styles.navTitle}>Tournoi — Munafasa</Text>
+            <Text style={styles.navDesc}>Compétition hebdomadaire & classement par ligue</Text>
           </View>
-        </View>
-      </View>
+          <Ionicons name="chevron-forward" size={18} color={COLORS.textLight} />
+        </TouchableOpacity>
+
+        {/* Halaqat */}
+        <TouchableOpacity
+          style={styles.navCard}
+          onPress={() => router.push('/multi/halaqat')}
+          activeOpacity={0.85}
+        >
+          <Text style={styles.navIcon}>🕌</Text>
+          <View style={styles.navTextContainer}>
+            <Text style={styles.navTitle}>Mode Halaqat</Text>
+            <Text style={styles.navDesc}>Cercle d'étude pour enseignants & élèves</Text>
+          </View>
+          <Ionicons name="chevron-forward" size={18} color={COLORS.textLight} />
+        </TouchableOpacity>
+      </ScrollView>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: COLORS.background },
-  content: { flex: 1, padding: 20 },
+  content: { padding: 20, paddingBottom: 40 },
   header: { alignItems: 'center', marginBottom: 28, paddingTop: 8 },
   bismillah: { fontSize: 16, color: COLORS.primary, marginBottom: 8 },
   title: { fontSize: 24, fontWeight: 'bold', color: COLORS.text },
@@ -193,4 +212,20 @@ const styles = StyleSheet.create({
   infoTextContainer: { flex: 1 },
   infoTitle: { fontSize: 15, fontWeight: '600', color: COLORS.primary, marginBottom: 4 },
   infoDesc: { fontSize: 13, color: COLORS.textSecondary, lineHeight: 18 },
+  sectionTitle: { fontSize: 14, fontWeight: '700', color: COLORS.textSecondary, marginTop: 8, marginBottom: 10, textTransform: 'uppercase' },
+  navCard: {
+    backgroundColor: COLORS.surface,
+    borderRadius: 14,
+    padding: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 14,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+  },
+  navIcon: { fontSize: 28 },
+  navTextContainer: { flex: 1 },
+  navTitle: { fontSize: 15, fontWeight: 'bold', color: COLORS.text },
+  navDesc: { fontSize: 12, color: COLORS.textSecondary, marginTop: 2 },
 });

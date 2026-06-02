@@ -92,7 +92,7 @@ router.post('/submit', authMiddleware, async (req: AuthRequest, res: Response): 
     // Update user XP and streak
     const today = new Date().toISOString().slice(0, 10);
     const userResult = await pool.query(
-      'SELECT xp_total, niveau, streak_days, last_daily_challenge FROM users WHERE id = $1',
+      'SELECT xp_total, niveau, streak_days, last_daily_challenge, xp_semaine, semaine_ref FROM users WHERE id = $1',
       [user_id]
     );
     const currentUser = userResult.rows[0];
@@ -112,10 +112,34 @@ router.post('/submit', authMiddleware, async (req: AuthRequest, res: Response): 
     if (lastChallenge === yesterday) { newStreak += 1; }
     else if (lastChallenge !== today) { newStreak = 1; }
 
+    // XP hebdomadaire (réinitialisé chaque lundi)
+    const now = new Date();
+    const day = now.getDay();
+    const diffToMonday = (day === 0 ? -6 : 1) - day;
+    const monday = new Date(now);
+    monday.setDate(now.getDate() + diffToMonday);
+    const mondayStr = monday.toISOString().slice(0, 10);
+    const sameWeek = currentUser.semaine_ref &&
+      new Date(currentUser.semaine_ref).toISOString().slice(0, 10) === mondayStr;
+    const newXpSemaine = (sameWeek ? (currentUser.xp_semaine || 0) : 0) + xp_gained;
+
     await pool.query(
-      'UPDATE users SET xp_total = $1, niveau = $2, streak_days = $3, last_daily_challenge = $4, updated_at = NOW() WHERE id = $5',
-      [newXp, newNiveau, newStreak, today, user_id]
+      `UPDATE users SET xp_total = $1, niveau = $2, streak_days = $3, last_daily_challenge = $4,
+       xp_semaine = $5, semaine_ref = $6, updated_at = NOW() WHERE id = $7`,
+      [newXp, newNiveau, newStreak, today, newXpSemaine, mondayStr, user_id]
     );
+
+    // Met à jour les points du tournoi actif si l'utilisateur y est inscrit
+    if (xp_gained > 0) {
+      await pool.query(
+        `UPDATE tournoi_participants tp
+         SET points = points + $1
+         FROM tournois t
+         WHERE tp.tournoi_id = t.id AND tp.user_id = $2
+           AND t.statut = 'ouvert' AND CURRENT_DATE BETWEEN t.date_debut AND t.date_fin`,
+        [xp_gained, user_id]
+      );
+    }
 
     const level_up = newNiveau > currentUser.niveau;
 
@@ -172,6 +196,95 @@ router.get('/mistakes', authMiddleware, async (req: AuthRequest, res: Response):
     res.json({ success: true, data: result.rows });
   } catch (err) {
     console.error('Get mistakes error:', err);
+    res.status(500).json({ success: false, error: 'Erreur serveur' });
+  }
+});
+
+// ---------------------------------------------------------------
+// SRS — Répétition espacée (mode Ta'allum)
+// ---------------------------------------------------------------
+
+// GET /api/quiz/srs/due — questions à réviser aujourd'hui (cartes échues)
+router.get('/srs/due', authMiddleware, async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const user_id = req.user!.id;
+    const limit = Math.min(Number(req.query.limit) || 10, 30);
+
+    const query = `
+      SELECT q.*, json_agg(json_build_object(
+        'id', r.id, 'texte_fr', r.texte_fr, 'texte_ar', r.texte_ar, 'est_correcte', r.est_correcte
+      ) ORDER BY r.id) AS reponses
+      FROM srs_cards c
+      JOIN questions q ON q.id = c.question_id AND q.statut = 'valide'
+      LEFT JOIN reponses r ON r.question_id = q.id
+      WHERE c.user_id = $1 AND c.due_date <= CURRENT_DATE
+      GROUP BY q.id, c.due_date
+      ORDER BY c.due_date ASC
+      LIMIT $2
+    `;
+
+    const result = await pool.query(query, [user_id, limit]);
+    res.json({ success: true, data: result.rows });
+  } catch (err) {
+    console.error('SRS due error:', err);
+    res.status(500).json({ success: false, error: 'Erreur serveur' });
+  }
+});
+
+const srsReviewSchema = z.object({
+  question_id: z.string().uuid(),
+  // qualité de rappel : 0 = oublié, 1 = difficile, 2 = correct, 3 = facile
+  quality: z.number().int().min(0).max(3),
+});
+
+// POST /api/quiz/srs/review — enregistre une révision et reprogramme la carte (SM-2 simplifié)
+router.post('/srs/review', authMiddleware, async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const { question_id, quality } = srsReviewSchema.parse(req.body);
+    const user_id = req.user!.id;
+
+    const existing = await pool.query(
+      'SELECT * FROM srs_cards WHERE user_id = $1 AND question_id = $2',
+      [user_id, question_id]
+    );
+
+    let ease = existing.rows[0]?.ease_factor ? Number(existing.rows[0].ease_factor) : 2.5;
+    let repetitions = existing.rows[0]?.repetitions ?? 0;
+    let interval = existing.rows[0]?.interval_days ?? 0;
+
+    if (quality < 2) {
+      // Échec : on recommence à zéro
+      repetitions = 0;
+      interval = 1;
+    } else {
+      repetitions += 1;
+      if (repetitions === 1) interval = 1;
+      else if (repetitions === 2) interval = 3;
+      else interval = Math.round(interval * ease);
+    }
+
+    // Ajuste l'ease factor (borné à 1.3)
+    ease = Math.max(1.3, ease + (0.1 - (3 - quality) * (0.08 + (3 - quality) * 0.02)));
+
+    const due = new Date();
+    due.setDate(due.getDate() + interval);
+    const dueStr = due.toISOString().slice(0, 10);
+
+    await pool.query(
+      `INSERT INTO srs_cards (user_id, question_id, ease_factor, interval_days, repetitions, due_date, last_reviewed)
+       VALUES ($1, $2, $3, $4, $5, $6, NOW())
+       ON CONFLICT (user_id, question_id)
+       DO UPDATE SET ease_factor = $3, interval_days = $4, repetitions = $5, due_date = $6, last_reviewed = NOW()`,
+      [user_id, question_id, ease.toFixed(2), interval, repetitions, dueStr]
+    );
+
+    res.json({ success: true, data: { next_review: dueStr, interval_days: interval, ease_factor: Number(ease.toFixed(2)) } });
+  } catch (err) {
+    if (err instanceof z.ZodError) {
+      res.status(400).json({ success: false, error: 'Données invalides', details: err.errors });
+      return;
+    }
+    console.error('SRS review error:', err);
     res.status(500).json({ success: false, error: 'Erreur serveur' });
   }
 });

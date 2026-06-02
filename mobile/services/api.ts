@@ -112,6 +112,42 @@ export const signalementsApi = {
     api.post<{ success: boolean; message: string }>('/signalements', data),
 };
 
+// Tournois
+export const tournoisApi = {
+  getActif: () =>
+    api.get<{ success: boolean; data: { id: string; nom: string; nom_ar: string; theme: string; description: string; date_debut: string; date_fin: string } }>('/tournois/actif'),
+
+  join: (id: string) =>
+    api.post<{ success: boolean; message: string }>(`/tournois/${id}/join`),
+
+  getClassement: (id: string) =>
+    api.get<{ success: boolean; data: Array<{ rang: number; user_id: string; pseudo: string; pays: string; points: number; xp_total: number; ligue: { id: string; nom: string; nom_ar: string } }> }>(`/tournois/${id}/classement`),
+};
+
+// Halaqat
+export const halaqatApi = {
+  create: (data: { nom: string; description?: string }) =>
+    api.post<{ success: boolean; data: { id: string; nom: string; code_acces: string } }>('/halaqat', data),
+
+  join: (code: string) =>
+    api.post<{ success: boolean; data: { id: string; nom: string } }>('/halaqat/join', { code }),
+
+  getMy: () =>
+    api.get<{ success: boolean; data: Array<{ id: string; nom: string; role: string; code_acces: string; nb_membres: number }> }>('/halaqat/my'),
+
+  getHalaqa: (id: string) =>
+    api.get<{ success: boolean; data: unknown }>(`/halaqat/${id}`),
+};
+
+// SRS — répétition espacée
+export const srsApi = {
+  getDue: (limit = 10) =>
+    api.get<{ success: boolean; data: Question[] }>('/quiz/srs/due', { params: { limit } }),
+
+  review: (question_id: string, quality: number) =>
+    api.post<{ success: boolean; data: { next_review: string; interval_days: number } }>('/quiz/srs/review', { question_id, quality }),
+};
+
 // Badges
 export const badgesApi = {
   getAllBadges: () =>

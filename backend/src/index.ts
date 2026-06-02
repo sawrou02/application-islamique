@@ -15,6 +15,8 @@ import leaderboardRoutes from './routes/leaderboard';
 import badgesRoutes from './routes/badges';
 import duelsRoutes from './routes/duels';
 import signalementsRoutes from './routes/signalements';
+import tournoisRoutes from './routes/tournois';
+import halaqatRoutes from './routes/halaqat';
 import { setupSocket } from './socket';
 
 const app = express();
@@ -46,6 +48,8 @@ app.use('/api/leaderboard', leaderboardRoutes);
 app.use('/api/badges', badgesRoutes);
 app.use('/api/duels', duelsRoutes);
 app.use('/api/signalements', signalementsRoutes);
+app.use('/api/tournois', tournoisRoutes);
+app.use('/api/halaqat', halaqatRoutes);
 
 // Socket.io
 setupSocket(io);

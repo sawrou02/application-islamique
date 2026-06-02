@@ -82,6 +82,31 @@ export const QUIZ_MODES = [
   },
 ];
 
+export interface Ligue {
+  id: string;
+  nom: string;
+  nomAr: string;
+  color: string;
+  minXp: number;
+}
+
+export const LIGUES: Ligue[] = [
+  { id: 'bronze', nom: 'Bronze', nomAr: 'برونزي', color: '#CD7F32', minXp: 0 },
+  { id: 'argent', nom: 'Argent', nomAr: 'فضي', color: '#C0C0C0', minXp: 500 },
+  { id: 'or', nom: 'Or', nomAr: 'ذهبي', color: '#FFD700', minXp: 2000 },
+  { id: 'diamant', nom: 'Diamant', nomAr: 'ماسي', color: '#B9F2FF', minXp: 5000 },
+  { id: 'savant', nom: 'Savant', nomAr: 'عالم', color: '#E040FB', minXp: 10000 },
+  { id: 'mufti', nom: 'Mufti', nomAr: 'مفتي', color: '#FF6F00', minXp: 20000 },
+];
+
+export function getLigue(xp: number): Ligue {
+  let result = LIGUES[0];
+  for (const l of LIGUES) {
+    if (xp >= l.minXp) result = l;
+  }
+  return result;
+}
+
 export interface CalendarEvent {
   id: string;
   name: string;
