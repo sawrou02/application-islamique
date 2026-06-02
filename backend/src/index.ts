@@ -1,25 +1,13 @@
-import express from 'express';
-import cors from 'cors';
 import dotenv from 'dotenv';
-import { createServer } from 'http';
-import { Server as SocketServer } from 'socket.io';
-
 dotenv.config();
 
-import authRoutes from './routes/auth';
-import questionsRoutes from './routes/questions';
-import quizRoutes from './routes/quiz';
-import roomsRoutes from './routes/rooms';
-import usersRoutes from './routes/users';
-import leaderboardRoutes from './routes/leaderboard';
-import badgesRoutes from './routes/badges';
-import duelsRoutes from './routes/duels';
-import signalementsRoutes from './routes/signalements';
-import tournoisRoutes from './routes/tournois';
-import halaqatRoutes from './routes/halaqat';
+import { createServer } from 'http';
+import { Server as SocketServer } from 'socket.io';
+import app from './app';
 import { setupSocket } from './socket';
+import { sendDailyReminder } from './services/notifications';
+import pool from './db';
 
-const app = express();
 const httpServer = createServer(app);
 
 const io = new SocketServer(httpServer, {
@@ -29,30 +17,30 @@ const io = new SocketServer(httpServer, {
   },
 });
 
-// Middleware
-app.use(cors());
-app.use(express.json());
-
-// Health check
-app.get('/health', (_, res) => {
-  res.json({ status: 'ok', timestamp: new Date().toISOString() });
-});
-
-// Routes
-app.use('/api/auth', authRoutes);
-app.use('/api/questions', questionsRoutes);
-app.use('/api/quiz', quizRoutes);
-app.use('/api/rooms', roomsRoutes);
-app.use('/api/users', usersRoutes);
-app.use('/api/leaderboard', leaderboardRoutes);
-app.use('/api/badges', badgesRoutes);
-app.use('/api/duels', duelsRoutes);
-app.use('/api/signalements', signalementsRoutes);
-app.use('/api/tournois', tournoisRoutes);
-app.use('/api/halaqat', halaqatRoutes);
-
 // Socket.io
 setupSocket(io);
+
+// Daily reminder scheduler — checks once per minute, sends at 7:00 AM server time
+let lastReminderDay = '';
+setInterval(async () => {
+  const now = new Date();
+  if (now.getHours() === 7 && now.getMinutes() === 0) {
+    const today = now.toISOString().slice(0, 10);
+    if (lastReminderDay === today) return;
+    lastReminderDay = today;
+
+    try {
+      const result = await pool.query(
+        `SELECT fcm_token FROM users WHERE fcm_token IS NOT NULL AND fcm_token <> ''`
+      );
+      for (const row of result.rows) {
+        sendDailyReminder(row.fcm_token).catch(() => {});
+      }
+    } catch (err) {
+      console.error('Daily reminder error:', err);
+    }
+  }
+}, 60_000);
 
 const PORT = process.env.PORT || 3000;
 httpServer.listen(PORT, () => {

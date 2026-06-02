@@ -52,6 +52,7 @@ router.put('/profile', authMiddleware, async (req: AuthRequest, res: Response): 
       pays: z.string().optional(),
       langue: z.string().optional(),
       ville: z.string().optional(),
+      fcm_token: z.string().optional(),
     });
 
     const updates = schema.parse(req.body);
@@ -65,6 +66,7 @@ router.put('/profile', authMiddleware, async (req: AuthRequest, res: Response): 
     if (updates.pays) { sets.push(`pays = $${idx++}`); params.push(updates.pays); }
     if (updates.langue) { sets.push(`langue = $${idx++}`); params.push(updates.langue); }
     if (updates.ville) { sets.push(`ville = $${idx++}`); params.push(updates.ville); }
+    if (updates.fcm_token !== undefined) { sets.push(`fcm_token = $${idx++}`); params.push(updates.fcm_token); }
 
     if (sets.length === 0) {
       res.status(400).json({ success: false, error: 'Aucune donnée à mettre à jour' });
