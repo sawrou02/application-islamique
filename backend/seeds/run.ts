@@ -2,6 +2,7 @@ import { Client } from 'pg';
 import dotenv from 'dotenv';
 import { seedBadges } from './badges';
 import { seedQuestions } from './questions';
+import { seedQuestionsExtra } from './questions_extra';
 
 dotenv.config();
 
@@ -13,6 +14,7 @@ async function runSeeds(): Promise<void> {
     console.log('Running seeds...');
     await seedBadges(client);
     await seedQuestions(client);
+    await seedQuestionsExtra(client);
     console.log('All seeds completed successfully.');
   } finally {
     await client.end();
