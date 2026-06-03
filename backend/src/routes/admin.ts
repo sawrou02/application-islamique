@@ -122,4 +122,20 @@ router.post('/questions/:id/rejeter', authMiddleware, adminMiddleware, async (re
   }
 });
 
+// GET /api/admin/users — liste tous les utilisateurs
+router.get('/users', authMiddleware, adminMiddleware, async (_req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const result = await pool.query(
+      `SELECT id, pseudo, email, niveau, xp_total, role, created_at
+       FROM users
+       ORDER BY created_at DESC
+       LIMIT 200`
+    );
+    res.json({ success: true, data: result.rows });
+  } catch (err) {
+    console.error('Admin users error:', err);
+    res.status(500).json({ success: false, error: 'Erreur serveur' });
+  }
+});
+
 export default router;

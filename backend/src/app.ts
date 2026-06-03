@@ -1,5 +1,6 @@
 import express from 'express';
 import cors from 'cors';
+import path from 'path';
 
 import authRoutes from './routes/auth';
 import questionsRoutes from './routes/questions';
@@ -38,5 +39,8 @@ app.use('/api/signalements', signalementsRoutes);
 app.use('/api/tournois', tournoisRoutes);
 app.use('/api/halaqat', halaqatRoutes);
 app.use('/api/admin', adminRoutes);
+
+// Panel admin web (fichiers statiques)
+app.use('/admin', express.static(path.join(__dirname, '../../admin')));
 
 export default app;
