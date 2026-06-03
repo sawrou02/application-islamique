@@ -1,0 +1,12 @@
+{
+  "name": "quiz-islamique",
+  "version": "1.0.0",
+  "scripts": {
+    "build": "cd backend && npm ci && npm run build",
+    "start": "cd backend && node dist/src/index.js",
+    "migrate": "cd backend && node -r ts-node/register migrations/run.ts"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  }
+}
