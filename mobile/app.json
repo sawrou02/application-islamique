@@ -35,6 +35,12 @@
     ],
     "experiments": {
       "typedRoutes": true
-    }
+    },
+    "extra": {
+      "eas": {
+        "projectId": "REMPLACER_PAR_TON_EAS_PROJECT_ID"
+      }
+    },
+    "owner": "REMPLACER_PAR_TON_EXPO_USERNAME"
   }
 }
