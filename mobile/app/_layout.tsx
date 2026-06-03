@@ -5,12 +5,24 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { StyleSheet } from 'react-native';
 import { useAuthStore } from '../store/authStore';
+import { registerForPushNotifications, setupNotificationHandlers } from '../services/notifications';
+import { usersApi } from '../services/api';
+
+setupNotificationHandlers();
 
 export default function RootLayout() {
   const { loadUser } = useAuthStore();
 
   useEffect(() => {
     loadUser();
+  }, []);
+
+  useEffect(() => {
+    registerForPushNotifications().then((token) => {
+      if (token) {
+        usersApi.updateProfile({ fcm_token: token }).catch(() => {});
+      }
+    });
   }, []);
 
   return (

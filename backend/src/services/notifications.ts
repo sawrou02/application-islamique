@@ -1,86 +1,42 @@
-import * as admin from 'firebase-admin';
+const EXPO_PUSH_URL = 'https://exp.host/--/api/v2/push/send';
 
-let initialized = false;
-
-export function initFirebase(): void {
-  if (initialized) return;
-
-  const serviceAccountJson = process.env.FIREBASE_SERVICE_ACCOUNT_JSON;
-  if (!serviceAccountJson) {
-    console.warn('FIREBASE_SERVICE_ACCOUNT_JSON not set — push notifications disabled');
-    return;
-  }
-
-  try {
-    const serviceAccount = JSON.parse(serviceAccountJson);
-    admin.initializeApp({
-      credential: admin.credential.cert(serviceAccount),
-    });
-    initialized = true;
-    console.log('Firebase Admin initialized');
-  } catch (err) {
-    console.error('Failed to initialize Firebase Admin:', err);
-  }
-}
-
-export async function sendNotification(
-  token: string,
+export async function sendPushNotification(
+  expoPushToken: string,
   title: string,
   body: string,
-  data?: Record<string, string>
+  data?: object
 ): Promise<void> {
-  if (!initialized) return;
+  if (!expoPushToken || !expoPushToken.startsWith('ExponentPushToken')) return;
 
   try {
-    await admin.messaging().send({
-      token,
-      notification: { title, body },
-      data,
+    await fetch(EXPO_PUSH_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        to: expoPushToken,
+        title,
+        body,
+        sound: 'default',
+        data: data || {},
+      }),
     });
-  } catch (err) {
-    console.error('FCM send error:', err);
+  } catch {
+    // Silencieux — ne pas bloquer le flow principal
   }
 }
 
 export async function sendDailyReminder(token: string): Promise<void> {
-  await sendNotification(
-    token,
-    '🌙 Quiz Islamique',
-    "C'est l'heure de votre défi quotidien ! Testez vos connaissances islamiques.",
-    { type: 'daily_reminder' }
-  );
-}
-
-export async function sendDuelInvite(
-  token: string,
-  challengerPseudo: string,
-  duelCode: string
-): Promise<void> {
-  await sendNotification(
-    token,
-    '⚔️ Défi reçu !',
-    `${challengerPseudo} vous défie ! Rejoignez le duel maintenant.`,
-    { type: 'duel_invite', duel_code: duelCode, challenger: challengerPseudo }
-  );
+  await sendPushNotification(token, '🌙 Quiz du jour', 'Votre défi quotidien vous attend ! Testez vos connaissances islamiques.', { type: 'daily' });
 }
 
 export async function sendStreakReminder(token: string, streak: number): Promise<void> {
-  await sendNotification(
-    token,
-    '🔥 Votre série est en danger !',
-    `Ne brisez pas votre série de ${streak} jours. Jouez maintenant !`,
-    { type: 'streak_reminder', streak: String(streak) }
-  );
+  await sendPushNotification(token, '🔥 Ne perdez pas votre série !', `Vous avez une série de ${streak} jours. Jouez aujourd'hui pour la maintenir !`, { type: 'streak', streak });
+}
+
+export async function sendDuelInvite(token: string, challengerPseudo: string, duelCode: string): Promise<void> {
+  await sendPushNotification(token, '⚔️ Défi reçu !', `${challengerPseudo} vous défie en duel islamique. Code : ${duelCode}`, { type: 'duel', code: duelCode });
 }
 
 export async function sendTournoiStart(token: string, tournoiNom: string): Promise<void> {
-  await sendNotification(
-    token,
-    '🏆 Tournoi commencé !',
-    `Le tournoi "${tournoiNom}" vient de démarrer. Bonne chance !`,
-    { type: 'tournoi_start', tournoi_nom: tournoiNom }
-  );
+  await sendPushNotification(token, '🏆 Tournoi en cours !', `Le tournoi "${tournoiNom}" a commencé. Participez pour grimper dans le classement !`, { type: 'tournoi' });
 }
-
-// Initialize on module load
-initFirebase();

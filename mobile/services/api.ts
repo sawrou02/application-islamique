@@ -78,7 +78,7 @@ export const usersApi = {
   getProfile: () =>
     api.get<{ success: boolean; data: User & { badges: Badge[]; total_parties: number } }>('/users/profile'),
 
-  updateProfile: (data: { madhab?: string; pays?: string; langue?: string; ville?: string }) =>
+  updateProfile: (data: { madhab?: string; pays?: string; langue?: string; ville?: string; fcm_token?: string }) =>
     api.put<{ success: boolean; data: User }>('/users/profile', data),
 
   getStats: () =>

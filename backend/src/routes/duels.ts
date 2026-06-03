@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { randomBytes } from 'crypto';
 import pool from '../db';
 import { authMiddleware, AuthRequest } from '../middleware/auth';
+import { sendDuelInvite } from '../services/notifications';
 
 const router = Router();
 
@@ -13,13 +14,17 @@ function generateToken(): string {
 // POST /api/duels — créer un duel et retourner un token d'invitation
 router.post('/', authMiddleware, async (req: AuthRequest, res: Response): Promise<void> => {
   try {
-    const config = z.object({
-      domaine: z.string().optional(),
-      niveau: z.union([z.number(), z.string()]).optional(),
-      nb_questions: z.number().int().min(5).max(20).default(10),
-      temps_par_question: z.number().int().default(30),
-    }).parse(req.body.config ?? {});
+    const body = z.object({
+      config: z.object({
+        domaine: z.string().optional(),
+        niveau: z.union([z.number(), z.string()]).optional(),
+        nb_questions: z.number().int().min(5).max(20).default(10),
+        temps_par_question: z.number().int().default(30),
+      }).optional(),
+      challenged_id: z.number().int().optional(),
+    }).parse(req.body);
 
+    const config = body.config ?? { nb_questions: 10, temps_par_question: 30 };
     const invite_token = generateToken();
 
     const result = await pool.query(
@@ -29,7 +34,30 @@ router.post('/', authMiddleware, async (req: AuthRequest, res: Response): Promis
       [req.user!.id, JSON.stringify(config), invite_token]
     );
 
-    res.status(201).json({ success: true, data: result.rows[0] });
+    const duel = result.rows[0];
+
+    // Si un adversaire ciblé est précisé, lui envoyer une notification de défi
+    if (body.challenged_id) {
+      try {
+        const challengerResult = await pool.query(
+          'SELECT pseudo FROM users WHERE id = $1',
+          [req.user!.id]
+        );
+        const adversaryResult = await pool.query(
+          'SELECT fcm_token FROM users WHERE id = $1',
+          [body.challenged_id]
+        );
+        const challengerPseudo = challengerResult.rows[0]?.pseudo ?? 'Un joueur';
+        const adversaryToken = adversaryResult.rows[0]?.fcm_token;
+        if (adversaryToken) {
+          await sendDuelInvite(adversaryToken, challengerPseudo, invite_token);
+        }
+      } catch {
+        // Silencieux
+      }
+    }
+
+    res.status(201).json({ success: true, data: duel });
   } catch (err) {
     if (err instanceof z.ZodError) {
       res.status(400).json({ success: false, error: 'Config invalide', details: err.errors });
