@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Quiz Islamique — Panel Admin</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: system-ui, -apple-system, sans-serif; background: #F5F5F0; color: #212121; }
+    header { background: #1B5E20; color: #fff; padding: 14px 24px; display: flex; align-items: center; justify-content: space-between; }
+    header h1 { font-size: 18px; }
+    header span { font-size: 13px; opacity: 0.8; }
+    #login-screen { max-width: 360px; margin: 80px auto; background: #fff; border-radius: 12px; padding: 32px; box-shadow: 0 2px 12px rgba(0,0,0,0.1); }
+    #login-screen h2 { margin-bottom: 20px; color: #1B5E20; }
+    input { width: 100%; padding: 10px 14px; border: 1.5px solid #ddd; border-radius: 8px; font-size: 15px; margin-bottom: 12px; }
+    input:focus { outline: none; border-color: #1B5E20; }
+    button { background: #1B5E20; color: #fff; border: none; border-radius: 8px; padding: 10px 18px; font-size: 14px; cursor: pointer; font-weight: 600; }
+    button:hover { background: #2E7D32; }
+    button.danger { background: #C62828; }
+    button.danger:hover { background: #B71C1C; }
+    button.warning { background: #E65100; }
+    button.warning:hover { background: #BF360C; }
+    button.secondary { background: #455A64; }
+    button.secondary:hover { background: #37474F; }
+    button:disabled { opacity: 0.5; cursor: not-allowed; }
+    #app { display: none; }
+    .tabs { display: flex; gap: 0; background: #fff; border-bottom: 2px solid #E8F5E9; padding: 0 24px; }
+    .tab { padding: 14px 20px; cursor: pointer; font-weight: 600; font-size: 14px; border-bottom: 3px solid transparent; color: #666; }
+    .tab.active { color: #1B5E20; border-bottom-color: #1B5E20; }
+    .content { padding: 24px; max-width: 1100px; margin: 0 auto; }
+    .panel { display: none; }
+    .panel.active { display: block; }
+    table { width: 100%; border-collapse: collapse; background: #fff; border-radius: 12px; overflow: hidden; box-shadow: 0 1px 4px rgba(0,0,0,0.08); margin-top: 16px; }
+    th { background: #E8F5E9; color: #1B5E20; text-align: left; padding: 12px 16px; font-size: 13px; }
+    td { padding: 12px 16px; border-bottom: 1px solid #f0f0f0; font-size: 13px; vertical-align: top; }
+    tr:last-child td { border-bottom: none; }
+    tr:hover td { background: #FAFFF5; }
+    .badge { display: inline-block; padding: 2px 10px; border-radius: 20px; font-size: 11px; font-weight: 700; }
+    .badge-orange { background: #FFF3E0; color: #E65100; }
+    .badge-red { background: #FFEBEE; color: #C62828; }
+    .badge-green { background: #E8F5E9; color: #1B5E20; }
+    .actions { display: flex; gap: 6px; flex-wrap: wrap; }
+    .msg { padding: 10px 16px; border-radius: 8px; margin-bottom: 16px; font-size: 13px; }
+    .msg.success { background: #E8F5E9; color: #1B5E20; }
+    .msg.error { background: #FFEBEE; color: #C62828; }
+    .stats { display: flex; gap: 16px; margin-bottom: 20px; flex-wrap: wrap; }
+    .stat-card { background: #fff; border-radius: 10px; padding: 16px 20px; flex: 1; min-width: 140px; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+    .stat-card .num { font-size: 28px; font-weight: 800; color: #1B5E20; }
+    .stat-card .label { font-size: 12px; color: #666; margin-top: 2px; }
+    .refresh-btn { float: right; font-size: 12px; padding: 6px 12px; }
+    #logout-btn { background: transparent; border: 1px solid rgba(255,255,255,0.5); font-size: 13px; padding: 6px 14px; }
+    .empty { text-align: center; padding: 40px; color: #999; font-style: italic; }
+    .q-text { max-width: 300px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  </style>
+</head>
+<body>
+
+<div id="login-screen">
+  <h2>🌙 Admin — Quiz Islamique</h2>
+  <p style="font-size:13px;color:#666;margin-bottom:20px;">Connectez-vous avec votre compte administrateur.</p>
+  <input type="email" id="email" placeholder="Email" />
+  <input type="password" id="password" placeholder="Mot de passe" />
+  <div id="login-error" style="color:#C62828;font-size:13px;margin-bottom:10px;display:none;"></div>
+  <button id="login-btn" style="width:100%">Se connecter</button>
+</div>
+
+<div id="app">
+  <header>
+    <h1>🕌 Quiz Islamique — Panel Admin</h1>
+    <div style="display:flex;align-items:center;gap:16px">
+      <span id="user-info"></span>
+      <button id="logout-btn">Déconnexion</button>
+    </div>
+  </header>
+
+  <div class="tabs">
+    <div class="tab active" data-tab="signalements">⚠️ Signalements</div>
+    <div class="tab" data-tab="questions">📋 Questions en attente</div>
+    <div class="tab" data-tab="users">👥 Utilisateurs</div>
+  </div>
+
+  <div class="content">
+    <div id="msg-container"></div>
+
+    <!-- Signalements -->
+    <div class="panel active" id="panel-signalements">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+        <h2 style="font-size:16px;color:#1B5E20">Signalements en attente</h2>
+        <button class="refresh-btn secondary" onclick="loadSignalements()">↻ Actualiser</button>
+      </div>
+      <div class="stats" id="stats-signalements"></div>
+      <table>
+        <thead>
+          <tr>
+            <th>Question</th><th>Motif</th><th>Détail</th><th>Date</th><th>Actions</th>
+          </tr>
+        </thead>
+        <tbody id="tbody-signalements">
+          <tr><td colspan="5" class="empty">Chargement...</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Questions en attente -->
+    <div class="panel" id="panel-questions">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+        <h2 style="font-size:16px;color:#1B5E20">Questions en attente de validation</h2>
+        <button class="refresh-btn secondary" onclick="loadQuestions()">↻ Actualiser</button>
+      </div>
+      <table>
+        <thead>
+          <tr>
+            <th>Question</th><th>Domaine</th><th>Niveau</th><th>Madhab</th><th>Actions</th>
+          </tr>
+        </thead>
+        <tbody id="tbody-questions">
+          <tr><td colspan="5" class="empty">Chargement...</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Utilisateurs -->
+    <div class="panel" id="panel-users">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+        <h2 style="font-size:16px;color:#1B5E20">Gestion des utilisateurs</h2>
+        <button class="refresh-btn secondary" onclick="loadUsers()">↻ Actualiser</button>
+      </div>
+      <table>
+        <thead>
+          <tr><th>Pseudo</th><th>Email</th><th>Niveau</th><th>XP</th><th>Rôle</th><th>Inscription</th></tr>
+        </thead>
+        <tbody id="tbody-users">
+          <tr><td colspan="6" class="empty">Chargement...</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<script src="app.js"></script>
+</body>
+</html>

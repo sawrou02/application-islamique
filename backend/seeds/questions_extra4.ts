@@ -1,0 +1,878 @@
+import { Client } from 'pg';
+
+interface QuestionSeed {
+  domaine: string;
+  sous_domaine?: string;
+  niveau: number;
+  madhab: string;
+  texte_fr: string;
+  texte_ar?: string;
+  dalil_ref?: string;
+  dalil_texte_ar?: string;
+  dalil_texte_fr?: string;
+  explication?: string;
+  savant_reference?: string;
+  grade_hadith?: string;
+  reponses: { texte_fr: string; texte_ar?: string; est_correcte: boolean }[];
+}
+
+const QUESTIONS_EXTRA4: QuestionSeed[] = [
+  // ===================== FIQH COMPARATIF (20) =====================
+  {
+    domaine: 'fiqh', sous_domaine: 'taharah', niveau: 3, madhab: 'shafii',
+    texte_fr: "Selon le madhhab shafi'i, le contact de la peau entre un homme et une femme non-mahram rompt-il le wudu ?",
+    texte_ar: 'هل لمس المرأة الأجنبية ينقض الوضوء عند الشافعية؟',
+    explication: "Selon le madhhab shafi'i, tout contact de peau entre un homme et une femme non-mahram (quelle que soit l'intention) rompt le wudu. Cela diffère du madhhab hanafi qui exige que le contact soit avec désir pour rompre le wudu.",
+    savant_reference: "An-Nawawi, Al-Majmu'",
+    reponses: [
+      { texte_fr: "Oui, tout contact direct rompt le wudu selon le madhhab shafi'i", est_correcte: true },
+      { texte_fr: "Non, le wudu n'est pas rompu par le contact selon tous les madhhabs", est_correcte: false },
+      { texte_fr: "Seulement si le contact est intentionnel", est_correcte: false },
+      { texte_fr: "Seulement si la femme est une épouse", est_correcte: false },
+    ],
+  },
+  {
+    domaine: 'fiqh', sous_domaine: 'taharah', niveau: 3, madhab: 'hanafi',
+    texte_fr: "Selon le madhhab hanafi, l'eau qui a servi à l'ablution (ma' musta'mal) peut-elle resservir pour une nouvelle ablution ?",
+    texte_ar: 'هل الماء المستعمل يجوز استخدامه مرة أخرى للوضوء عند الحنفية؟',
+    explication: "Selon le madhhab hanafi, l'eau musta'mal (ayant servi à une ablution obligatoire) est pure mais non purifiante. Elle ne peut donc pas être réutilisée pour une nouvelle ablution, contrairement à une ablution surérogatoire selon certains avis hanafis.",
+    reponses: [
+      { texte_fr: "Non, elle est pure mais non purifiante selon les Hanafis", est_correcte: true },
+      { texte_fr: "Oui, elle peut toujours être réutilisée", est_correcte: false },
+      { texte_fr: "Seulement si la quantité est supérieure à deux qullas", est_correcte: false },
+      { texte_fr: "Oui, si l'eau est froide", est_correcte: false },
+    ],
+  },
+  {
+    domaine: 'fiqh', sous_domaine: 'salat', niveau: 3, madhab: 'maliki',
+    texte_fr: "Selon le madhhab maliki, la Basmala ('Bismillah...') est-elle récitée à voix haute dans la prière ?",
+    texte_ar: 'هل تُجهر البسملة في الصلاة عند المالكية؟',
+    explication: "Le madhhab maliki ne récite pas la Basmala dans la prière, ni à voix haute ni en silence, car selon leur position, elle ne fait pas partie de la Fatiha. Cela contraste avec les Shafi'is qui la récitent à voix haute.",
+    savant_reference: "Ibn Rushd, Bidayat al-Mujtahid",
+    reponses: [
+      { texte_fr: "Elle n'est pas récitée du tout selon les Malikis", est_correcte: true },
+      { texte_fr: "Elle est récitée à voix haute", est_correcte: false },
+      { texte_fr: "Elle est récitée silencieusement", est_correcte: false },
+      { texte_fr: "Seulement dans la première rak'at", est_correcte: false },
+    ],
+  },
+  {
+    domaine: 'fiqh', sous_domaine: 'salat', niveau: 2, madhab: 'hanbali',
+    texte_fr: "Selon le madhhab hanbali, lever les mains (raf' al-yadayn) lors du ruku est-il recommandé ?",
+    texte_ar: 'هل رفع اليدين عند الركوع مستحب عند الحنابلة؟',
+    dalil_ref: 'Sahih Al-Bukhari 736',
+    explication: "Selon les Hanbalis (et les Shafi'is), lever les mains au niveau des oreilles ou des épaules lors du ruku (en allant et en revenant) est une sunna confirmée suivant le hadith d'Ibn Umar.",
+    reponses: [
+      { texte_fr: "Oui, c'est une sunna recommandée", est_correcte: true },
+      { texte_fr: "Non, c'est makruh selon les Hanbalis", est_correcte: false },
+      { texte_fr: "Seulement dans la première rak'at", est_correcte: false },
+      { texte_fr: "Obligatoire (wajib) selon les Hanbalis", est_correcte: false },
+    ],
+  },
+  {
+    domaine: 'fiqh', sous_domaine: 'nikah', niveau: 3, madhab: 'hanafi',
+    texte_fr: "Selon le madhhab hanafi, une femme adulte peut-elle se marier sans l'accord de son wali (tuteur) ?",
+    texte_ar: 'هل تتزوج المرأة البالغة بدون ولي عند الحنفية؟',
+    explication: "Selon le madhhab hanafi, une femme adulte et saine d'esprit peut conclure son propre contrat de mariage sans l'accord du wali, bien que cela soit déconseillé. Les autres madhhabs (Maliki, Shafi'i, Hanbali) exigent le wali comme condition de validité.",
+    savant_reference: "Ibn Abidin, Radd al-Muhtar",
+    reponses: [
+      { texte_fr: "Oui, selon les Hanafis la femme majeure peut se marier sans wali", est_correcte: true },
+      { texte_fr: "Non, le wali est obligatoire dans tous les madhhabs", est_correcte: false },
+      { texte_fr: "Seulement si elle est divorcée ou veuve", est_correcte: false },
+      { texte_fr: "Seulement avec l'accord du juge (qadi)", est_correcte: false },
+    ],
+  },
+  {
+    domaine: 'fiqh', sous_domaine: 'zakat', niveau: 2, madhab: 'maliki',
+    texte_fr: "Selon le madhhab maliki, la zakat est-elle due sur les bijoux d'or et d'argent portés par les femmes ?",
+    texte_ar: 'هل تجب الزكاة في حلي المرأة عند المالكية؟',
+    explication: "Selon les Malikis et les Shafi'is, les bijoux portés par les femmes sont exempts de zakat tant qu'ils sont utilisés comme ornement. Les Hanbalis ont deux opinions, et les Hanafis exigent la zakat sur tout l'or et l'argent.",
+    reponses: [
+      { texte_fr: "Non, les bijoux portés comme ornement sont exempts selon les Malikis", est_correcte: true },
+      { texte_fr: "Oui, la zakat est due sur tous les bijoux", est_correcte: false },
+      { texte_fr: "Seulement si la valeur dépasse 200 dinars", est_correcte: false },
+      { texte_fr: "Seulement sur l'or, pas l'argent", est_correcte: false },
+    ],
+  },
+  {
+    domaine: 'fiqh', sous_domaine: 'sawm', niveau: 3, madhab: 'shafii',
+    texte_fr: "Selon le madhhab shafi'i, l'intention (niyya) du jeûne de Ramadan doit-elle être renouvelée chaque nuit ?",
+    texte_ar: 'هل يجب تجديد النية كل ليلة لصيام رمضان عند الشافعية؟',
+    explication: "Selon les Shafi'is et les Hanbalis, l'intention doit être faite chaque nuit avant l'aube pour chaque jour de jeûne séparément. Les Malikis permettent une intention générale au début de Ramadan. Les Hanafis ont une position intermédiaire.",
+    savant_reference: "An-Nawawi, Al-Majmu'",
+    reponses: [
+      { texte_fr: "Oui, l'intention doit être renouvelée chaque nuit selon les Shafi'is", est_correcte: true },
+      { texte_fr: "Non, une seule intention au début de Ramadan suffit", est_correcte: false },
+      { texte_fr: "L'intention se fait uniquement à l'aube le premier jour", est_correcte: false },
+      { texte_fr: "L'intention n'est pas obligatoire pour le jeûne de Ramadan", est_correcte: false },
+    ],
+  },
+  {
+    domaine: 'fiqh', sous_domaine: 'taharah', niveau: 2, madhab: 'hanbali',
+    texte_fr: "Selon le madhhab hanbali, combien de fois doit-on laver une impureté légère lors de l'ablution ?",
+    texte_ar: 'كم مرة يجب غسل الأعضاء في الوضوء عند الحنابلة؟',
+    explication: "Selon les Hanbalis, laver les membres une seule fois suffit (fard). Deux fois est mieux et trois fois est la sunna. Au-delà de trois fois, c'est excessif et blâmable.",
+    reponses: [
+      { texte_fr: "Une fois suffit (fard), trois fois est la sunna", est_correcte: true },
+      { texte_fr: "Trois fois est obligatoire", est_correcte: false },
+      { texte_fr: "Sept fois comme pour la purification de l'impureté du chien", est_correcte: false },
+      { texte_fr: "Deux fois minimum", est_correcte: false },
+    ],
+  },
+  {
+    domaine: 'fiqh', sous_domaine: 'janaza', niveau: 3, madhab: 'maliki',
+    texte_fr: "Selon le madhhab maliki, est-il permis d'effectuer la prière funèbre (janaza) en l'absence du corps (salat al-ghayb) ?",
+    texte_ar: 'هل تجوز صلاة الغائب عند المالكية؟',
+    explication: "Le madhhab maliki n'autorise pas la prière funèbre en l'absence du corps (salat al-ghayb). Les Shafi'is et les Hanbalis la permettent, s'appuyant sur le hadith de la prière du Prophète ﷺ sur An-Najashi.",
+    savant_reference: "Ibn Rushd, Bidayat al-Mujtahid",
+    reponses: [
+      { texte_fr: "Non, les Malikis ne permettent pas la salat al-ghayb", est_correcte: true },
+      { texte_fr: "Oui, elle est permise selon tous les madhhabs", est_correcte: false },
+      { texte_fr: "Seulement pour les savants ou les dirigeants", est_correcte: false },
+      { texte_fr: "Seulement si le défunt est mort en pays non-musulman", est_correcte: false },
+    ],
+  },
+  {
+    domaine: 'fiqh', sous_domaine: 'muamalat', niveau: 3, madhab: 'hanafi',
+    texte_fr: "Selon le madhhab hanafi, la vente d'un bien avant de le posséder est-elle permise ?",
+    texte_ar: 'هل يجوز بيع ما لا يملك عند الحنفية؟',
+    explication: "Selon le madhhab hanafi, vendre un bien que l'on ne possède pas encore (fudul sale) est généralement interdit car il y a gharar (incertitude). Cependant, certains contrats comme le salam (vente à terme) sont des exceptions.",
+    reponses: [
+      { texte_fr: "Généralement interdit, sauf exceptions comme le salam", est_correcte: true },
+      { texte_fr: "Toujours permis selon les Hanafis", est_correcte: false },
+      { texte_fr: "Permis si on obtient le bien dans les 3 jours", est_correcte: false },
+      { texte_fr: "Permis uniquement entre marchands", est_correcte: false },
+    ],
+  },
+  {
+    domaine: 'fiqh', sous_domaine: 'salat', niveau: 2, madhab: 'shafii',
+    texte_fr: "Selon le madhhab shafi'i, quelle est la position obligatoire (fard) des pieds pendant la prosternation (sujud) ?",
+    texte_ar: 'ما الواجب في وضع القدمين في السجود عند الشافعية؟',
+    explication: "Selon les Shafi'is, poser au moins une partie des orteils sur le sol pendant le sujud est obligatoire. Le bout des doigts doit être dirigé vers la qibla.",
+    reponses: [
+      { texte_fr: "Poser au moins une partie des orteils orientés vers la qibla", est_correcte: true },
+      { texte_fr: "Les pieds peuvent être levés complètement", est_correcte: false },
+      { texte_fr: "Poser les deux talons au sol", est_correcte: false },
+      { texte_fr: "Les pieds joints obligatoirement", est_correcte: false },
+    ],
+  },
+  {
+    domaine: 'fiqh', sous_domaine: 'hajj', niveau: 3, madhab: 'hanbali',
+    texte_fr: "Selon le madhhab hanbali, quel est le jugement du rasage de la tête (halq) lors du Hajj ?",
+    texte_ar: 'ما حكم الحلق في الحج عند الحنابلة؟',
+    dalil_ref: 'Sourate Al-Fath 48:27',
+    explication: "Selon les Hanbalis, le halq (rasage complet) ou taqsir (raccourcissement) lors du Hajj est un wajib (obligation dont l'omission exige une kaffarah). Le halq est préféré au taqsir selon le hadith où le Prophète ﷺ a fait du du'a trois fois pour ceux qui se rasent.",
+    reponses: [
+      { texte_fr: "Wajib (obligatoire), le halq étant préféré au taqsir", est_correcte: true },
+      { texte_fr: "Sunna seulement", est_correcte: false },
+      { texte_fr: "Rukn (pilier) sans lequel le Hajj est invalide", est_correcte: false },
+      { texte_fr: "Mubah (permis optionnel)", est_correcte: false },
+    ],
+  },
+  {
+    domaine: 'fiqh', sous_domaine: 'muamalat', niveau: 2, madhab: 'maliki',
+    texte_fr: "Selon le madhhab maliki, quel est le statut juridique du contrat de murabaha (vente avec marge bénéficiaire déclarée) ?",
+    texte_ar: 'ما حكم بيع المرابحة عند المالكية؟',
+    explication: "La murabaha est un contrat de vente licite selon tous les madhhabs où le vendeur déclare son prix de revient et sa marge bénéficiaire. Elle est utilisée dans la finance islamique moderne comme alternative aux prêts à intérêts.",
+    reponses: [
+      { texte_fr: "Licite (halal) selon tous les madhhabs incluant les Malikis", est_correcte: true },
+      { texte_fr: "Interdit car assimilable au riba", est_correcte: false },
+      { texte_fr: "Makruh selon les Malikis", est_correcte: false },
+      { texte_fr: "Seulement permis entre musulmans", est_correcte: false },
+    ],
+  },
+  {
+    domaine: 'fiqh', sous_domaine: 'salat', niveau: 3, madhab: 'hanafi',
+    texte_fr: "Selon le madhhab hanafi, combien de rak'at comportent les prières surérogatoires (rawatib) de la prière du Dhuhr ?",
+    texte_ar: 'كم ركعة راتبة للظهر عند الحنفية؟',
+    explication: "Selon le madhhab hanafi, les rawatib du Dhuhr sont 4 rak'at avant le fard et 2 rak'at après. Certains ajoutent 2 autres rak'at après (total : 4+4+2). Selon les Shafi'is, c'est 2 avant et 2 après.",
+    reponses: [
+      { texte_fr: "4 rak'at avant et 2 après selon les Hanafis", est_correcte: true },
+      { texte_fr: "2 rak'at avant et 2 après", est_correcte: false },
+      { texte_fr: "Il n'y a pas de rawatib pour le Dhuhr", est_correcte: false },
+      { texte_fr: "6 rak'at avant uniquement", est_correcte: false },
+    ],
+  },
+  {
+    domaine: 'fiqh', sous_domaine: 'taharah', niveau: 2, madhab: 'general',
+    texte_fr: "Sur quoi les quatre madhhabs s'accordent-ils concernant les conditions de validité du wudu ?",
+    texte_ar: 'على ماذا اتفقت المذاهب الأربعة في شروط صحة الوضوء؟',
+    explication: "Les quatre madhhabs s'accordent sur : l'islam du fidèle, la discernement (tamyiz), l'intention, l'eau pure, l'absence d'obstacle sur la peau, et la purification préalable des impuretés (najasa). Les divergences portent sur les détails.",
+    reponses: [
+      { texte_fr: "Islam, discernement, intention, eau pure, peau libre d'obstacle", est_correcte: true },
+      { texte_fr: "Seulement l'intention et l'eau pure", est_correcte: false },
+      { texte_fr: "Les 4 madhhabs sont en désaccord total sur toutes les conditions", est_correcte: false },
+      { texte_fr: "Seulement l'islam et la majorité", est_correcte: false },
+    ],
+  },
+  {
+    domaine: 'fiqh', sous_domaine: 'muamalat', niveau: 3, madhab: 'general',
+    texte_fr: "Qu'est-ce que le contrat de mudaraba en finance islamique ?",
+    texte_ar: 'ما عقد المضاربة في المالية الإسلامية؟',
+    explication: "La mudaraba est un contrat de partenariat où un investisseur (rabb al-mal) fournit le capital et un entrepreneur (mudarib) fournit le travail et l'expertise. Les profits sont partagés selon un ratio convenu, et les pertes supportées uniquement par l'investisseur (sauf négligence du mudarib).",
+    reponses: [
+      { texte_fr: "Partenariat où l'un apporte le capital, l'autre le travail, profits partagés", est_correcte: true },
+      { texte_fr: "Prêt avec taux d'intérêt fixe", est_correcte: false },
+      { texte_fr: "Vente à terme sans paiement immédiat", est_correcte: false },
+      { texte_fr: "Donation conditionnée au profit", est_correcte: false },
+    ],
+  },
+  {
+    domaine: 'fiqh', sous_domaine: 'muamalat', niveau: 3, madhab: 'general',
+    texte_fr: "Qu'est-ce que le contrat de musharaka en finance islamique ?",
+    texte_ar: 'ما عقد المشاركة في المالية الإسلامية؟',
+    explication: "La musharaka est un partenariat où tous les associés contribuent au capital (et éventuellement au travail). Les profits et les pertes sont partagés proportionnellement à la mise de chacun. C'est l'équivalent islamique d'une société en participation.",
+    reponses: [
+      { texte_fr: "Partenariat où tous contribuent au capital et partagent profits et pertes", est_correcte: true },
+      { texte_fr: "Vente avec option de rachat", est_correcte: false },
+      { texte_fr: "Prêt sans intérêt (qard hassan)", est_correcte: false },
+      { texte_fr: "Location avec option d'achat", est_correcte: false },
+    ],
+  },
+  {
+    domaine: 'fiqh', sous_domaine: 'muamalat', niveau: 2, madhab: 'general',
+    texte_fr: "Qu'est-ce que le bay' al-salam (vente à terme) en droit islamique ?",
+    texte_ar: 'ما بيع السلم في الفقه الإسلامي؟',
+    dalil_ref: 'Sahih Al-Bukhari 2239',
+    explication: "Le bay' al-salam est un contrat licite où l'acheteur paie immédiatement pour une marchandise qui sera livrée ultérieurement. Les conditions sont : description précise, délai fixé, et paiement intégral à l'avance. C'est une exception à l'interdiction de vendre ce qu'on ne possède pas encore.",
+    reponses: [
+      { texte_fr: "Contrat de vente à terme avec paiement immédiat et livraison ultérieure", est_correcte: true },
+      { texte_fr: "Vente à crédit avec paiement différé", est_correcte: false },
+      { texte_fr: "Contrat de location longue durée", est_correcte: false },
+      { texte_fr: "Vente aux enchères islamique", est_correcte: false },
+    ],
+  },
+  {
+    domaine: 'fiqh', sous_domaine: 'muamalat', niveau: 2, madhab: 'general',
+    texte_fr: "Qu'est-ce que l'ijara en finance islamique ?",
+    texte_ar: 'ما الإجارة في المالية الإسلامية؟',
+    explication: "L'ijara est un contrat de location islamique où le bailleur (mu'ajjir) loue un bien ou un service à un locataire (musta'jir) en échange d'un loyer (ujra) fixé. Elle est l'équivalent islamique du leasing et est considérée comme parfaitement licite.",
+    reponses: [
+      { texte_fr: "Contrat de location licite, équivalent islamique du leasing", est_correcte: true },
+      { texte_fr: "Contrat de prêt sans intérêt", est_correcte: false },
+      { texte_fr: "Contrat de don avec conditions", est_correcte: false },
+      { texte_fr: "Contrat de vente à terme", est_correcte: false },
+    ],
+  },
+  {
+    domaine: 'fiqh', sous_domaine: 'muamalat', niveau: 3, madhab: 'general',
+    texte_fr: "Qu'est-ce que le gharar dans les transactions islamiques ?",
+    texte_ar: 'ما الغرر في المعاملات الإسلامية؟',
+    dalil_ref: 'Sahih Muslim 1513',
+    dalil_texte_ar: 'نَهَى رَسُولُ اللَّهِ ﷺ عَنْ بَيْعِ الْغَرَرِ',
+    dalil_texte_fr: "Le Messager d'Allah ﷺ a interdit la vente avec gharar.",
+    grade_hadith: 'sahih',
+    explication: "Le gharar est l'incertitude ou l'ambiguïté excessive dans un contrat (objet inconnu, prix indéterminé, livraison incertaine). Il rend les contrats invalides car il peut mener à des litiges et à l'injustice.",
+    reponses: [
+      { texte_fr: "L'incertitude ou l'ambiguïté excessive rendant les contrats invalides", est_correcte: true },
+      { texte_fr: "Le taux d'intérêt dans les prêts", est_correcte: false },
+      { texte_fr: "La vente d'alcool ou de porc", est_correcte: false },
+      { texte_fr: "La tromperie délibérée dans la vente", est_correcte: false },
+    ],
+  },
+  // ===================== ASMA WA SIFAT (15) =====================
+  {
+    domaine: 'aqida', sous_domaine: 'asma_sifat', niveau: 1, madhab: 'general',
+    texte_fr: "Que signifie le nom divin 'Al-Rahman' ?",
+    texte_ar: "ما معنى اسم الله 'الرحمن'؟",
+    dalil_ref: 'Sourate Al-Fatiha 1:3',
+    dalil_texte_ar: 'الرَّحْمَٰنِ الرَّحِيمِ',
+    explication: "'Al-Rahman' désigne la miséricorde universelle et absolue d'Allah qui s'étend à toute Sa création dans cette vie. Elle inclut croyants et non-croyants, humains et animaux.",
+    reponses: [
+      { texte_fr: "Le Très Miséricordieux dont la miséricorde s'étend à toute la création", texte_ar: 'الرحمن بكل الخلق', est_correcte: true },
+      { texte_fr: "Celui qui punit les pécheurs", est_correcte: false },
+      { texte_fr: "Le Créateur de toute chose", est_correcte: false },
+      { texte_fr: "Celui dont la miséricorde est réservée aux croyants uniquement", est_correcte: false },
+    ],
+  },
+  {
+    domaine: 'aqida', sous_domaine: 'asma_sifat', niveau: 1, madhab: 'general',
+    texte_fr: "Que signifie le nom divin 'Al-Rahim' ?",
+    texte_ar: "ما معنى اسم الله 'الرحيم'؟",
+    explication: "'Al-Rahim' désigne la miséricorde spéciale d'Allah réservée aux croyants dans l'au-delà, contrairement à 'Al-Rahman' qui est universelle. Ensemble, ils expriment les deux dimensions de la miséricorde divine.",
+    reponses: [
+      { texte_fr: "Le Miséricordieux dont la miséricorde spéciale est pour les croyants dans l'au-delà", est_correcte: true },
+      { texte_fr: "Identique à Al-Rahman", est_correcte: false },
+      { texte_fr: "Celui qui donne la vie", est_correcte: false },
+      { texte_fr: "Celui qui guide", est_correcte: false },
+    ],
+  },
+  {
+    domaine: 'aqida', sous_domaine: 'asma_sifat', niveau: 2, madhab: 'general',
+    texte_fr: "Que signifie le nom divin 'Al-Quddus' ?",
+    texte_ar: "ما معنى اسم الله 'القدوس'؟",
+    dalil_ref: 'Sourate Al-Hashr 59:23',
+    dalil_texte_ar: 'الْمَلِكُ الْقُدُّوسُ السَّلَامُ',
+    explication: "'Al-Quddus' signifie Celui qui est absolument pur et exempt de tout défaut, de toute imperfection et de toute ressemblance avec Sa création. Il exprime la transcendance absolue d'Allah.",
+    reponses: [
+      { texte_fr: "Le Très Pur, exempt de tout défaut et de toute imperfection", est_correcte: true },
+      { texte_fr: "Celui qui donne la paix", est_correcte: false },
+      { texte_fr: "Le Roi absolu", est_correcte: false },
+      { texte_fr: "Celui qui répond aux prières", est_correcte: false },
+    ],
+  },
+  {
+    domaine: 'aqida', sous_domaine: 'asma_sifat', niveau: 1, madhab: 'general',
+    texte_fr: "Que signifie le nom divin 'Al-Hayy Al-Qayyum' ?",
+    texte_ar: "ما معنى اسمَي الله 'الحي القيوم'؟",
+    dalil_ref: 'Sourate Al-Baqara 2:255',
+    dalil_texte_ar: 'اللَّهُ لَا إِلَٰهَ إِلَّا هُوَ الْحَيُّ الْقَيُّومُ',
+    explication: "'Al-Hayy' signifie Le Vivant, dont la vie est parfaite et éternelle sans début ni fin. 'Al-Qayyum' signifie Celui qui subsiste par Lui-même et dont toute la création dépend pour son existence.",
+    reponses: [
+      { texte_fr: "Le Vivant éternel, Celui dont toute la création dépend", est_correcte: true },
+      { texte_fr: "Le Créateur et le Destructeur", est_correcte: false },
+      { texte_fr: "L'Omniscient et l'Omnipotent", est_correcte: false },
+      { texte_fr: "Le Premier et le Dernier", est_correcte: false },
+    ],
+  },
+  {
+    domaine: 'aqida', sous_domaine: 'asma_sifat', niveau: 2, madhab: 'general',
+    texte_fr: "Que signifie le nom divin 'Al-Ghafur' et comment diffère-t-il de 'Al-Ghaffar' ?",
+    texte_ar: "ما الفرق بين اسمَي الله 'الغفور' و'الغفار'؟",
+    explication: "'Al-Ghafur' signifie Celui dont le pardon est immense et total. 'Al-Ghaffar' signifie Celui qui pardonne répétitivement et continuellement. Al-Ghafur insiste sur l'ampleur du pardon, Al-Ghaffar sur sa répétition.",
+    reponses: [
+      { texte_fr: "Al-Ghafur : pardon immense ; Al-Ghaffar : pardon répété et continuel", est_correcte: true },
+      { texte_fr: "Ce sont deux noms identiques avec le même sens", est_correcte: false },
+      { texte_fr: "Al-Ghafur est pour les croyants, Al-Ghaffar pour tout le monde", est_correcte: false },
+      { texte_fr: "Al-Ghaffar est un nom plus ancien dans la révélation", est_correcte: false },
+    ],
+  },
+  {
+    domaine: 'aqida', sous_domaine: 'asma_sifat', niveau: 2, madhab: 'general',
+    texte_fr: "Que signifie le nom divin 'Al-Wadud' ?",
+    texte_ar: "ما معنى اسم الله 'الودود'؟",
+    dalil_ref: 'Sourate Hud 11:90',
+    dalil_texte_ar: 'إِنَّ رَبِّي رَحِيمٌ وَدُودٌ',
+    explication: "'Al-Wadud' signifie Celui qui aime Ses créatures croyantes et qui est aimé par elles. C'est un amour divin actif : Allah aime les croyants et leur prodigue Sa bienveillance.",
+    reponses: [
+      { texte_fr: "Celui qui aime (les croyants) et qui est aimé", est_correcte: true },
+      { texte_fr: "Celui qui observe tout", est_correcte: false },
+      { texte_fr: "Celui qui est proche", est_correcte: false },
+      { texte_fr: "Celui qui est généreux", est_correcte: false },
+    ],
+  },
+  {
+    domaine: 'aqida', sous_domaine: 'asma_sifat', niveau: 1, madhab: 'general',
+    texte_fr: "Combien les savants de la Sunnah dénombrent-ils de noms d'Allah dans le célèbre hadith ?",
+    texte_ar: 'كم اسمًا لله في الحديث الشهير؟',
+    dalil_ref: 'Sahih Al-Bukhari 2736, Muslim 2677',
+    dalil_texte_ar: 'إِنَّ لِلَّهِ تِسْعَةً وَتِسْعِينَ اسْمًا مِئَةً إِلَّا وَاحِدًا مَنْ أَحْصَاهَا دَخَلَ الْجَنَّةَ',
+    dalil_texte_fr: "Allah a quatre-vingt-dix-neuf noms, cent moins un. Celui qui les connaît entrera au Paradis.",
+    grade_hadith: 'sahih',
+    explication: "Le hadith mentionne 99 noms. Les savants précisent que ce nombre n'est pas limitatif : Allah a plus de noms, mais 99 sont particulièrement liés à la promesse d'entrée au Paradis pour celui qui les 'ihsa' (connaît, compte, comprend et agit selon eux).",
+    reponses: [
+      { texte_fr: "99 noms (cent moins un)", texte_ar: 'تسعة وتسعون', est_correcte: true },
+      { texte_fr: "114 noms (comme les sourates)", est_correcte: false },
+      { texte_fr: "1000 noms", est_correcte: false },
+      { texte_fr: "Les noms d'Allah sont illimités sans nombre fixé", est_correcte: false },
+    ],
+  },
+  {
+    domaine: 'aqida', sous_domaine: 'asma_sifat', niveau: 2, madhab: 'general',
+    texte_fr: "Que signifie le nom divin 'Al-Hakam Al-Adl' ?",
+    texte_ar: "ما معنى اسمَي الله 'الحكم العدل'؟",
+    explication: "'Al-Hakam' signifie Le Juge suprême dont le jugement est parfait et définitif. 'Al-Adl' signifie Le Parfaitement Juste dont la justice ne dévie jamais. Ensemble, ils expriment que le jugement divin est à la fois souverain et parfaitement équitable.",
+    reponses: [
+      { texte_fr: "Le Juge suprême et Le Parfaitement Juste", est_correcte: true },
+      { texte_fr: "Le Sage et Le Fort", est_correcte: false },
+      { texte_fr: "Le Pardonnant et Le Clément", est_correcte: false },
+      { texte_fr: "Le Vivant et Le Subsistant", est_correcte: false },
+    ],
+  },
+  {
+    domaine: 'aqida', sous_domaine: 'asma_sifat', niveau: 3, madhab: 'general',
+    texte_fr: "Que signifie le nom divin 'Al-Batin' et comment s'oppose-t-il à 'Az-Zahir' ?",
+    texte_ar: "ما الفرق بين اسمَي الله 'الظاهر' و'الباطن'؟",
+    dalil_ref: 'Sourate Al-Hadid 57:3',
+    dalil_texte_ar: 'هُوَ الْأَوَّلُ وَالْآخِرُ وَالظَّاهِرُ وَالْبَاطِنُ',
+    explication: "'Az-Zahir' signifie L'Apparent : Allah est manifeste par Ses signes, Sa création et Ses preuves. 'Al-Batin' signifie Le Caché : Sa Essence est au-delà de toute perception et compréhension humaine. Ces deux noms expriment la transcendance et l'immanence d'Allah.",
+    reponses: [
+      { texte_fr: "Az-Zahir : manifeste par Ses signes ; Al-Batin : Essence cachée à la perception", est_correcte: true },
+      { texte_fr: "Ce sont deux noms contradictoires sans sens précis", est_correcte: false },
+      { texte_fr: "Az-Zahir signifie visible physiquement, Al-Batin caché physiquement", est_correcte: false },
+      { texte_fr: "Ils signifient tous deux la même chose : la transcendance", est_correcte: false },
+    ],
+  },
+  {
+    domaine: 'aqida', sous_domaine: 'asma_sifat', niveau: 2, madhab: 'general',
+    texte_fr: "Que signifie le nom divin 'Al-Wakil' ?",
+    texte_ar: "ما معنى اسم الله 'الوكيل'؟",
+    dalil_ref: 'Sourate Al-Imran 3:173',
+    dalil_texte_ar: 'حَسْبُنَا اللَّهُ وَنِعْمَ الْوَكِيلُ',
+    dalil_texte_fr: "Allah nous suffit, et quel excellent Protecteur !",
+    explication: "'Al-Wakil' signifie Celui à qui on confie totalement ses affaires et qui s'en occupe parfaitement. Le tawakkul (confiance totale en Allah) est de remettre ses affaires à Al-Wakil tout en prenant les moyens nécessaires.",
+    reponses: [
+      { texte_fr: "Celui à qui on peut confier totalement ses affaires, le Tuteur parfait", est_correcte: true },
+      { texte_fr: "Celui qui protège physiquement", est_correcte: false },
+      { texte_fr: "Celui qui donne la richesse", est_correcte: false },
+      { texte_fr: "L'avocat divin", est_correcte: false },
+    ],
+  },
+  {
+    domaine: 'aqida', sous_domaine: 'asma_sifat', niveau: 1, madhab: 'general',
+    texte_fr: "Que signifie le nom divin 'As-Sami' Al-Basir' ?",
+    texte_ar: "ما معنى اسمَي الله 'السميع البصير'؟",
+    dalil_ref: 'Sourate Al-Mujadila 58:1',
+    dalil_texte_ar: 'وَاللَّهُ سَمِيعٌ بَصِيرٌ',
+    explication: "'As-Sami'' signifie Celui qui entend tout, même les pensées secrètes. 'Al-Basir' signifie Celui qui voit tout, même ce qui est invisible. Ces deux attributs confirment la connaissance parfaite d'Allah de toute Sa création.",
+    reponses: [
+      { texte_fr: "L'Audient de tout, le Clairvoyant de tout", est_correcte: true },
+      { texte_fr: "Celui qui entend uniquement les prières sincères", est_correcte: false },
+      { texte_fr: "Celui qui voit mais n'entend pas les pensées", est_correcte: false },
+      { texte_fr: "Des attributs métaphoriques sans sens littéral", est_correcte: false },
+    ],
+  },
+  {
+    domaine: 'aqida', sous_domaine: 'asma_sifat', niveau: 2, madhab: 'general',
+    texte_fr: "Que signifie le nom divin 'Al-Muhaymin' ?",
+    texte_ar: "ما معنى اسم الله 'المهيمن'؟",
+    dalil_ref: 'Sourate Al-Hashr 59:23',
+    dalil_texte_ar: 'الْمُؤْمِنُ الْمُهَيْمِنُ',
+    explication: "'Al-Muhaymin' signifie Le Gardien absolu, Celui qui surveille, protège et préserve toute Sa création. Il inclut les sens de témoin, protecteur et préservateur. C'est aussi l'un des noms du Coran.",
+    reponses: [
+      { texte_fr: "Le Gardien absolu, surveillant et protecteur de toute Sa création", est_correcte: true },
+      { texte_fr: "Celui qui punit les injustes", est_correcte: false },
+      { texte_fr: "Celui qui donne la sécurité", est_correcte: false },
+      { texte_fr: "Le Maître du Jour du Jugement", est_correcte: false },
+    ],
+  },
+  {
+    domaine: 'aqida', sous_domaine: 'asma_sifat', niveau: 3, madhab: 'general',
+    texte_fr: "Que signifie 'ihsa' des noms d'Allah selon les savants de la Sunnah ?",
+    texte_ar: "ما معنى 'إحصاء' أسماء الله عند علماء السنة؟",
+    dalil_ref: 'Sahih Al-Bukhari 2736',
+    explication: "L'ihsa des noms d'Allah inclut trois niveaux selon les savants : 1) les compter et les mémoriser, 2) comprendre leurs significations, 3) adorer Allah en conséquence et invoquer Allah par ces noms dans les situations appropriées.",
+    reponses: [
+      { texte_fr: "Mémoriser, comprendre leurs sens, et adorer Allah en conséquence", est_correcte: true },
+      { texte_fr: "Simplement les compter et les réciter", est_correcte: false },
+      { texte_fr: "Les écrire dans un carnet", est_correcte: false },
+      { texte_fr: "Leur attribuer des pouvoirs spéciaux", est_correcte: false },
+    ],
+  },
+  {
+    domaine: 'aqida', sous_domaine: 'asma_sifat', niveau: 2, madhab: 'general',
+    texte_fr: "Que signifie le nom divin 'Al-Wali' ?",
+    texte_ar: "ما معنى اسم الله 'الولي'؟",
+    dalil_ref: 'Sourate Al-Baqara 2:257',
+    dalil_texte_ar: 'اللَّهُ وَلِيُّ الَّذِينَ آمَنُوا',
+    dalil_texte_fr: "Allah est le Protecteur de ceux qui croient.",
+    explication: "'Al-Wali' signifie Le Protecteur et l'Ami des croyants. Allah prend en charge les affaires des croyants, les guide et les soutient. C'est différent des 'awliya' (saints) humains qui sont simplement des serviteurs pieux d'Allah.",
+    reponses: [
+      { texte_fr: "Le Protecteur et Ami des croyants qui prend en charge leurs affaires", est_correcte: true },
+      { texte_fr: "Le nom d'un saint islamique", est_correcte: false },
+      { texte_fr: "Celui qui donne la victoire aux armées", est_correcte: false },
+      { texte_fr: "Le tuteur légal dans le fiqh uniquement", est_correcte: false },
+    ],
+  },
+  {
+    domaine: 'aqida', sous_domaine: 'asma_sifat', niveau: 1, madhab: 'general',
+    texte_fr: "Que signifie le nom divin 'Al-Khaliq Al-Bari Al-Musawwir' dans la sourate Al-Hashr ?",
+    texte_ar: "ما معنى أسماء الله 'الخالق البارئ المصور' في سورة الحشر؟",
+    dalil_ref: 'Sourate Al-Hashr 59:24',
+    dalil_texte_ar: 'هُوَ اللَّهُ الْخَالِقُ الْبَارِئُ الْمُصَوِّرُ',
+    explication: "'Al-Khaliq' = Celui qui crée depuis le néant. 'Al-Bari'' = Celui qui distingue et sépare les êtres selon Son décret. 'Al-Musawwir' = Celui qui donne à chaque créature sa forme unique. Ces trois noms décrivent les étapes de la création divine.",
+    reponses: [
+      { texte_fr: "Créateur depuis le néant, Distincteur des êtres, Formateur des formes", est_correcte: true },
+      { texte_fr: "Trois noms identiques signifiant 'Créateur'", est_correcte: false },
+      { texte_fr: "Le Tout-Puissant, le Sage, le Savant", est_correcte: false },
+      { texte_fr: "Celui qui crée, détruit et recrée", est_correcte: false },
+    ],
+  },
+  // ===================== ADKAR ET DU'A (15) =====================
+  {
+    domaine: 'akhlaq', sous_domaine: 'adkar', niveau: 1, madhab: 'general',
+    texte_fr: "Quelle invocation le Prophète ﷺ recommandait-il de dire le matin et le soir trois fois chacune pour la protection ?",
+    texte_ar: 'ما الذكر الذي يقال صباحًا ومساءً ثلاث مرات للحماية؟',
+    dalil_ref: 'Sunan Abu Dawud 5088, At-Tirmidhi 3388',
+    dalil_texte_ar: 'بِسْمِ اللَّهِ الَّذِي لَا يَضُرُّ مَعَ اسْمِهِ شَيْءٌ فِي الْأَرْضِ وَلَا فِي السَّمَاءِ وَهُوَ السَّمِيعُ الْعَلِيمُ',
+    dalil_texte_fr: "Au nom d'Allah avec Qui rien ne peut nuire sur terre ni dans le ciel, et Il est l'Audient, l'Omniscient.",
+    grade_hadith: 'sahih',
+    explication: "Celui qui dit cet dhikr trois fois le matin et trois fois le soir ne sera pas atteint par une affliction soudaine selon le hadith authentique narré par Abu Dawud et At-Tirmidhi.",
+    reponses: [
+      { texte_fr: "'Bismillah alladhi la yadurru...' trois fois matin et soir", est_correcte: true },
+      { texte_fr: "Ayat Al-Kursi une seule fois", est_correcte: false },
+      { texte_fr: "Al-Fatiha sept fois", est_correcte: false },
+      { texte_fr: "Subhan Allah 33 fois", est_correcte: false },
+    ],
+  },
+  {
+    domaine: 'akhlaq', sous_domaine: 'adkar', niveau: 1, madhab: 'general',
+    texte_fr: "Quel dhikr le Prophète ﷺ recommandait-il après chaque prière obligatoire ?",
+    texte_ar: 'ما الذكر الذي حثّ النبي ﷺ على قوله بعد كل صلاة مفروضة؟',
+    dalil_ref: 'Sahih Muslim 597',
+    dalil_texte_ar: 'سُبْحَانَ اللَّهِ ثَلَاثًا وَثَلَاثِينَ وَالْحَمْدُ لِلَّهِ ثَلَاثًا وَثَلَاثِينَ وَاللَّهُ أَكْبَرُ ثَلَاثًا وَثَلَاثِينَ',
+    dalil_texte_fr: "Subhan Allah 33 fois, Al-Hamdu Lillah 33 fois, Allahu Akbar 33 fois.",
+    grade_hadith: 'sahih',
+    explication: "Ce tasbih (33+33+33 = 99 fois) après la prière est une sunna fortement recommandée. Certains ajoutent 'La ilaha illallah wahdahu...' pour compléter à 100.",
+    reponses: [
+      { texte_fr: "Subhan Allah 33x, Al-Hamdu Lillah 33x, Allahu Akbar 33x", est_correcte: true },
+      { texte_fr: "Ayat Al-Kursi uniquement", est_correcte: false },
+      { texte_fr: "Al-Fatiha trois fois", est_correcte: false },
+      { texte_fr: "La ilaha illallah 100 fois", est_correcte: false },
+    ],
+  },
+  {
+    domaine: 'akhlaq', sous_domaine: 'adkar', niveau: 1, madhab: 'general',
+    texte_fr: "Quelle invocation est recommandée avant de manger ?",
+    texte_ar: 'ما الدعاء المستحب قبل الأكل؟',
+    dalil_ref: 'Sunan Abu Dawud 3767',
+    dalil_texte_ar: 'بِسْمِ اللَّهِ',
+    dalil_texte_fr: "Au nom d'Allah.",
+    grade_hadith: 'sahih',
+    explication: "Dire 'Bismillah' avant de manger est une sunna. Si on oublie au début, on dit 'Bismillah awwalahu wa akhirahu' (au nom d'Allah au début et à la fin). La nourriture avec Bismillah éloigne Satan de s'y associer.",
+    reponses: [
+      { texte_fr: "'Bismillah' avant de commencer à manger", est_correcte: true },
+      { texte_fr: "Al-Fatiha complète", est_correcte: false },
+      { texte_fr: "La ilaha illallah", est_correcte: false },
+      { texte_fr: "Subhan Allah wa bihamdihi", est_correcte: false },
+    ],
+  },
+  {
+    domaine: 'akhlaq', sous_domaine: 'adkar', niveau: 2, madhab: 'general',
+    texte_fr: "Quelle invocation le Prophète ﷺ recommandait-il avant de dormir ?",
+    texte_ar: 'ما الدعاء الذي يُقال عند النوم؟',
+    dalil_ref: 'Sahih Al-Bukhari 5017',
+    dalil_texte_ar: 'اللَّهُمَّ بِاسْمِكَ أَمُوتُ وَأَحْيَا',
+    dalil_texte_fr: "Ô Allah, c'est en Ton nom que je meurs et que je vis.",
+    grade_hadith: 'sahih',
+    explication: "Avant de dormir, le Prophète ﷺ plaçait sa main droite sous sa joue et disait 'Allahumma bismika amutu wa ahya'. Il recommandait aussi de réciter les trois Qul (Al-Ikhlas, Al-Falaq, An-Nas) et de souffler sur ses mains.",
+    reponses: [
+      { texte_fr: "'Allahumma bismika amutu wa ahya' et les trois Qul", est_correcte: true },
+      { texte_fr: "Seulement Al-Fatiha", est_correcte: false },
+      { texte_fr: "Ayat Al-Kursi 7 fois", est_correcte: false },
+      { texte_fr: "Istighfar 100 fois", est_correcte: false },
+    ],
+  },
+  {
+    domaine: 'akhlaq', sous_domaine: 'adkar', niveau: 1, madhab: 'general',
+    texte_fr: "Quelle est l'invocation en entrant dans une mosquée ?",
+    texte_ar: 'ما دعاء دخول المسجد؟',
+    dalil_ref: 'Sahih Muslim 713',
+    dalil_texte_ar: 'اللَّهُمَّ افْتَحْ لِي أَبْوَابَ رَحْمَتِكَ',
+    dalil_texte_fr: "Ô Allah, ouvre-moi les portes de Ta miséricorde.",
+    grade_hadith: 'sahih',
+    explication: "On entre dans la mosquée avec le pied droit en disant la formule du Prophète ﷺ, et on en sort avec le pied gauche en demandant la grâce d'Allah.",
+    reponses: [
+      { texte_fr: "'Allahumm-aftah li abwaba rahmatik' en entrant du pied droit", est_correcte: true },
+      { texte_fr: "Takbir à voix haute", est_correcte: false },
+      { texte_fr: "Salut aux anges présents", est_correcte: false },
+      { texte_fr: "Réciter Al-Fatiha", est_correcte: false },
+    ],
+  },
+  {
+    domaine: 'akhlaq', sous_domaine: 'adkar', niveau: 2, madhab: 'general',
+    texte_fr: "Quelle est 'Sayyid al-Istighfar' (maître des invocations de repentir) selon le hadith ?",
+    texte_ar: "ما سيد الاستغفار؟",
+    dalil_ref: 'Sahih Al-Bukhari 6306',
+    dalil_texte_ar: 'اللَّهُمَّ أَنْتَ رَبِّي لَا إِلَهَ إِلَّا أَنْتَ خَلَقْتَنِي وَأَنَا عَبْدُكَ...',
+    grade_hadith: 'sahih',
+    explication: "Sayyid al-Istighfar commence par 'Allahumma anta Rabbi la ilaha illa anta, khalaqtani wa ana abduk, wa ana ala ahdika wa wa'dika mastata't...' Celui qui le dit le matin en croyant et meurt dans la journée est des gens du Paradis.",
+    reponses: [
+      { texte_fr: "'Allahumma anta Rabbi la ilaha illa anta khalaqtani...' (formule complète)", est_correcte: true },
+      { texte_fr: "Simplement 'Astaghfirullah' 100 fois", est_correcte: false },
+      { texte_fr: "Al-Fatiha avec l'intention du repentir", est_correcte: false },
+      { texte_fr: "'Subhan Allah wa bihamdihi' 100 fois", est_correcte: false },
+    ],
+  },
+  {
+    domaine: 'akhlaq', sous_domaine: 'adkar', niveau: 2, madhab: 'general',
+    texte_fr: "Quelle invocation le Prophète ﷺ recommandait-il lors d'une difficulté ou d'une calamité ?",
+    texte_ar: 'ما الدعاء عند الكرب الشديد؟',
+    dalil_ref: 'Sahih Al-Bukhari 6346',
+    dalil_texte_ar: 'لَا إِلَهَ إِلَّا اللَّهُ الْعَظِيمُ الْحَلِيمُ، لَا إِلَهَ إِلَّا اللَّهُ رَبُّ الْعَرْشِ الْعَظِيمِ',
+    dalil_texte_fr: "Pas de divinité sauf Allah le Grand le Clément, pas de divinité sauf Allah Seigneur du Trône immense.",
+    grade_hadith: 'sahih',
+    explication: "Lors d'une grande détresse, le Prophète ﷺ disait cet dhikr qui affirme la grandeur d'Allah et la dépendance totale à Lui. Il est particulièrement efficace dans les moments de difficultés.",
+    reponses: [
+      { texte_fr: "'La ilaha illallah Al-Adhim Al-Halim, la ilaha illallah Rabb Al-Arsh Al-Adhim'", est_correcte: true },
+      { texte_fr: "Réciter le Coran entier", est_correcte: false },
+      { texte_fr: "Faire du jeûne volontaire", est_correcte: false },
+      { texte_fr: "Donner la sadaqa immédiatement", est_correcte: false },
+    ],
+  },
+  {
+    domaine: 'akhlaq', sous_domaine: 'adkar', niveau: 1, madhab: 'general',
+    texte_fr: "Quelle est la formule islamique à dire après avoir éternué ?",
+    texte_ar: 'ماذا يقول المسلم بعد العطاس؟',
+    dalil_ref: 'Sahih Al-Bukhari 6224',
+    dalil_texte_ar: 'إِذَا عَطَسَ أَحَدُكُمْ فَلْيَقُلِ الْحَمْدُ لِلَّهِ، وَلْيَقُلْ لَهُ أَخُوهُ: يَرْحَمُكَ اللَّهُ',
+    grade_hadith: 'sahih',
+    explication: "Après avoir éternué, on dit 'Al-Hamdu Lillah'. L'auditeur répond 'Yarhamukallah', puis celui qui a éternué répond 'Yahdiikumullahu wa yuslihu balakum'.",
+    reponses: [
+      { texte_fr: "'Al-Hamdu Lillah', puis celui qui entend dit 'Yarhamukallah'", est_correcte: true },
+      { texte_fr: "'Astaghfirullah' par celui qui éternue", est_correcte: false },
+      { texte_fr: "'Subhan Allah' par les deux", est_correcte: false },
+      { texte_fr: "Rien de spécial n'est recommandé", est_correcte: false },
+    ],
+  },
+  {
+    domaine: 'akhlaq', sous_domaine: 'adkar', niveau: 2, madhab: 'general',
+    texte_fr: "Quelle invocation le Prophète ﷺ faisait-il lors de la prière du tahajjud (prière de nuit) pour commencer ?",
+    texte_ar: 'ما دعاء الاستفتاح في قيام الليل؟',
+    dalil_ref: 'Sahih Al-Bukhari 1120, Muslim 769',
+    dalil_texte_ar: 'اللَّهُمَّ لَكَ الْحَمْدُ أَنْتَ نُورُ السَّمَاوَاتِ وَالْأَرْضِ وَمَنْ فِيهِنَّ',
+    grade_hadith: 'sahih',
+    explication: "Le Prophète ﷺ commençait le tahajjud par une longue louange à Allah mentionnant Sa Lumière, Sa Vérité et Son omnipotence. C'est un dhikr d'ouverture qui prépare le cœur à la communion avec Allah.",
+    reponses: [
+      { texte_fr: "'Allahumma laka al-hamd anta nur as-samawati wal-ard...'", est_correcte: true },
+      { texte_fr: "Takbir 7 fois avant de commencer", est_correcte: false },
+      { texte_fr: "Al-Fatiha avant toute autre chose", est_correcte: false },
+      { texte_fr: "100 fois istighfar avant de commencer", est_correcte: false },
+    ],
+  },
+  {
+    domaine: 'akhlaq', sous_domaine: 'adkar', niveau: 1, madhab: 'general',
+    texte_fr: "Quelle est la vertu de dire 'La ilaha illallah wahdahu la sharika lah...' cent fois par jour ?",
+    texte_ar: 'ما فضل قول لا إله إلا الله وحده لا شريك له... مئة مرة في اليوم؟',
+    dalil_ref: 'Sahih Al-Bukhari 3293',
+    dalil_texte_ar: 'مَنْ قَالَ لَا إِلَهَ إِلَّا اللَّهُ وَحْدَهُ لَا شَرِيكَ لَهُ، لَهُ الْمُلْكُ وَلَهُ الْحَمْدُ وَهُوَ عَلَى كُلِّ شَيْءٍ قَدِيرٌ مِئَةَ مَرَّةٍ، كَانَتْ لَهُ عَدْلَ عَشْرِ رِقَابٍ',
+    grade_hadith: 'sahih',
+    explication: "Selon le hadith authentique, dire cette phrase 100 fois par jour équivaut à affranchir 10 esclaves, vaut 100 bonnes actions, efface 100 péchés, et protège contre Satan jusqu'au soir.",
+    reponses: [
+      { texte_fr: "Équivalent à 10 affranchissements d'esclaves, 100 bonnes actions, effacement de 100 péchés", est_correcte: true },
+      { texte_fr: "Garantit l'entrée directe au Paradis", est_correcte: false },
+      { texte_fr: "Efface tous les péchés majeurs et mineurs", est_correcte: false },
+      { texte_fr: "Équivaut à jeûner un mois entier", est_correcte: false },
+    ],
+  },
+  {
+    domaine: 'akhlaq', sous_domaine: 'adkar', niveau: 2, madhab: 'general',
+    texte_fr: "Selon le hadith, quelle est la phrase la plus aimée d'Allah ?",
+    texte_ar: 'ما أحب الكلام إلى الله وفق الحديث؟',
+    dalil_ref: 'Sahih Muslim 2731',
+    dalil_texte_ar: 'أَحَبُّ الْكَلَامِ إِلَى اللَّهِ أَرْبَعٌ: سُبْحَانَ اللَّهِ، وَالْحَمْدُ لِلَّهِ، وَلَا إِلَهَ إِلَّا اللَّهُ، وَاللَّهُ أَكْبَرُ',
+    grade_hadith: 'sahih',
+    explication: "Les quatre phrases les plus aimées d'Allah sont les quatre grandes glorifications : Subhan Allah, Al-Hamdu Lillah, La ilaha illallah, Allahu Akbar. L'ordre n'affecte pas leur valeur.",
+    reponses: [
+      { texte_fr: "Subhan Allah, Al-Hamdu Lillah, La ilaha illallah, Allahu Akbar", est_correcte: true },
+      { texte_fr: "Al-Fatiha récitée avec méditation", est_correcte: false },
+      { texte_fr: "La récitation du Coran uniquement", est_correcte: false },
+      { texte_fr: "Les invocations après la prière du Fajr", est_correcte: false },
+    ],
+  },
+  {
+    domaine: 'akhlaq', sous_domaine: 'adkar', niveau: 2, madhab: 'general',
+    texte_fr: "Quelle est la valeur de 'Subhan Allah wa bihamdihi' selon un hadith authentique ?",
+    texte_ar: 'ما فضل قول سبحان الله وبحمده؟',
+    dalil_ref: 'Sahih Al-Bukhari 6405',
+    dalil_texte_ar: 'كَلِمَتَانِ خَفِيفَتَانِ عَلَى اللِّسَانِ، ثَقِيلَتَانِ فِي الْمِيزَانِ، حَبِيبَتَانِ إِلَى الرَّحْمَنِ: سُبْحَانَ اللَّهِ وَبِحَمْدِهِ، سُبْحَانَ اللَّهِ الْعَظِيمِ',
+    grade_hadith: 'sahih',
+    explication: "Ce sont deux phrases légères sur la langue mais lourdes dans la balance des bonnes actions et aimées du Tout-Miséricordieux : 'Subhan Allah wa bihamdihi, Subhan Allah Al-Adhim'.",
+    reponses: [
+      { texte_fr: "Légères sur la langue, lourdes dans la balance, aimées du Tout-Miséricordieux", est_correcte: true },
+      { texte_fr: "Équivalentes à 1000 rakats de prière", est_correcte: false },
+      { texte_fr: "Effacent les péchés majeurs uniquement", est_correcte: false },
+      { texte_fr: "Valables uniquement si dites en arabe classique", est_correcte: false },
+    ],
+  },
+  {
+    domaine: 'akhlaq', sous_domaine: 'adkar', niveau: 1, madhab: 'general',
+    texte_fr: "Selon le hadith, quelle invocation est recommandée en cas de colère ?",
+    texte_ar: 'ما الدعاء المستحب عند الغضب؟',
+    dalil_ref: 'Sahih Al-Bukhari 3282',
+    dalil_texte_ar: 'أَعُوذُ بِاللَّهِ مِنَ الشَّيْطَانِ الرَّجِيمِ',
+    dalil_texte_fr: "Je cherche refuge en Allah contre Satan le maudit.",
+    grade_hadith: 'sahih',
+    explication: "Le Prophète ﷺ a enseigné de dire 'A'udhu billahi min ash-shaytan ar-rajim' en cas de colère, car la colère vient de Satan. Il a aussi recommandé de s'asseoir si on est debout, ou de se coucher si on est assis, et de faire les ablutions.",
+    reponses: [
+      { texte_fr: "'A'udhu billahi min ash-shaytan ar-rajim' et faire les ablutions", est_correcte: true },
+      { texte_fr: "Crier fort pour évacuer la colère", est_correcte: false },
+      { texte_fr: "Réciter la Fatiha 7 fois", est_correcte: false },
+      { texte_fr: "Faire une prière de 2 rak'at immédiatement", est_correcte: false },
+    ],
+  },
+  {
+    domaine: 'akhlaq', sous_domaine: 'adkar', niveau: 2, madhab: 'general',
+    texte_fr: "Quelle est la vertu de la récitation d'Ayat Al-Kursi après chaque prière obligatoire ?",
+    texte_ar: 'ما فضل قراءة آية الكرسي بعد كل صلاة مكتوبة؟',
+    dalil_ref: 'Al-Nasai, Sahih At-Targhib 598',
+    grade_hadith: 'sahih',
+    explication: "Selon le hadith authentifié, celui qui récite Ayat Al-Kursi après chaque prière obligatoire, rien ne l'empêchera d'entrer au Paradis sauf la mort. C'est l'une des plus grandes vertus liées à ce verset.",
+    reponses: [
+      { texte_fr: "Rien ne l'empêchera d'entrer au Paradis sauf la mort", est_correcte: true },
+      { texte_fr: "Il sera protégé de toute maladie", est_correcte: false },
+      { texte_fr: "Sa prière sera multipliée par 70", est_correcte: false },
+      { texte_fr: "Il verra le Prophète ﷺ en rêve", est_correcte: false },
+    ],
+  },
+  // ===================== TAZKIYA (10) =====================
+  {
+    domaine: 'akhlaq', sous_domaine: 'tazkiya', niveau: 2, madhab: 'general',
+    texte_fr: "Qu'est-ce que le 'riya' et pourquoi est-il particulièrement dangereux ?",
+    texte_ar: 'ما الرياء ولماذا هو خطر بالغ؟',
+    dalil_ref: 'Sahih Muslim 2985',
+    dalil_texte_ar: 'إِنَّ أَخْوَفَ مَا أَخَافُ عَلَيْكُمُ الشِّرْكُ الْأَصْغَرُ. قَالُوا: وَمَا الشِّرْكُ الْأَصْغَرُ يَا رَسُولَ اللَّهِ؟ قَالَ: الرِّيَاءُ',
+    grade_hadith: 'sahih',
+    explication: "Le riya est le fait d'accomplir des actes d'adoration pour être vu et admiré des gens plutôt que pour Allah. Le Prophète ﷺ l'a appelé 'le shirk mineur'. Il annule la récompense des actes et peut mener à des conséquences graves.",
+    reponses: [
+      { texte_fr: "Accomplir des actes pour être vu des gens, appelé 'shirk mineur' par le Prophète ﷺ", est_correcte: true },
+      { texte_fr: "Un péché mineur facilement pardonné", est_correcte: false },
+      { texte_fr: "L'orgueil dans le cœur sans manifestation extérieure", est_correcte: false },
+      { texte_fr: "La honte de pratiquer l'islam publiquement", est_correcte: false },
+    ],
+  },
+  {
+    domaine: 'akhlaq', sous_domaine: 'tazkiya', niveau: 2, madhab: 'general',
+    texte_fr: "Comment l'Islam définit-il le 'kibr' (orgueil) et quel en est le remède ?",
+    texte_ar: 'كيف يعرّف الإسلام الكبر وما علاجه؟',
+    dalil_ref: 'Sahih Muslim 91',
+    dalil_texte_ar: 'الْكِبْرُ بَطَرُ الْحَقِّ وَغَمْطُ النَّاسِ',
+    dalil_texte_fr: "L'orgueil est de rejeter la vérité et de mépriser les gens.",
+    grade_hadith: 'sahih',
+    explication: "Le kibr est défini par le Prophète ﷺ comme le rejet de la vérité (par arrogance) et le mépris des autres. Le remède est la tawadu' (humilité), la connaissance de sa propre faiblesse devant Allah, et l'étude de la biographie des pieux prédécesseurs.",
+    reponses: [
+      { texte_fr: "Rejeter la vérité et mépriser les gens ; remède : tawadu' et connaissance de soi", est_correcte: true },
+      { texte_fr: "Se vanter de ses richesses uniquement", est_correcte: false },
+      { texte_fr: "Péché léger sans danger spirituel majeur", est_correcte: false },
+      { texte_fr: "Avoir une haute opinion de soi-même en privé", est_correcte: false },
+    ],
+  },
+  {
+    domaine: 'akhlaq', sous_domaine: 'tazkiya', niveau: 3, madhab: 'general',
+    texte_fr: "Qu'est-ce que le 'ujb' (vanité/admiration de soi) selon les savants islamiques ?",
+    texte_ar: "ما العجب عند علماء الإسلام؟",
+    explication: "L'ujb est l'admiration excessive de soi-même pour ses qualités, ses actes ou ses connaissances, sans les rapporter à Allah. Il est différent de la fierté saine. Il peut annuler la récompense des bonnes actions car il fait oublier que tout vient d'Allah.",
+    reponses: [
+      { texte_fr: "Admiration excessive de soi sans rapporter ses dons à Allah", est_correcte: true },
+      { texte_fr: "Identique au kibr (orgueil)", est_correcte: false },
+      { texte_fr: "La jalousie des dons des autres", est_correcte: false },
+      { texte_fr: "La tristesse face à ses propres péchés", est_correcte: false },
+    ],
+  },
+  {
+    domaine: 'akhlaq', sous_domaine: 'tazkiya', niveau: 2, madhab: 'general',
+    texte_fr: "Selon la tradition islamique, qu'est-ce que le 'hasad' (jalousie mauvaise) ?",
+    texte_ar: 'ما الحسد الذميم في الإسلام؟',
+    dalil_ref: 'Sunan Abu Dawud 4903',
+    dalil_texte_ar: 'إِيَّاكُمْ وَالْحَسَدَ فَإِنَّ الْحَسَدَ يَأْكُلُ الْحَسَنَاتِ كَمَا تَأْكُلُ النَّارُ الْحَطَبَ',
+    dalil_texte_fr: "Gardez-vous de la jalousie car elle dévore les bonnes actions comme le feu dévore le bois.",
+    grade_hadith: 'hassan',
+    explication: "Le hasad est souhaiter que quelqu'un perde un bienfait qu'il possède. Il est interdit car il ronge l'âme et détruit les bonnes actions. Le remède est de faire du du'a pour la personne enviée et de compter ses propres bénédictions.",
+    reponses: [
+      { texte_fr: "Souhaiter que quelqu'un perde son bienfait ; dévore les bonnes actions", est_correcte: true },
+      { texte_fr: "Vouloir un bienfait similaire sans nuire à l'autre (c'est la ghipta)", est_correcte: false },
+      { texte_fr: "Un sentiment naturel sans conséquence spirituelle", est_correcte: false },
+      { texte_fr: "Uniquement la jalousie vis-à-vis des biens matériels", est_correcte: false },
+    ],
+  },
+  {
+    domaine: 'akhlaq', sous_domaine: 'tazkiya', niveau: 3, madhab: 'general',
+    texte_fr: "Qu'est-ce que le 'tawakkul' (confiance en Allah) selon l'Islam ?",
+    texte_ar: 'ما التوكل على الله في الإسلام؟',
+    dalil_ref: 'Sunan At-Tirmidhi 2517',
+    dalil_texte_ar: 'لَوْ أَنَّكُمْ كُنتُمْ تَوَكَّلُونَ عَلَى اللَّهِ حَقَّ تَوَكُّلِهِ لَرَزَقَكُمْ كَمَا يَرْزُقُ الطَّيْرَ تَغْدُو خِمَاصًا وَتَرُوحُ بِطَانًا',
+    grade_hadith: 'sahih',
+    explication: "Le tawakkul est de confier ses affaires à Allah APRÈS avoir pris tous les moyens nécessaires (asbab). Ce n'est pas la passivité : l'oiseau part chercher sa nourriture (prend les moyens) mais rentre le ventre plein (rizq vient d'Allah).",
+    reponses: [
+      { texte_fr: "Confiance totale en Allah après avoir pris les moyens nécessaires, pas la passivité", est_correcte: true },
+      { texte_fr: "Ne rien faire et attendre qu'Allah pourvoie", est_correcte: false },
+      { texte_fr: "Faire du du'a sans travailler", est_correcte: false },
+      { texte_fr: "Synonyme de fatalisme et d'abandon de tout effort", est_correcte: false },
+    ],
+  },
+  {
+    domaine: 'akhlaq', sous_domaine: 'tazkiya', niveau: 2, madhab: 'general',
+    texte_fr: "Selon les savants de la Sunnah, quelles sont les trois étapes du nafs (âme) mentionnées dans le Coran ?",
+    texte_ar: 'ما أطوار النفس الثلاثة الواردة في القرآن؟',
+    explication: "Le Coran mentionne : 1) An-nafs al-ammara bis-su' (l'âme qui commande au mal, Yusuf 12:53), 2) An-nafs al-lawwama (l'âme qui se reproche elle-même, Al-Qiyama 75:2), 3) An-nafs al-mutma'inna (l'âme apaisée, Al-Fajr 89:27).",
+    reponses: [
+      { texte_fr: "An-nafs al-ammara, al-lawwama, al-mutma'inna", est_correcte: true },
+      { texte_fr: "L'âme du corps, l'âme de l'esprit, l'âme du cœur", est_correcte: false },
+      { texte_fr: "L'âme mauvaise, l'âme bonne, l'âme neutre", est_correcte: false },
+      { texte_fr: "Ce ne sont pas trois mais deux étapes selon le Coran", est_correcte: false },
+    ],
+  },
+  {
+    domaine: 'akhlaq', sous_domaine: 'tazkiya', niveau: 3, madhab: 'general',
+    texte_fr: "Selon les savants de la Sunnah, comment purifier son cœur du riya ?",
+    texte_ar: 'كيف يتطهر القلب من الرياء؟',
+    explication: "Les savants recommandent : 1) Connaitre la définition et les dangers du riya, 2) Examiner son intention avant tout acte (muraqaba), 3) Cacher ses bonnes actions autant que possible, 4) Invoquer Allah pour la sincérité, 5) S'rappeler que seul Allah peut voir la réalité du cœur.",
+    reponses: [
+      { texte_fr: "Connaître ses dangers, examiner son intention, cacher ses actes, invoquer Allah", est_correcte: true },
+      { texte_fr: "Faire toutes ses adorations en public pour s'y habituer", est_correcte: false },
+      { texte_fr: "Arrêter les bonnes actions visibles permanemment", est_correcte: false },
+      { texte_fr: "Suffit de demander le pardon après coup", est_correcte: false },
+    ],
+  },
+  {
+    domaine: 'akhlaq', sous_domaine: 'tazkiya', niveau: 2, madhab: 'general',
+    texte_fr: "Qu'est-ce que la 'muraqaba' (conscience de la surveillance divine) ?",
+    texte_ar: 'ما المراقبة في التزكية الإسلامية؟',
+    explication: "La muraqaba est l'état de conscience permanente qu'Allah nous observe à tout moment (dans nos actes, paroles et pensées). C'est le niveau de l'ihsan : adorer Allah comme si on Le voit. Elle conduit à la droiture même quand personne ne regarde.",
+    reponses: [
+      { texte_fr: "Conscience permanente qu'Allah nous observe en tout, conduisant à la droiture", est_correcte: true },
+      { texte_fr: "Observer les autres pour corriger leurs fautes", est_correcte: false },
+      { texte_fr: "Surveiller ses propres péchés pour les confesser", est_correcte: false },
+      { texte_fr: "Technique de méditation islamique", est_correcte: false },
+    ],
+  },
+  {
+    domaine: 'akhlaq', sous_domaine: 'tazkiya', niveau: 1, madhab: 'general',
+    texte_fr: "Selon le Coran, quelle est la seule chose qui distingue les hommes devant Allah ?",
+    texte_ar: 'بماذا يتمايز الناس عند الله وفق القرآن؟',
+    dalil_ref: 'Sourate Al-Hujurat 49:13',
+    dalil_texte_ar: 'إِنَّ أَكْرَمَكُمْ عِندَ اللَّهِ أَتْقَاكُمْ',
+    dalil_texte_fr: "Le plus noble d'entre vous auprès d'Allah est le plus pieux.",
+    explication: "La seule distinction devant Allah est la taqwa (piété/crainte d'Allah). Ni la race, ni la richesse, ni le statut social ne comptent. C'est le principe fondamental de l'égalité islamique.",
+    reponses: [
+      { texte_fr: "La taqwa (piété et crainte d'Allah)", texte_ar: 'التقوى', est_correcte: true },
+      { texte_fr: "La connaissance du Coran", est_correcte: false },
+      { texte_fr: "La noblesse de la famille", est_correcte: false },
+      { texte_fr: "Le nombre de prières accomplies", est_correcte: false },
+    ],
+  },
+  {
+    domaine: 'akhlaq', sous_domaine: 'tazkiya', niveau: 2, madhab: 'general',
+    texte_fr: "Qu'est-ce que le 'sabr' (patience) islamique selon les savants ?",
+    texte_ar: 'ما الصبر في الإسلام؟',
+    dalil_ref: 'Sourate Az-Zumar 39:10',
+    dalil_texte_ar: 'إِنَّمَا يُوَفَّى الصَّابِرُونَ أَجْرَهُم بِغَيْرِ حِسَابٍ',
+    dalil_texte_fr: "Les patients recevront leur récompense sans compte.",
+    explication: "Les savants distinguent trois types de sabr : 1) patience dans l'accomplissement des obligations, 2) patience dans l'abstention des interdits, 3) patience face aux calamités et décrets divins. C'est la vertu qui a la plus grande récompense sans limite.",
+    reponses: [
+      { texte_fr: "Patience dans les obligations, les interdits, et face aux calamités", est_correcte: true },
+      { texte_fr: "Uniquement la patience face aux épreuves et maladies", est_correcte: false },
+      { texte_fr: "Ne jamais se plaindre, même légitimement", est_correcte: false },
+      { texte_fr: "Attendre passivement que les situations s'améliorent", est_correcte: false },
+    ],
+  },
+];
+
+export async function seedQuestionsExtra4(client: Client): Promise<void> {
+  let inserted = 0;
+  let skipped = 0;
+
+  console.log('Seeding extra questions (batch 4)...');
+
+  for (const q of QUESTIONS_EXTRA4) {
+    const exists = await client.query(
+      'SELECT id FROM questions WHERE texte_fr = $1',
+      [q.texte_fr]
+    );
+    if (exists.rows.length > 0) { skipped++; continue; }
+
+    const qResult = await client.query(
+      `INSERT INTO questions (domaine, sous_domaine, niveau, madhab, texte_fr, texte_ar, dalil_ref, dalil_texte_ar, dalil_texte_fr, explication, savant_reference, grade_hadith, statut)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,'valide')
+       RETURNING id`,
+      [
+        q.domaine, q.sous_domaine ?? null, q.niveau, q.madhab,
+        q.texte_fr, q.texte_ar ?? null,
+        q.dalil_ref ?? null, q.dalil_texte_ar ?? null, q.dalil_texte_fr ?? null,
+        q.explication ?? null, q.savant_reference ?? null, q.grade_hadith ?? null,
+      ]
+    );
+
+    const questionId = qResult.rows[0].id;
+    for (const r of q.reponses) {
+      await client.query(
+        `INSERT INTO reponses (question_id, texte_fr, texte_ar, est_correcte)
+         VALUES ($1,$2,$3,$4)`,
+        [questionId, r.texte_fr, r.texte_ar ?? null, r.est_correcte]
+      );
+    }
+    inserted++;
+  }
+
+  console.log(`questions_extra4: ${inserted} inserted, ${skipped} skipped.`);
+}
