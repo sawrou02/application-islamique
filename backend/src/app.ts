@@ -12,6 +12,7 @@ import duelsRoutes from './routes/duels';
 import signalementsRoutes from './routes/signalements';
 import tournoisRoutes from './routes/tournois';
 import halaqatRoutes from './routes/halaqat';
+import adminRoutes from './routes/admin';
 
 const app = express();
 
@@ -36,5 +37,6 @@ app.use('/api/duels', duelsRoutes);
 app.use('/api/signalements', signalementsRoutes);
 app.use('/api/tournois', tournoisRoutes);
 app.use('/api/halaqat', halaqatRoutes);
+app.use('/api/admin', adminRoutes);
 
 export default app;

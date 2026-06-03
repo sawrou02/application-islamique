@@ -4,10 +4,13 @@ import {
   ActivityIndicator, Alert, Share,
 } from 'react-native';
 import { router } from 'expo-router';
+import * as Linking from 'expo-linking';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS } from '../../constants/colors';
 import { halaqatApi } from '../../services/api';
+
+const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:3000/api';
 
 interface Halaqa {
   id: string;
@@ -144,10 +147,18 @@ export default function HalaqatScreen() {
                 </Text>
               </View>
               {h.role === 'enseignant' && (
-                <TouchableOpacity style={styles.codeBadge} onPress={() => shareCode(h.code_acces, h.nom)}>
-                  <Text style={styles.codeBadgeText}>{h.code_acces}</Text>
-                  <Ionicons name="share-social" size={14} color={COLORS.primary} />
-                </TouchableOpacity>
+                <View style={styles.enseignantActions}>
+                  <TouchableOpacity style={styles.codeBadge} onPress={() => shareCode(h.code_acces, h.nom)}>
+                    <Text style={styles.codeBadgeText}>{h.code_acces}</Text>
+                    <Ionicons name="share-social" size={14} color={COLORS.primary} />
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={styles.rapportBtn}
+                    onPress={() => Linking.openURL(`${API_BASE_URL}/halaqat/${h.id}/rapport-pdf`)}
+                  >
+                    <Text style={styles.rapportBtnText}>📄 Rapport PDF</Text>
+                  </TouchableOpacity>
+                </View>
               )}
             </View>
           ))
@@ -199,4 +210,11 @@ const styles = StyleSheet.create({
     backgroundColor: '#F1F8E9', borderRadius: 8, paddingHorizontal: 10, paddingVertical: 6,
   },
   codeBadgeText: { fontSize: 14, fontWeight: 'bold', color: COLORS.primary, letterSpacing: 2 },
+  enseignantActions: { alignItems: 'flex-end', gap: 6 },
+  rapportBtn: {
+    backgroundColor: '#E8F5E9', borderRadius: 8,
+    paddingHorizontal: 10, paddingVertical: 5,
+    borderWidth: 1, borderColor: COLORS.primary,
+  },
+  rapportBtnText: { fontSize: 11, color: COLORS.primary, fontWeight: '600' },
 });

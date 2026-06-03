@@ -2,6 +2,7 @@ import { Router, Response } from 'express';
 import { z } from 'zod';
 import pool from '../db';
 import { authMiddleware, AuthRequest } from '../middleware/auth';
+import { generateHalaqaPDF } from '../services/pdfExport';
 
 const router = Router();
 
@@ -135,6 +136,58 @@ router.get('/:id', authMiddleware, async (req: AuthRequest, res: Response): Prom
     });
   } catch (err) {
     console.error('Get halaqa error:', err);
+    res.status(500).json({ success: false, error: 'Erreur serveur' });
+  }
+});
+
+// GET /api/halaqat/:id/rapport-pdf — télécharger le rapport PDF (membres uniquement)
+router.get('/:id/rapport-pdf', authMiddleware, async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const { id } = req.params;
+    const user_id = req.user!.id;
+
+    const membre = await pool.query(
+      'SELECT role FROM halaqat_membres WHERE halaqa_id = $1 AND user_id = $2',
+      [id, user_id]
+    );
+    if (membre.rows.length === 0) {
+      res.status(403).json({ success: false, error: 'Accès réservé aux membres' });
+      return;
+    }
+
+    const halaqa = await pool.query('SELECT * FROM halaqat WHERE id = $1', [id]);
+    if (halaqa.rows.length === 0) {
+      res.status(404).json({ success: false, error: 'Halaqa introuvable' });
+      return;
+    }
+
+    const resultats = await pool.query(
+      `SELECT u.pseudo, hr.score, hr.nb_correctes, hr.nb_questions, hr.xp_gagne, hr.created_at as date
+       FROM halaqat_resultats hr
+       JOIN users u ON u.id = hr.user_id
+       WHERE hr.halaqa_id = $1
+       ORDER BY hr.score DESC`,
+      [id]
+    );
+
+    const h = halaqa.rows[0];
+    const report = {
+      nom: h.nom,
+      code_acces: h.code_acces,
+      date_generation: new Date().toLocaleDateString('fr-FR'),
+      membres: resultats.rows.map((r: any) => ({
+        pseudo: r.pseudo,
+        score: Number(r.score),
+        nb_correctes: Number(r.nb_correctes),
+        nb_questions: Number(r.nb_questions),
+        xp_gagne: Number(r.xp_gagne),
+        date: r.date,
+      })),
+    };
+
+    generateHalaqaPDF(report, res);
+  } catch (err) {
+    console.error('PDF rapport error:', err);
     res.status(500).json({ success: false, error: 'Erreur serveur' });
   }
 });

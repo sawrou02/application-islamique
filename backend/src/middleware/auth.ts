@@ -2,7 +2,7 @@ import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 
 export interface AuthRequest extends Request {
-  user?: { id: string; email: string; pseudo: string };
+  user?: { id: string; email: string; pseudo: string; role?: string };
 }
 
 export function authMiddleware(req: AuthRequest, res: Response, next: NextFunction): void {
@@ -20,6 +20,7 @@ export function authMiddleware(req: AuthRequest, res: Response, next: NextFuncti
       id: string;
       email: string;
       pseudo: string;
+      role?: string;
     };
     req.user = decoded;
     next();
