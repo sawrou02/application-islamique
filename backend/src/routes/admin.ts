@@ -17,9 +17,9 @@ function adminMiddleware(req: AuthRequest, res: Response, next: Function): void 
 router.get('/signalements', authMiddleware, adminMiddleware, async (_req: AuthRequest, res: Response): Promise<void> => {
   try {
     const result = await pool.query(
-      `SELECT s.id, s.raison, s.details, s.statut, s.created_at,
+      `SELECT s.id, s.motif, s.statut, s.created_at,
               u.pseudo AS signaleur,
-              q.id AS question_id, q.texte AS question_texte, q.categorie, q.difficulte, q.est_valide
+              q.id AS question_id, q.texte_fr AS question_texte, q.domaine, q.niveau
        FROM signalements s
        JOIN users u ON u.id = s.user_id
        JOIN questions q ON q.id = s.question_id

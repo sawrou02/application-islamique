@@ -846,8 +846,8 @@ export async function seedQuestionsExtra3(client: Client): Promise<void> {
       `INSERT INTO questions
         (domaine, sous_domaine, niveau, madhab, texte_fr, texte_ar,
          dalil_ref, dalil_texte_ar, dalil_texte_fr, explication,
-         savant_reference, grade_hadith, est_validee)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,true)
+         savant_reference, grade_hadith, statut)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,'valide')
        RETURNING id`,
       [
         q.domaine, q.sous_domaine ?? null, q.niveau, q.madhab,

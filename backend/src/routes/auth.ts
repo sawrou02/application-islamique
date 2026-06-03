@@ -68,7 +68,7 @@ router.post('/login', async (req: Request, res: Response): Promise<void> => {
     const { email, password } = body;
 
     const result = await pool.query(
-      `SELECT id, pseudo, email, password_hash, pays, madhab, langue, niveau, xp_total, streak_days, created_at, updated_at
+      `SELECT id, pseudo, email, password_hash, pays, madhab, langue, niveau, xp_total, streak_days, role, created_at, updated_at
        FROM users WHERE email = $1`,
       [email]
     );
@@ -88,7 +88,7 @@ router.post('/login', async (req: Request, res: Response): Promise<void> => {
     const { password_hash: _pw, ...userPublic } = user;
 
     const token = jwt.sign(
-      { id: user.id, email: user.email, pseudo: user.pseudo },
+      { id: user.id, email: user.email, pseudo: user.pseudo, role: user.role },
       process.env.JWT_SECRET as string,
       { expiresIn: (process.env.JWT_EXPIRES_IN || '7d') as import('jsonwebtoken').SignOptions['expiresIn'] }
     );

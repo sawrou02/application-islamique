@@ -1026,8 +1026,8 @@ export async function seedQuestionsExtra2(client: Client): Promise<void> {
 
   for (const q of QUESTIONS_EXTRA2) {
     const qResult = await client.query(
-      `INSERT INTO questions (domaine, sous_domaine, niveau, madhab, texte_fr, texte_ar, dalil_ref, dalil_texte_ar, dalil_texte_fr, explication, savant_reference, grade_hadith, est_valide)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,true)
+      `INSERT INTO questions (domaine, sous_domaine, niveau, madhab, texte_fr, texte_ar, dalil_ref, dalil_texte_ar, dalil_texte_fr, explication, savant_reference, grade_hadith, statut)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,'valide')
        RETURNING id`,
       [
         q.domaine, q.sous_domaine || null, q.niveau, q.madhab,
