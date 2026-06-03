@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { Question, QuizConfig, PlayerAnswer, QuizResult } from '../types';
 import { questionsApi, quizApi, srsApi } from '../services/api';
+import { offlineCache } from '../services/offlineCache';
 
 interface QuizState {
   config: QuizConfig | null;
@@ -66,7 +67,15 @@ export const useQuizStore = create<QuizState>((set, get) => ({
         status: 'playing',
         questionStartTime: Date.now(),
       });
+      offlineCache.saveQuestions(response.data.data);
     } catch (err) {
+      if (config.mode !== 'quotidien' && config.mode !== 'murajaah') {
+        const cached = await offlineCache.loadQuestions();
+        if (cached.length > 0) {
+          set({ questions: cached, status: 'playing', isLoading: false });
+          return;
+        }
+      }
       set({ isLoading: false, status: 'idle' });
       throw err;
     }
