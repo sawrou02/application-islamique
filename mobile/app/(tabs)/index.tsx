@@ -372,6 +372,9 @@ export default function HomeScreen() {
           <Text style={styles.hadithLabel}>◉ {t('hadith_du_jour').toUpperCase()}</Text>
           <Text style={styles.hadithAr}>{hadith.textAr}</Text>
           <Text style={styles.hadithFr}>« {hadith.text} »</Text>
+          {hadith.narrator && (
+            <Text style={styles.hadithNarrator}>{hadith.narrator}</Text>
+          )}
           <Text style={styles.hadithSource}>— {hadith.source}</Text>
         </View>
       </ScrollView>
@@ -769,6 +772,13 @@ const styles = StyleSheet.create({
     fontStyle: 'italic',
     lineHeight: 20,
     marginBottom: 8,
+  },
+  hadithNarrator: {
+    fontSize: 12,
+    color: COLORS.primary,
+    fontStyle: 'italic',
+    fontWeight: '500',
+    marginBottom: 4,
   },
   hadithSource: {
     fontSize: 11,
