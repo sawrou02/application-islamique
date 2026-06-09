@@ -11,6 +11,7 @@ import { enrichDalil } from './enrich_dalil';
 import { enrichDalilV2 } from './enrich_dalil_v2';
 import { seedQuestionsExtra5 } from './questions_extra5';
 import { enrichDalilEn } from './enrich_dalil_en';
+import { enrichHadithNarrator } from './enrich_hadith_narrator';
 
 dotenv.config();
 
@@ -31,6 +32,7 @@ async function runSeeds(): Promise<void> {
     await enrichDalilV2(client);
     await seedQuestionsExtra5(client);
     await enrichDalilEn(client);
+    await enrichHadithNarrator(client);
     console.log('All seeds completed successfully.');
   } finally {
     await client.end();

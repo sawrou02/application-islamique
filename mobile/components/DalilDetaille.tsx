@@ -47,11 +47,6 @@ interface Props {
   initialOpen?: boolean;
 }
 
-/**
- * DalilDetaille — Panneau "Dalil détaillé" cliquable qui s'expand
- * pour afficher 4 sections distinctes (Coran, Hadith, Savants, Explication).
- * Les sections vides sont automatiquement masquées.
- */
 export function DalilDetaille({ question, initialOpen = false }: Props) {
   const [open, setOpen] = useState(initialOpen);
 
@@ -64,7 +59,6 @@ export function DalilDetaille({ question, initialOpen = false }: Props) {
   const hasHadith = !!(question.hadith_texte_ar || hadithText || question.hadith_ref);
   const hasSavant = !!(savantText || question.parole_savant_ref);
   const hasExplication = !!explicationText;
-  // Fallback legacy (anciennes questions sans nouvelles colonnes)
   const hasLegacyDalil = !!(question.dalil_texte_ar || question.dalil_texte_fr || question.dalil_ref);
 
   if (!hasCoran && !hasHadith && !hasSavant && !hasExplication && !hasLegacyDalil) {
@@ -80,7 +74,7 @@ export function DalilDetaille({ question, initialOpen = false }: Props) {
     <View style={styles.container}>
       <Pressable onPress={toggle} style={styles.header}>
         <IslamicIcon name="book" size={18} color={COLORS.gold} />
-        <Text style={styles.headerTitle}>{getCurrentLang() === 'en' ? 'Detailed Dalil' : 'Dalil détaillé'}</Text>
+        <Text style={styles.headerTitle}>{getCurrentLang() === 'en' ? 'Detailed Dalil' : getCurrentLang() === 'ar' ? 'الدليل التفصيلي' : 'Dalil détaillé'}</Text>
         <View style={{ flex: 1 }} />
         <IslamicIcon name={open ? 'up' : 'down'} size={16} color={COLORS.primary} />
       </Pressable>
@@ -94,6 +88,7 @@ export function DalilDetaille({ question, initialOpen = false }: Props) {
               ar={question.verset_ar}
               fr={versetText}
               source={question.verset_ref}
+              type="verset"
             />
           )}
           {hasHadith && (
@@ -103,6 +98,7 @@ export function DalilDetaille({ question, initialOpen = false }: Props) {
               ar={question.hadith_texte_ar}
               fr={hadithText}
               source={question.hadith_ref}
+              type="hadith"
             />
           )}
           {hasSavant && (
@@ -111,6 +107,7 @@ export function DalilDetaille({ question, initialOpen = false }: Props) {
               title={t('parole_savants')}
               fr={savantText}
               source={question.parole_savant_ref}
+              type="savant"
             />
           )}
           {hasExplication && (
@@ -118,15 +115,17 @@ export function DalilDetaille({ question, initialOpen = false }: Props) {
               icon="info"
               title={t('explication')}
               fr={explicationText}
+              type="explication"
             />
           )}
           {!hasCoran && !hasHadith && !hasSavant && !hasExplication && hasLegacyDalil && (
             <Section
               icon="book"
-              title={getCurrentLang() === 'en' ? 'Source' : 'Source'}
+              title="Source"
               ar={question.dalil_texte_ar}
               fr={question.dalil_texte_fr}
               source={question.dalil_ref}
+              type="verset"
             />
           )}
         </View>
@@ -141,20 +140,66 @@ interface SectionProps {
   ar?: string;
   fr?: string;
   source?: string;
+  type: 'verset' | 'hadith' | 'savant' | 'explication';
 }
 
-function Section({ icon, title, ar, fr, source: refStr }: SectionProps) {
+/**
+ * Parse source string — format: "Rapporté par X | Collection Y | Grade Z"
+ * Falls back to displaying source as-is if no pipe separator.
+ */
+function parseSource(source: string, type: string): { narrator?: string; collection: string; grade?: string } {
+  if (source.includes(' | ')) {
+    const parts = source.split(' | ');
+    if (type === 'hadith') {
+      return { narrator: parts[0], collection: parts[1] || '', grade: parts[2] };
+    }
+    return { collection: parts[0], grade: parts[1] };
+  }
+  return { collection: source };
+}
+
+function GradeChip({ grade }: { grade: string }) {
+  const isSahih = grade.toLowerCase().includes('sahih') || grade.toLowerCase().includes('صحيح');
+  const isHasan = grade.toLowerCase().includes('hasan') || grade.toLowerCase().includes('حسن');
+  const color = isSahih ? '#1B5E20' : isHasan ? '#E65100' : COLORS.textSecondary;
+  const bg = isSahih ? '#E8F5E9' : isHasan ? '#FFF3E0' : '#F5F5F5';
+  return (
+    <View style={[styles.gradeChip, { backgroundColor: bg, borderColor: color }]}>
+      <Text style={[styles.gradeText, { color }]}>{grade}</Text>
+    </View>
+  );
+}
+
+function Section({ icon, title, ar, fr, source: refStr, type }: SectionProps) {
   const lang = getCurrentLang();
   const isAr = lang === 'ar';
+
+  const parsed = refStr ? parseSource(refStr, type) : null;
+
   return (
     <View style={styles.section}>
       <View style={styles.sectionHeader}>
         <IslamicIcon name={icon} size={14} color={COLORS.gold} />
         <Text style={styles.sectionTitle}>{title}</Text>
       </View>
+
       {ar && <Text style={styles.ar}>{ar}</Text>}
       {!isAr && fr && <Text style={styles.fr}>{ar ? `« ${fr} »` : fr}</Text>}
-      {refStr && <Text style={styles.ref}>— {refStr}</Text>}
+
+      {parsed && (
+        <View style={styles.sourceBlock}>
+          {parsed.narrator && (
+            <View style={styles.narratorRow}>
+              <Text style={styles.narratorIcon}>◉</Text>
+              <Text style={styles.narratorText}>{parsed.narrator}</Text>
+            </View>
+          )}
+          <View style={styles.refRow}>
+            <Text style={styles.refText}>— {parsed.collection}</Text>
+            {parsed.grade && <GradeChip grade={parsed.grade} />}
+          </View>
+        </View>
+      )}
     </View>
   );
 }
@@ -198,7 +243,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    marginBottom: 6,
+    marginBottom: 8,
   },
   sectionTitle: {
     fontSize: 12,
@@ -213,7 +258,7 @@ const styles = StyleSheet.create({
     textAlign: 'right',
     writingDirection: 'rtl',
     lineHeight: 28,
-    marginBottom: 6,
+    marginBottom: 8,
     fontWeight: '500',
   },
   fr: {
@@ -221,12 +266,50 @@ const styles = StyleSheet.create({
     color: COLORS.text,
     lineHeight: 20,
     fontStyle: 'italic',
+    marginBottom: 8,
   },
-  ref: {
+  sourceBlock: {
+    marginTop: 6,
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(0,0,0,0.06)',
+    paddingTop: 8,
+    gap: 4,
+  },
+  narratorRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  narratorIcon: {
+    fontSize: 10,
+    color: COLORS.primary,
+  },
+  narratorText: {
+    fontSize: 12.5,
+    color: COLORS.primary,
+    fontWeight: '600',
+    fontStyle: 'italic',
+  },
+  refRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    flexWrap: 'wrap',
+  },
+  refText: {
     fontSize: 11.5,
     color: COLORS.textSecondary,
-    fontWeight: '600',
-    marginTop: 6,
+    fontWeight: '500',
+  },
+  gradeChip: {
+    borderRadius: 8,
+    borderWidth: 1,
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+  },
+  gradeText: {
+    fontSize: 10.5,
+    fontWeight: '700',
   },
 });
 
