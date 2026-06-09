@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { View, Text, Animated, StyleSheet, Alert } from 'react-native';
 import { router } from 'expo-router';
-import { useQuizSetupStore, SETUP_MODES, madhabApplicable } from '../../../store/quizSetupStore';
+import { useQuizSetupStore, SETUP_MODES } from '../../../store/quizSetupStore';
 import { useQuizStore } from '../../../store/quizStore';
 import { QuizConfig } from '../../../types';
 
@@ -31,13 +31,9 @@ export default function Countdown() {
         ? 'mixte'
         : (setup.setup_niveau as number);
 
-    const domaine = setup.setup_domaine && setup.setup_domaine !== 'general'
+    const domaine = setup.setup_domaine
       ? (setup.setup_domaine as QuizConfig['domaine'])
       : undefined;
-
-    const madhab = (madhabApplicable(setup.setup_domaine) && setup.setup_madhab
-      ? setup.setup_madhab
-      : 'general') as QuizConfig['madhab'];
 
     const nb = backendMode === 'quotidien' ? 5 : (setup.setup_nb || 10);
 
@@ -45,7 +41,6 @@ export default function Countdown() {
       mode: backendMode,
       domaine,
       niveau,
-      madhab,
       nb_questions: nb,
       temps_par_question: 30,
     };

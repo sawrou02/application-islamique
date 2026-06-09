@@ -22,13 +22,12 @@ export const SETUP_MODES: SetupModeMeta[] = [
 ];
 
 export const SETUP_DOMAINS = [
-  { id: 'general', name: 'Général', nameAr: 'عام', icon: '۞', color: '#1B5E20', desc: 'Tous domaines mélangés' },
-  { id: 'fiqh', name: 'Fiqh', nameAr: 'فقه', icon: '⚖', color: '#1B5E20', desc: 'Jurisprudence islamique' },
-  { id: 'aqida', name: 'Aqida', nameAr: 'عقيدة', icon: '☪', color: '#1A237E', desc: 'Croyance authentique' },
-  { id: 'tafsir', name: 'Tafsir / Coran', nameAr: 'تفسير', icon: '۩', color: '#4A148C', desc: 'Exégèse du Coran' },
-  { id: 'hadith', name: 'Hadith', nameAr: 'حديث', icon: '◉', color: '#BF360C', desc: 'Sciences du hadith' },
-  { id: 'sirah', name: 'Sirah', nameAr: 'سيرة', icon: '✦', color: '#01579B', desc: 'Vie du Prophète ﷺ' },
-  { id: 'akhlaq', name: 'Akhlaq', nameAr: 'أخلاق', icon: '✧', color: '#006064', desc: 'Comportement & éthique' },
+  { id: 'fiqh',   name: 'Fiqh',          nameAr: 'فقه',    icon: '⚖', color: '#1B5E20', desc: 'Jurisprudence islamique' },
+  { id: 'aqida',  name: 'Aqida',         nameAr: 'عقيدة',  icon: '☪', color: '#1A237E', desc: 'Croyance authentique' },
+  { id: 'tafsir', name: 'Tafsir / Coran',nameAr: 'تفسير',  icon: '۩', color: '#4A148C', desc: 'Exégèse du Coran' },
+  { id: 'hadith', name: 'Hadith',        nameAr: 'حديث',   icon: '◉', color: '#BF360C', desc: 'Sciences du hadith' },
+  { id: 'sirah',  name: 'Sirah',         nameAr: 'سيرة',   icon: '✦', color: '#01579B', desc: 'Vie du Prophète ﷺ' },
+  { id: 'akhlaq', name: 'Akhlaq',        nameAr: 'أخلاق',  icon: '✧', color: '#006064', desc: 'Comportement & éthique' },
 ];
 
 export const SETUP_LEVELS = [
@@ -39,26 +38,16 @@ export const SETUP_LEVELS = [
   { id: 5, name: "'Alim", nameAr: 'عالم', desc: 'Expert' },
 ];
 
-export const SETUP_MADHABS = [
-  { id: 'hanafi', name: 'Hanafi', nameAr: 'حنفي' },
-  { id: 'maliki', name: 'Maliki', nameAr: 'مالكي' },
-  { id: 'shafii', name: "Shafi'i", nameAr: 'شافعي' },
-  { id: 'hanbali', name: 'Hanbali', nameAr: 'حنبلي' },
-  { id: 'general', name: 'Général', nameAr: 'عام' },
-];
-
 export const SETUP_NB_QUESTIONS = [5, 10, 15, 20, 30];
 
 interface QuizSetupState {
   setup_mode: SetupModeId | null;
-  setup_domaine: string | null; // 'general' | domain id
+  setup_domaine: string | null;
   setup_niveau: number | 'mixte' | null;
-  setup_madhab: string | null;
   setup_nb: number | null;
   setMode: (m: SetupModeId | null) => void;
   setDomaine: (d: string | null) => void;
   setNiveau: (n: number | 'mixte' | null) => void;
-  setMadhab: (m: string | null) => void;
   setNb: (n: number | null) => void;
   reset: () => void;
 }
@@ -67,16 +56,10 @@ export const useQuizSetupStore = create<QuizSetupState>((set) => ({
   setup_mode: null,
   setup_domaine: null,
   setup_niveau: null,
-  setup_madhab: null,
   setup_nb: null,
   setMode: (m) => set({ setup_mode: m }),
   setDomaine: (d) => set({ setup_domaine: d }),
   setNiveau: (n) => set({ setup_niveau: n }),
-  setMadhab: (m) => set({ setup_madhab: m }),
   setNb: (n) => set({ setup_nb: n }),
-  reset: () => set({ setup_mode: null, setup_domaine: null, setup_niveau: null, setup_madhab: null, setup_nb: null }),
+  reset: () => set({ setup_mode: null, setup_domaine: null, setup_niveau: null, setup_nb: null }),
 }));
-
-export function madhabApplicable(domaine: string | null): boolean {
-  return domaine === 'fiqh' || domaine === 'general';
-}

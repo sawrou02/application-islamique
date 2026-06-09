@@ -73,7 +73,6 @@ export interface Badge {
 export interface QuizConfig {
   domaine?: Domaine;
   niveau?: number | 'mixte';
-  madhab?: Madhab;
   nb_questions: number;
   temps_par_question: number;
   mode: GameMode;

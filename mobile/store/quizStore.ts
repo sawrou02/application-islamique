@@ -72,7 +72,6 @@ export const useQuizStore = create<QuizState>((set, get) => ({
           response = await questionsApi.getQuestions({
             domaine: config.domaine,
             niveau: typeof config.niveau === 'number' ? config.niveau : undefined,
-            madhab: config.madhab,
             limit: config.nb_questions,
           });
         }

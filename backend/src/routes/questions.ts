@@ -6,7 +6,7 @@ const router = Router();
 // GET /api/questions
 router.get('/', async (req: Request, res: Response): Promise<void> => {
   try {
-    const { domaine, niveau, madhab, limit = '10', offset = '0' } = req.query;
+    const { domaine, niveau, limit = '10', offset = '0' } = req.query;
 
     const conditions: string[] = ["q.statut = 'valide'"];
     const params: unknown[] = [];
@@ -14,7 +14,6 @@ router.get('/', async (req: Request, res: Response): Promise<void> => {
 
     if (domaine) { conditions.push(`q.domaine = $${idx++}`); params.push(domaine); }
     if (niveau) { conditions.push(`q.niveau = $${idx++}`); params.push(Number(niveau)); }
-    if (madhab) { conditions.push(`(q.madhab = $${idx++} OR q.madhab = 'general')`); params.push(madhab); }
 
     params.push(Number(limit), Number(offset));
 

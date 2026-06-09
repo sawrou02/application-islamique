@@ -2,12 +2,12 @@ import { useEffect, useRef } from 'react';
 import { View, Text, Animated, StyleSheet } from 'react-native';
 import { router } from 'expo-router';
 import { QuizSetupShell, SelectCard } from '../../../components/QuizSetupShell';
-import { useQuizSetupStore, SETUP_LEVELS, madhabApplicable } from '../../../store/quizSetupStore';
+import { useQuizSetupStore, SETUP_LEVELS } from '../../../store/quizSetupStore';
 import { COLORS } from '../../../constants/colors';
 import { t } from '../../../i18n';
 
 export default function StepNiveau() {
-  const { setup_niveau, setNiveau, setup_domaine } = useQuizSetupStore();
+  const { setup_niveau, setNiveau } = useQuizSetupStore();
 
   const anims = useRef([...SETUP_LEVELS, { id: 'mixte' }].map(() => new Animated.Value(0))).current;
   useEffect(() => {
@@ -18,16 +18,12 @@ export default function StepNiveau() {
 
   const handleNext = () => {
     if (setup_niveau === null) return;
-    if (madhabApplicable(setup_domaine)) {
-      router.push('/quiz/setup/madhab');
-    } else {
-      router.push('/quiz/setup/questions');
-    }
+    router.push('/quiz/setup/questions');
   };
 
   return (
     <QuizSetupShell
-      step={3} total={6}
+      step={3} total={5}
       title={t('choisir_niveau')}
       titleAr="مستوى الصعوبة"
       subtitle="Adaptons les questions à votre maîtrise."

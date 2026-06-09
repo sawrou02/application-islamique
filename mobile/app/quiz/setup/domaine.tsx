@@ -21,7 +21,7 @@ export default function StepDomaine() {
 
   return (
     <QuizSetupShell
-      step={2} total={6}
+      step={2} total={5}
       title={t('choisir_domaine')}
       titleAr="مجال العلم"
       subtitle="Sur quelle science voulez-vous être interrogé ?"

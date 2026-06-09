@@ -21,7 +21,7 @@ export default function StepQuestions() {
 
   return (
     <QuizSetupShell
-      step={5} total={6}
+      step={4} total={5}
       title={t('nombre_questions')}
       titleAr="عدد الأسئلة"
       subtitle="Combien de questions souhaitez-vous ?"

@@ -2,8 +2,7 @@ import { View, Text, StyleSheet } from 'react-native';
 import { router } from 'expo-router';
 import { QuizSetupShell } from '../../../components/QuizSetupShell';
 import {
-  useQuizSetupStore, SETUP_MODES, SETUP_DOMAINS, SETUP_LEVELS, SETUP_MADHABS,
-  madhabApplicable,
+  useQuizSetupStore, SETUP_MODES, SETUP_DOMAINS, SETUP_LEVELS,
 } from '../../../store/quizSetupStore';
 import { COLORS } from '../../../constants/colors';
 import { t } from '../../../i18n';
@@ -15,21 +14,18 @@ export default function StepRecap() {
   const level = s.setup_niveau === 'mixte'
     ? { name: 'Mixte', nameAr: 'متنوع' }
     : SETUP_LEVELS.find(l => l.id === s.setup_niveau);
-  const madhab = SETUP_MADHABS.find(m => m.id === s.setup_madhab);
 
   const showFiqh = mode && mode.id !== 'quotidien' && mode.id !== 'murajaah';
-  const showMadhab = showFiqh && madhabApplicable(s.setup_domaine);
 
   const lines: { label: string; value: string; icon: string; color?: string }[] = [];
   if (mode) lines.push({ label: 'Mode', value: `${mode.name} (${mode.nameAr})`, icon: mode.icon, color: mode.color });
   if (showFiqh && domain) lines.push({ label: 'Domaine', value: `${domain.name} (${domain.nameAr})`, icon: domain.icon, color: domain.color });
   if (showFiqh && level) lines.push({ label: 'Niveau', value: `${level.name} · ${level.nameAr}`, icon: '◆' });
-  if (showMadhab && madhab) lines.push({ label: 'Madhab', value: `${madhab.name} (${madhab.nameAr})`, icon: '⚖' });
   if (showFiqh && s.setup_nb) lines.push({ label: 'Questions', value: `${s.setup_nb}`, icon: '#' });
 
   return (
     <QuizSetupShell
-      step={6} total={6}
+      step={5} total={5}
       title="Récapitulatif"
       titleAr="ملخّص"
       subtitle="Vérifiez vos choix avant de commencer."
