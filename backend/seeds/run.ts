@@ -6,6 +6,7 @@ import { seedQuestionsExtra } from './questions_extra';
 import { seedQuestionsExtra2 } from './questions_extra2';
 import { seedQuestionsExtra3 } from './questions_extra3';
 import { seedQuestionsExtra4 } from './questions_extra4';
+import { enrichDalil } from './enrich_dalil';
 
 dotenv.config();
 
@@ -21,6 +22,7 @@ async function runSeeds(): Promise<void> {
     await seedQuestionsExtra2(client);
     await seedQuestionsExtra3(client);
     await seedQuestionsExtra4(client);
+    await enrichDalil(client);
     console.log('All seeds completed successfully.');
   } finally {
     await client.end();

@@ -4,7 +4,7 @@ import {
 } from 'react-native';
 import { router } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Ionicons } from '@expo/vector-icons';
+import { IslamicIcon } from '../../components/IslamicIcon';
 import { COLORS } from '../../constants/colors';
 import { useGameStore } from '../../store/gameStore';
 import { useAuthStore } from '../../store/authStore';
@@ -69,20 +69,20 @@ export default function MultiScreen() {
           activeOpacity={0.85}
         >
           <View style={styles.cardIconContainer}>
-            <Ionicons name="add-circle" size={40} color={COLORS.gold} />
+            <IslamicIcon name="add" size={36} color={COLORS.gold} />
           </View>
           <View style={styles.cardTextContainer}>
             <Text style={styles.cardTitle}>Créer une salle</Text>
             <Text style={styles.cardTitleAr}>إنشاء غرفة</Text>
             <Text style={styles.cardDesc}>Invitez vos frères à jouer ensemble</Text>
           </View>
-          <Ionicons name="chevron-forward" size={20} color="rgba(255,255,255,0.6)" />
+          <IslamicIcon name="next" size={22} color="rgba(255,255,255,0.6)" />
         </TouchableOpacity>
 
         {/* Join Room */}
         <View style={styles.joinCard}>
           <View style={styles.joinHeader}>
-            <Ionicons name="enter" size={24} color={COLORS.primary} />
+            <IslamicIcon name="enter" size={24} color={COLORS.primary} />
             <View style={styles.joinTextContainer}>
               <Text style={styles.joinTitle}>Rejoindre une salle</Text>
               <Text style={styles.joinTitleAr}>الانضمام لغرفة</Text>
@@ -122,7 +122,7 @@ export default function MultiScreen() {
             <Text style={styles.navTitle}>Tournoi — Munafasa</Text>
             <Text style={styles.navDesc}>Compétition hebdomadaire & classement par ligue</Text>
           </View>
-          <Ionicons name="chevron-forward" size={18} color={COLORS.textLight} />
+          <IslamicIcon name="next" size={20} color={COLORS.textLight} />
         </TouchableOpacity>
 
         {/* Halaqat */}
@@ -136,7 +136,7 @@ export default function MultiScreen() {
             <Text style={styles.navTitle}>Mode Halaqat</Text>
             <Text style={styles.navDesc}>Cercle d'étude pour enseignants & élèves</Text>
           </View>
-          <Ionicons name="chevron-forward" size={18} color={COLORS.textLight} />
+          <IslamicIcon name="next" size={20} color={COLORS.textLight} />
         </TouchableOpacity>
       </ScrollView>
     </SafeAreaView>

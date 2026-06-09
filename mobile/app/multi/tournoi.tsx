@@ -4,7 +4,7 @@ import {
 } from 'react-native';
 import { router } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Ionicons } from '@expo/vector-icons';
+import { IslamicIcon } from '../../components/IslamicIcon';
 import { COLORS } from '../../constants/colors';
 import { LIGUES } from '../../constants/islamic';
 import { tournoisApi } from '../../services/api';
@@ -74,7 +74,7 @@ export default function TournoiScreen() {
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
-          <Ionicons name="arrow-back" size={22} color="#FFFFFF" />
+          <IslamicIcon name="back" size={28} color="#FFFFFF" />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Tournoi — Munafasa</Text>
       </View>
@@ -103,7 +103,7 @@ export default function TournoiScreen() {
               )}
               {isRegistered && (
                 <View style={styles.registeredBadge}>
-                  <Ionicons name="checkmark-circle" size={16} color={COLORS.success} />
+                  <IslamicIcon name="check-circle" size={16} color={COLORS.success} />
                   <Text style={styles.registeredText}>Inscrit</Text>
                 </View>
               )}

@@ -28,6 +28,7 @@ export default function ActiveQuiz() {
   const questionStartRef = useRef<number>(Date.now());
   const dalilAnim = useRef(new Animated.Value(0)).current;
   const flashAnim = useRef(new Animated.Value(0)).current;
+  const questionAnim = useRef(new Animated.Value(0)).current;
 
   const question = questions[currentIndex];
   const reponses = question?.reponses || [];
@@ -46,6 +47,8 @@ export default function ActiveQuiz() {
     setTimeLeft(config?.temps_par_question || 30);
     questionStartRef.current = Date.now();
     dalilAnim.setValue(0);
+    questionAnim.setValue(0);
+    Animated.spring(questionAnim, { toValue: 1, friction: 6, tension: 90, useNativeDriver: true }).start();
 
     timerRef.current = setInterval(() => {
       setTimeLeft(prev => {
@@ -152,12 +155,15 @@ export default function ActiveQuiz() {
       </View>
 
       {/* Question */}
-      <View style={styles.questionContainer}>
+      <Animated.View style={[styles.questionContainer, {
+        opacity: questionAnim,
+        transform: [{ scale: questionAnim.interpolate({ inputRange: [0, 1], outputRange: [0.95, 1] }) }],
+      }]}>
         {question.texte_ar && (
           <Text style={styles.questionAr}>{question.texte_ar}</Text>
         )}
         <Text style={styles.questionFr}>{question.texte_fr}</Text>
-      </View>
+      </Animated.View>
 
       {/* Answers */}
       <View style={styles.answersContainer}>
@@ -186,22 +192,10 @@ export default function ActiveQuiz() {
         })}
       </View>
 
-      {/* Dalil */}
-      {showDalil && (question.dalil_texte_ar || question.explication) && (
-        <Animated.View style={[styles.dalilCard, { opacity: dalilAnim }]}>
-          {question.dalil_texte_ar && (
-            <Text style={styles.dalilAr}>{question.dalil_texte_ar}</Text>
-          )}
-          {question.dalil_texte_fr && (
-            <Text style={styles.dalilFr}>"{question.dalil_texte_fr}"</Text>
-          )}
-          {question.dalil_ref && (
-            <Text style={styles.dalilRef}>— {question.dalil_ref}</Text>
-          )}
-          {question.explication && !question.dalil_texte_fr && (
-            <Text style={styles.dalilFr}>{question.explication}</Text>
-          )}
-          {/* Signaler cette question */}
+      {/* Dalil détaillé (panneau expansible avec sections Coran/Hadith/Savants/Explication) */}
+      {showDalil && (
+        <Animated.View style={{ opacity: dalilAnim }}>
+          <DalilDetaille question={question} initialOpen={true} />
           <Pressable
             style={styles.signalerBtn}
             onPress={() => router.push({
@@ -209,7 +203,7 @@ export default function ActiveQuiz() {
               params: { question_id: question.id, question_fr: question.texte_fr },
             })}
           >
-            <Ionicons name="flag-outline" size={13} color={COLORS.textLight} />
+            <IslamicIcon name="flag" size={13} color={COLORS.textLight} />
             <Text style={styles.signalerText}>Signaler une erreur</Text>
           </Pressable>
         </Animated.View>
@@ -221,7 +215,7 @@ export default function ActiveQuiz() {
           <Text style={styles.nextButtonText}>
             {currentIndex + 1 < questions.length ? 'Question suivante' : 'Voir les résultats'}
           </Text>
-          <Ionicons name="arrow-forward" size={20} color="#FFFFFF" />
+          <IslamicIcon name="next" size={22} color="#FFFFFF" />
         </TouchableOpacity>
       )}
     </SafeAreaView>
@@ -292,7 +286,7 @@ const styles = StyleSheet.create({
   dalilRef: { fontSize: 12, color: COLORS.textLight, fontWeight: '500' },
   signalerBtn: {
     flexDirection: 'row', alignItems: 'center', gap: 4,
-    marginTop: 10, alignSelf: 'flex-start',
+    marginTop: 10, marginHorizontal: 16, alignSelf: 'flex-start',
   },
   signalerText: { fontSize: 11, color: COLORS.textLight },
   nextButton: {

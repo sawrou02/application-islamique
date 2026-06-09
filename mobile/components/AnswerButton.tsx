@@ -1,5 +1,5 @@
 import { TouchableOpacity, Text, View, StyleSheet } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { IslamicIcon } from './IslamicIcon';
 import { COLORS } from '../constants/colors';
 
 type AnswerState = 'default' | 'selected' | 'correct' | 'incorrect';
@@ -38,10 +38,10 @@ export default function AnswerButton({ label, text, state = 'default', onPress, 
       </View>
       <Text style={styles.answerText}>{text}</Text>
       {state === 'correct' && (
-        <Ionicons name="checkmark-circle" size={22} color={COLORS.success} />
+        <IslamicIcon name="check-circle" size={22} color={COLORS.success} />
       )}
       {state === 'incorrect' && (
-        <Ionicons name="close-circle" size={22} color={COLORS.error} />
+        <IslamicIcon name="close-circle" size={22} color={COLORS.error} />
       )}
     </TouchableOpacity>
   );

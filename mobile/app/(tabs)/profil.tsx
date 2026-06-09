@@ -4,7 +4,7 @@ import {
 } from 'react-native';
 import { router } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Ionicons } from '@expo/vector-icons';
+import { IslamicIcon } from '../../components/IslamicIcon';
 import { useAuthStore } from '../../store/authStore';
 import { badgesApi } from '../../services/api';
 import { Badge } from '../../types';
@@ -120,19 +120,19 @@ export default function ProfilScreen() {
           <Text style={styles.sectionTitle}>Informations</Text>
           <View style={styles.infoCard}>
             <View style={styles.infoRow}>
-              <Ionicons name="book" size={18} color={COLORS.primary} />
+              <IslamicIcon name="book" size={18} color={COLORS.primary} />
               <Text style={styles.infoLabel}>Madhab</Text>
               <Text style={styles.infoValue}>{user?.madhab || 'Général'}</Text>
             </View>
             <View style={styles.divider} />
             <View style={styles.infoRow}>
-              <Ionicons name="language" size={18} color={COLORS.primary} />
+              <IslamicIcon name="language" size={18} color={COLORS.primary} />
               <Text style={styles.infoLabel}>Langue</Text>
               <Text style={styles.infoValue}>{user?.langue || 'fr'}</Text>
             </View>
             <View style={styles.divider} />
             <View style={styles.infoRow}>
-              <Ionicons name="mail" size={18} color={COLORS.primary} />
+              <IslamicIcon name="mail" size={18} color={COLORS.primary} />
               <Text style={styles.infoLabel}>Email</Text>
               <Text style={styles.infoValue} numberOfLines={1}>{user?.email}</Text>
             </View>
@@ -141,7 +141,7 @@ export default function ProfilScreen() {
 
         {/* Logout */}
         <TouchableOpacity style={styles.logoutButton} onPress={handleLogout} activeOpacity={0.8}>
-          <Ionicons name="log-out" size={20} color={COLORS.error} />
+          <IslamicIcon name="logout" size={20} color={COLORS.error} />
           <Text style={styles.logoutText}>Se déconnecter</Text>
         </TouchableOpacity>
       </ScrollView>

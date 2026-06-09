@@ -4,7 +4,7 @@ import {
 } from 'react-native';
 import { router } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Ionicons } from '@expo/vector-icons';
+import { IslamicIcon } from '../../components/IslamicIcon';
 import { COLORS } from '../../constants/colors';
 import { useQuizStore } from '../../store/quizStore';
 import { MOTIVATION_HADITHS } from '../../constants/islamic';
@@ -60,7 +60,7 @@ export default function QuizResult() {
 
           {/* XP gained */}
           <View style={styles.xpBadge}>
-            <Ionicons name="star" size={16} color={COLORS.gold} />
+            <IslamicIcon name="star" size={16} color={COLORS.gold} />
             <Text style={styles.xpText}>+{xpGained} XP gagnés</Text>
           </View>
 
@@ -90,8 +90,8 @@ export default function QuizResult() {
               <View key={answer.question_id} style={[styles.reviewItem, detail?.est_correcte ? styles.reviewCorrect : styles.reviewIncorrect]}>
                 <View style={styles.reviewHeader}>
                   {detail?.est_correcte
-                    ? <Ionicons name="checkmark-circle" size={18} color={COLORS.success} />
-                    : <Ionicons name="close-circle" size={18} color={COLORS.error} />
+                    ? <IslamicIcon name="check-circle" size={18} color={COLORS.success} />
+                    : <IslamicIcon name="close-circle" size={18} color={COLORS.error} />
                   }
                   <Text style={styles.reviewQ} numberOfLines={2}>{question.texte_fr}</Text>
                 </View>
@@ -106,11 +106,11 @@ export default function QuizResult() {
         {/* Buttons */}
         <View style={styles.buttonsContainer}>
           <TouchableOpacity style={styles.playAgainButton} onPress={handlePlayAgain} activeOpacity={0.85}>
-            <Ionicons name="refresh" size={18} color="#FFFFFF" />
+            <IslamicIcon name="refresh" size={18} color="#FFFFFF" />
             <Text style={styles.playAgainText}>Rejouer</Text>
           </TouchableOpacity>
           <TouchableOpacity style={styles.homeButton} onPress={handleGoHome} activeOpacity={0.85}>
-            <Ionicons name="home" size={18} color={COLORS.primary} />
+            <IslamicIcon name="home" size={18} color={COLORS.primary} />
             <Text style={styles.homeText}>Accueil</Text>
           </TouchableOpacity>
         </View>

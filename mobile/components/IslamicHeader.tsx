@@ -1,5 +1,5 @@
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { IslamicIcon } from './IslamicIcon';
 import { router } from 'expo-router';
 import { COLORS } from '../constants/colors';
 
@@ -16,7 +16,7 @@ export default function IslamicHeader({ title, titleAr, showBack = false, rightA
       <View style={styles.leftSection}>
         {showBack && (
           <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-            <Ionicons name="arrow-back" size={24} color="#FFFFFF" />
+            <IslamicIcon name="back" size={30} color="#FFFFFF" />
           </TouchableOpacity>
         )}
         {!showBack && <View style={styles.bismillahContainer}>
@@ -32,7 +32,7 @@ export default function IslamicHeader({ title, titleAr, showBack = false, rightA
       <View style={styles.rightSection}>
         {rightAction ? (
           <TouchableOpacity onPress={rightAction.onPress} style={styles.rightButton}>
-            <Ionicons name={rightAction.icon as 'settings'} size={22} color="#FFFFFF" />
+            <IslamicIcon name={rightAction.icon} size={22} color="#FFFFFF" />
           </TouchableOpacity>
         ) : (
           <View style={styles.placeholder} />

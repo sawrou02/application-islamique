@@ -4,7 +4,7 @@ import {
 } from 'react-native';
 import { router } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Ionicons } from '@expo/vector-icons';
+import { IslamicIcon } from '../../components/IslamicIcon';
 import { useAuthStore } from '../../store/authStore';
 import { COLORS } from '../../constants/colors';
 import { DOMAINS, MOTIVATION_HADITHS, LEVELS, getTodayEvent } from '../../constants/islamic';
@@ -45,17 +45,17 @@ export default function HomeScreen() {
         {/* Stats Row */}
         <View style={styles.statsRow}>
           <View style={styles.statCard}>
-            <Ionicons name="star" size={20} color={COLORS.gold} />
+            <IslamicIcon name="star" size={20} color={COLORS.gold} />
             <Text style={styles.statValue}>{currentXp}</Text>
             <Text style={styles.statLabel}>XP Total</Text>
           </View>
           <View style={styles.statCard}>
-            <Ionicons name="flame" size={20} color={COLORS.error} />
+            <IslamicIcon name="flame" size={20} color={COLORS.error} />
             <Text style={styles.statValue}>{user?.streak_days || 0}</Text>
             <Text style={styles.statLabel}>Streak</Text>
           </View>
           <View style={styles.statCard}>
-            <Ionicons name="trending-up" size={20} color={COLORS.primary} />
+            <IslamicIcon name="trending" size={20} color={COLORS.primary} />
             <Text style={styles.statValue}>{user?.niveau || 1}/6</Text>
             <Text style={styles.statLabel}>Niveau</Text>
           </View>
@@ -89,7 +89,7 @@ export default function HomeScreen() {
               <Text style={styles.eventNameAr}>{todayEvent.nameAr}</Text>
               <Text style={styles.eventDesc}>{todayEvent.description}</Text>
             </View>
-            <Ionicons name="chevron-forward" size={18} color={todayEvent.color} />
+            <IslamicIcon name="next" size={20} color={todayEvent.color} />
           </TouchableOpacity>
         )}
 
@@ -107,7 +107,7 @@ export default function HomeScreen() {
               <Text style={styles.dailyDesc}>5 questions • Renouvellement quotidien</Text>
             </View>
           </View>
-          <Ionicons name="chevron-forward" size={20} color={COLORS.gold} />
+          <IslamicIcon name="next" size={22} color={COLORS.gold} />
         </TouchableOpacity>
 
         {/* Hadith du jour */}
@@ -136,7 +136,7 @@ export default function HomeScreen() {
                 <Text style={styles.domainName}>{domain.name}</Text>
                 <Text style={styles.domainNameAr}>{domain.nameAr}</Text>
               </View>
-              <Ionicons name="chevron-forward" size={16} color={COLORS.textLight} />
+              <IslamicIcon name="next" size={18} color={COLORS.textLight} />
             </TouchableOpacity>
           ))}
         </View>

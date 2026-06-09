@@ -4,18 +4,29 @@ import {
 } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Ionicons } from '@expo/vector-icons';
+import { IslamicIcon } from '../../components/IslamicIcon';
 import { COLORS } from '../../constants/colors';
 import { DOMAINS, MADHABS, QUIZ_MODES } from '../../constants/islamic';
 import { useQuizStore } from '../../store/quizStore';
 import { QuizConfig } from '../../types';
 
 const LEVELS_OPTS = [
-  { id: 1, label: 'Débutant', labelAr: 'مبتدئ' },
-  { id: 2, label: 'Intermédiaire', labelAr: 'متوسط' },
-  { id: 3, label: 'Avancé', labelAr: 'متقدم' },
-  { id: 0, label: 'Mixte', labelAr: 'مختلط' },
+  { id: 1, label: 'Débutant', labelAr: 'مبتدئ', desc: 'Bases de l\'islam' },
+  { id: 2, label: 'Initié', labelAr: 'مبتدئ متقدم', desc: 'Connaissances essentielles' },
+  { id: 3, label: 'Intermédiaire', labelAr: 'متوسط', desc: 'Approfondissement' },
+  { id: 4, label: 'Avancé', labelAr: 'متقدم', desc: 'Sciences islamiques' },
+  { id: 5, label: 'Expert', labelAr: 'خبير', desc: 'Niveau savant' },
+  { id: 0, label: 'Mixte', labelAr: 'مختلط', desc: 'Tous niveaux' },
 ];
+
+const DOMAIN_DESC: Record<string, string> = {
+  fiqh: 'Jurisprudence islamique',
+  aqida: 'Croyance authentique',
+  tafsir: 'Exégèse du Coran',
+  hadith: 'Sciences du hadith',
+  sirah: 'Vie du Prophète ﷺ',
+  akhlaq: 'Comportement & éthique',
+};
 const NB_QUESTIONS = [10, 20, 30];
 
 export default function QuizSelection() {
@@ -81,44 +92,76 @@ export default function QuizSelection() {
           ))}
         </View>
 
-        {/* Domain Selection */}
+        {/* Domain Selection — riches cartes */}
         <Text style={styles.sectionLabel}>Domaine</Text>
-        <View style={styles.row}>
+        <View style={styles.domainGrid}>
           <TouchableOpacity
-            style={[styles.chip, !selectedDomain && styles.chipActive]}
+            style={[styles.domainRichCard, !selectedDomain && { borderColor: COLORS.primary, borderWidth: 2 }]}
             onPress={() => setSelectedDomain(undefined)}
+            activeOpacity={0.85}
           >
-            <Text style={[styles.chipText, !selectedDomain && styles.chipTextActive]}>Tous</Text>
+            <Text style={styles.domainRichIcon}>۞</Text>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.domainRichName}>Tous les domaines</Text>
+              <Text style={styles.domainRichNameAr}>جميع المجالات</Text>
+              <Text style={styles.domainRichDesc}>Toutes les sciences mélangées</Text>
+            </View>
           </TouchableOpacity>
-          {DOMAINS.map((d) => (
-            <TouchableOpacity
-              key={d.id}
-              style={[styles.chip, selectedDomain === d.id && styles.chipActive]}
-              onPress={() => setSelectedDomain(d.id)}
-            >
-              <Text style={styles.chipIcon}>{d.icon}</Text>
-              <Text style={[styles.chipText, selectedDomain === d.id && styles.chipTextActive]}>
-                {d.name}
-              </Text>
-            </TouchableOpacity>
-          ))}
+          {DOMAINS.map((d) => {
+            const active = selectedDomain === d.id;
+            return (
+              <TouchableOpacity
+                key={d.id}
+                style={[
+                  styles.domainRichCard,
+                  { borderLeftColor: d.color, borderLeftWidth: 4 },
+                  active && { borderColor: d.color, borderWidth: 2, backgroundColor: `${d.color}11` },
+                ]}
+                onPress={() => setSelectedDomain(d.id)}
+                activeOpacity={0.85}
+              >
+                <Text style={styles.domainRichIcon}>{d.icon}</Text>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.domainRichName}>{d.name}</Text>
+                  <Text style={styles.domainRichNameAr}>{d.nameAr}</Text>
+                  <Text style={styles.domainRichDesc}>{DOMAIN_DESC[d.id] || ''}</Text>
+                </View>
+              </TouchableOpacity>
+            );
+          })}
         </View>
 
-        {/* Level Selection */}
-        <Text style={styles.sectionLabel}>Niveau</Text>
-        <View style={styles.row}>
-          {LEVELS_OPTS.map((l) => (
-            <TouchableOpacity
-              key={l.id}
-              style={[styles.chip, selectedNiveau === l.id && styles.chipActive]}
-              onPress={() => setSelectedNiveau(l.id)}
-            >
-              <Text style={[styles.chipText, selectedNiveau === l.id && styles.chipTextActive]}>
-                {l.label}
-              </Text>
-            </TouchableOpacity>
-          ))}
+        {/* Level Selection — barre de progression 1→5 */}
+        <Text style={styles.sectionLabel}>Niveau de difficulté</Text>
+        <View style={styles.levelTrack}>
+          {LEVELS_OPTS.filter(l => l.id !== 0).map((l) => {
+            const active = selectedNiveau === l.id;
+            return (
+              <TouchableOpacity
+                key={l.id}
+                style={styles.levelStep}
+                onPress={() => setSelectedNiveau(l.id)}
+                activeOpacity={0.8}
+              >
+                <View style={[styles.levelDot, active && styles.levelDotActive]}>
+                  <Text style={[styles.levelDotText, active && styles.levelDotTextActive]}>{l.id}</Text>
+                </View>
+                <Text style={[styles.levelStepLabel, active && styles.levelStepLabelActive]} numberOfLines={1}>
+                  {l.label}
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
         </View>
+        <TouchableOpacity
+          style={[styles.levelMixte, selectedNiveau === 0 && styles.levelMixteActive]}
+          onPress={() => setSelectedNiveau(0)}
+          activeOpacity={0.85}
+        >
+          <Text style={[styles.levelMixteText, selectedNiveau === 0 && styles.levelMixteTextActive]}>
+            ✦ Mixte — tous niveaux confondus
+          </Text>
+        </TouchableOpacity>
 
         {/* Madhab (if fiqh selected) */}
         {selectedDomain === 'fiqh' && (
@@ -167,7 +210,7 @@ export default function QuizSelection() {
           disabled={isLoading}
           activeOpacity={0.85}
         >
-          <Ionicons name="play" size={20} color="#FFFFFF" style={styles.startIcon} />
+          <IslamicIcon name="play" size={20} color="#FFFFFF" style={styles.startIcon} />
           <Text style={styles.startButtonText}>
             {isLoading ? 'Chargement...' : 'Commencer le Quiz'}
           </Text>
@@ -229,4 +272,55 @@ const styles = StyleSheet.create({
   buttonDisabled: { opacity: 0.6 },
   startIcon: {},
   startButtonText: { fontSize: 17, fontWeight: 'bold', color: '#FFFFFF' },
+  domainGrid: { gap: 8 },
+  domainRichCard: {
+    backgroundColor: COLORS.surface,
+    borderRadius: 14,
+    padding: 14,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    borderWidth: 1.5,
+    borderColor: COLORS.border,
+  },
+  domainRichIcon: { fontSize: 28, width: 36, textAlign: 'center' },
+  domainRichName: { fontSize: 15, fontWeight: '700', color: COLORS.text },
+  domainRichNameAr: { fontSize: 13, color: COLORS.arabicText, marginTop: 1 },
+  domainRichDesc: { fontSize: 11, color: COLORS.textSecondary, marginTop: 2 },
+  levelTrack: {
+    flexDirection: 'row',
+    backgroundColor: COLORS.surface,
+    borderRadius: 14,
+    padding: 14,
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    borderWidth: 1.5,
+    borderColor: COLORS.border,
+  },
+  levelStep: { alignItems: 'center', flex: 1, gap: 6 },
+  levelDot: {
+    width: 36, height: 36, borderRadius: 18,
+    backgroundColor: COLORS.background,
+    borderWidth: 1.5, borderColor: COLORS.border,
+    justifyContent: 'center', alignItems: 'center',
+  },
+  levelDotActive: {
+    backgroundColor: COLORS.primary, borderColor: COLORS.gold,
+    shadowColor: COLORS.gold, shadowOpacity: 0.4, shadowRadius: 6, elevation: 4,
+  },
+  levelDotText: { fontSize: 14, fontWeight: '700', color: COLORS.textSecondary },
+  levelDotTextActive: { color: COLORS.gold },
+  levelStepLabel: { fontSize: 10, color: COLORS.textSecondary, textAlign: 'center' },
+  levelStepLabelActive: { color: COLORS.primary, fontWeight: '700' },
+  levelMixte: {
+    marginTop: 8,
+    padding: 10,
+    borderRadius: 10,
+    backgroundColor: COLORS.surface,
+    borderWidth: 1.5, borderColor: COLORS.border,
+    alignItems: 'center',
+  },
+  levelMixteActive: { backgroundColor: COLORS.primary, borderColor: COLORS.primary },
+  levelMixteText: { fontSize: 13, color: COLORS.textSecondary, fontWeight: '600' },
+  levelMixteTextActive: { color: '#FFFFFF' },
 });

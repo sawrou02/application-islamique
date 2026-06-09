@@ -6,7 +6,7 @@ import {
 import { router } from 'expo-router';
 import * as Linking from 'expo-linking';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Ionicons } from '@expo/vector-icons';
+import { IslamicIcon } from '../../components/IslamicIcon';
 import { COLORS } from '../../constants/colors';
 import { halaqatApi } from '../../services/api';
 
@@ -86,7 +86,7 @@ export default function HalaqatScreen() {
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
-          <Ionicons name="arrow-back" size={22} color="#FFFFFF" />
+          <IslamicIcon name="back" size={28} color="#FFFFFF" />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Mode Halaqat</Text>
       </View>
@@ -111,7 +111,7 @@ export default function HalaqatScreen() {
           maxLength={150}
         />
         <TouchableOpacity style={[styles.btn, busy && styles.disabled]} onPress={handleCreate} disabled={busy}>
-          <Ionicons name="add-circle" size={18} color="#FFFFFF" />
+          <IslamicIcon name="add" size={16} color="#FFFFFF" />
           <Text style={styles.btnText}>Créer</Text>
         </TouchableOpacity>
 
@@ -127,7 +127,7 @@ export default function HalaqatScreen() {
           autoCapitalize="characters"
         />
         <TouchableOpacity style={[styles.btn, styles.btnSecondary, busy && styles.disabled]} onPress={handleJoin} disabled={busy}>
-          <Ionicons name="enter" size={18} color="#FFFFFF" />
+          <IslamicIcon name="enter" size={18} color="#FFFFFF" />
           <Text style={styles.btnText}>Rejoindre</Text>
         </TouchableOpacity>
 
@@ -150,7 +150,7 @@ export default function HalaqatScreen() {
                 <View style={styles.enseignantActions}>
                   <TouchableOpacity style={styles.codeBadge} onPress={() => shareCode(h.code_acces, h.nom)}>
                     <Text style={styles.codeBadgeText}>{h.code_acces}</Text>
-                    <Ionicons name="share-social" size={14} color={COLORS.primary} />
+                    <IslamicIcon name="share" size={14} color={COLORS.primary} />
                   </TouchableOpacity>
                   <TouchableOpacity
                     style={styles.rapportBtn}

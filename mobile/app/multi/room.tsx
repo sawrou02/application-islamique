@@ -4,7 +4,7 @@ import {
 } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Ionicons } from '@expo/vector-icons';
+import { IslamicIcon } from '../../components/IslamicIcon';
 import { COLORS } from '../../constants/colors';
 import { useGameStore } from '../../store/gameStore';
 import { useAuthStore } from '../../store/authStore';
@@ -43,7 +43,7 @@ export default function RoomScreen() {
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
-          <Ionicons name="arrow-back" size={24} color={COLORS.text} />
+          <IslamicIcon name="back" size={30} color={COLORS.text} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Salle de jeu</Text>
         <View style={styles.placeholder} />
@@ -55,7 +55,7 @@ export default function RoomScreen() {
           <Text style={styles.codeLabel}>Code de la salle</Text>
           <Text style={styles.codeValue}>{room?.code_salle || '------'}</Text>
           <TouchableOpacity style={styles.shareButton} onPress={handleShare} activeOpacity={0.8}>
-            <Ionicons name="share-social" size={18} color={COLORS.primary} />
+            <IslamicIcon name="share" size={18} color={COLORS.primary} />
             <Text style={styles.shareText}>Partager</Text>
           </TouchableOpacity>
         </View>
@@ -92,17 +92,17 @@ export default function RoomScreen() {
           <Text style={styles.sectionTitle}>Paramètres</Text>
           <View style={styles.settingsCard}>
             <View style={styles.settingRow}>
-              <Ionicons name="book-outline" size={18} color={COLORS.primary} />
+              <IslamicIcon name="book" size={18} color={COLORS.primary} />
               <Text style={styles.settingLabel}>Domaine</Text>
               <Text style={styles.settingValue}>{room?.config?.domaine || 'Tous'}</Text>
             </View>
             <View style={styles.settingRow}>
-              <Ionicons name="layers-outline" size={18} color={COLORS.primary} />
+              <IslamicIcon name="layers" size={18} color={COLORS.primary} />
               <Text style={styles.settingLabel}>Niveau</Text>
               <Text style={styles.settingValue}>{room?.config?.niveau || 'Mixte'}</Text>
             </View>
             <View style={styles.settingRow}>
-              <Ionicons name="help-circle-outline" size={18} color={COLORS.primary} />
+              <IslamicIcon name="help" size={18} color={COLORS.primary} />
               <Text style={styles.settingLabel}>Questions</Text>
               <Text style={styles.settingValue}>{room?.config?.nb_questions || 10}</Text>
             </View>
@@ -117,7 +117,7 @@ export default function RoomScreen() {
             onPress={handleStart}
             activeOpacity={0.85}
           >
-            <Ionicons name="play" size={20} color="#FFFFFF" />
+            <IslamicIcon name="play" size={20} color="#FFFFFF" />
             <Text style={styles.startButtonText}>Commencer la partie</Text>
           </TouchableOpacity>
         </View>
@@ -126,7 +126,7 @@ export default function RoomScreen() {
       {!isHost && (
         <View style={styles.footer}>
           <View style={styles.waitingBanner}>
-            <Ionicons name="time-outline" size={20} color={COLORS.textSecondary} />
+            <IslamicIcon name="time" size={20} color={COLORS.textSecondary} />
             <Text style={styles.waitingBannerText}>En attente du démarrage par l'hôte...</Text>
           </View>
         </View>
