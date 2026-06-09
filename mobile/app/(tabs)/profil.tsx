@@ -16,6 +16,8 @@ import { Switch } from 'react-native';
 import {
   loadPrayerPrefs, savePrayerPrefs, schedulePrayerNotifications,
   PrayerPrefs, DEFAULT_PRAYER_PREFS,
+  loadAdhkarPrefs, saveAdhkarPrefs, scheduleAdhkarNotifications,
+  AdhkarPrefs, DEFAULT_ADHKAR_PREFS,
 } from '../../services/notifications';
 
 export default function ProfilScreen() {
@@ -23,6 +25,7 @@ export default function ProfilScreen() {
   const [badges, setBadges] = useState<Badge[]>([]);
   const [currentLang, setCurrentLang] = useState<Lang>((user?.langue as Lang) || getCurrentLang());
   const [prayerPrefs, setPrayerPrefs] = useState<PrayerPrefs>(DEFAULT_PRAYER_PREFS);
+  const [adhkarPrefs, setAdhkarPrefs] = useState<AdhkarPrefs>(DEFAULT_ADHKAR_PREFS);
   const lang = getCurrentLang();
   const isAr = lang === 'ar';
 
@@ -47,7 +50,15 @@ export default function ProfilScreen() {
       .then(r => setBadges(r.data.data))
       .catch(() => {});
     loadPrayerPrefs().then(setPrayerPrefs);
+    loadAdhkarPrefs().then(setAdhkarPrefs);
   }, []);
+
+  const handleAdhkarToggle = async (key: keyof AdhkarPrefs, value: boolean) => {
+    const updated = { ...adhkarPrefs, [key]: { ...adhkarPrefs[key], enabled: value } };
+    setAdhkarPrefs(updated);
+    await saveAdhkarPrefs(updated);
+    await scheduleAdhkarNotifications(updated, lang).catch(() => {});
+  };
 
   const handlePrayerToggle = async (key: keyof PrayerPrefs, value: boolean) => {
     const updated = { ...prayerPrefs, [key]: { ...prayerPrefs[key], enabled: value } };
@@ -239,6 +250,48 @@ export default function ProfilScreen() {
           </Text>
         </View>
 
+        {/* Rappels Adhkar matin/soir */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>
+            {isAr ? '☪ تذكيرات الأذكار' : lang === 'en' ? '☪ Adhkar reminders' : '☪ Rappels Adhkar'}
+          </Text>
+          <View style={styles.infoCard}>
+            {(['matin', 'soir'] as const).map((key, i) => {
+              const pref = adhkarPrefs[key];
+              const name = key === 'matin'
+                ? (isAr ? 'أذكار الصباح' : lang === 'en' ? 'Morning' : 'Matin')
+                : (isAr ? 'أذكار المساء' : lang === 'en' ? 'Evening' : 'Soir');
+              const pad = (n: number) => String(n).padStart(2, '0');
+              return (
+                <View key={key}>
+                  <View style={styles.prayerRow}>
+                    <Text style={styles.prayerName}>{name}</Text>
+                    <Text style={styles.prayerTime}>{pad(pref.hour)}:{pad(pref.minute)}</Text>
+                    <Switch
+                      value={pref.enabled}
+                      onValueChange={(v) => handleAdhkarToggle(key, v)}
+                      trackColor={{ false: COLORS.border, true: COLORS.primary }}
+                      thumbColor={pref.enabled ? COLORS.gold : '#FFF'}
+                    />
+                  </View>
+                  {i === 0 && <View style={styles.divider} />}
+                </View>
+              );
+            })}
+          </View>
+        </View>
+
+        {/* Lien CGU */}
+        <TouchableOpacity
+          style={styles.cguBtn}
+          onPress={() => router.push('/cgu')}
+          activeOpacity={0.7}
+        >
+          <Text style={styles.cguText}>
+            {isAr ? '📄 الشروط والخصوصية' : lang === 'en' ? '📄 Terms & Privacy' : '📄 CGU & Confidentialité'}
+          </Text>
+        </TouchableOpacity>
+
         {/* Logout */}
         <TouchableOpacity style={styles.logoutButton} onPress={handleLogout} activeOpacity={0.8}>
           <IslamicIcon name="logout" size={20} color={COLORS.error} />
@@ -250,6 +303,11 @@ export default function ProfilScreen() {
 }
 
 const styles = StyleSheet.create({
+  cguBtn: {
+    marginHorizontal: 16, marginTop: 12, paddingVertical: 12,
+    alignItems: 'center', borderRadius: 10, backgroundColor: 'rgba(0,0,0,0.04)',
+  },
+  cguText: { fontSize: 13, color: COLORS.textSecondary, fontWeight: '600' },
   container: { flex: 1, backgroundColor: COLORS.background },
   scroll: { paddingBottom: 40 },
   profileHeader: {

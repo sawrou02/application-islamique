@@ -277,7 +277,7 @@ export default function HomeScreen() {
           </View>
         </TouchableOpacity>
 
-        {/* ── Accès rapide : Coran & Adhkar ── */}
+        {/* ── Accès rapide : Coran, Adhkar, Horaires, Qibla ── */}
         <View style={styles.quickRow}>
           <TouchableOpacity
             style={[styles.quickCard, { backgroundColor: '#1B5E20' }]}
@@ -285,12 +285,7 @@ export default function HomeScreen() {
             activeOpacity={0.85}
           >
             <Text style={styles.quickIcon}>۩</Text>
-            <Text style={styles.quickTitle}>
-              {isAr ? 'القرآن' : lang === 'en' ? 'Qur’an' : 'Le Coran'}
-            </Text>
-            <Text style={styles.quickSub}>
-              {isAr ? '١١٤ سورة' : lang === 'en' ? '114 surahs' : '114 sourates'}
-            </Text>
+            <Text style={styles.quickTitle}>{isAr ? 'القرآن' : lang === 'en' ? 'Qur’an' : 'Coran'}</Text>
           </TouchableOpacity>
           <TouchableOpacity
             style={[styles.quickCard, { backgroundColor: '#4A148C' }]}
@@ -298,12 +293,25 @@ export default function HomeScreen() {
             activeOpacity={0.85}
           >
             <Text style={styles.quickIcon}>☪</Text>
-            <Text style={styles.quickTitle}>
-              {isAr ? 'الأذكار' : 'Adhkar'}
-            </Text>
-            <Text style={styles.quickSub}>
-              {isAr ? 'الصباح والمساء' : lang === 'en' ? 'Morning & evening' : 'Matin & soir'}
-            </Text>
+            <Text style={styles.quickTitle}>{isAr ? 'الأذكار' : 'Adhkar'}</Text>
+          </TouchableOpacity>
+        </View>
+        <View style={styles.quickRow}>
+          <TouchableOpacity
+            style={[styles.quickCard, { backgroundColor: '#01579B' }]}
+            onPress={() => router.push('/horaires')}
+            activeOpacity={0.85}
+          >
+            <Text style={styles.quickIcon}>🕌</Text>
+            <Text style={styles.quickTitle}>{isAr ? 'مواقيت الصلاة' : lang === 'en' ? 'Prayer times' : 'Horaires'}</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.quickCard, { backgroundColor: '#BF360C' }]}
+            onPress={() => router.push('/qibla')}
+            activeOpacity={0.85}
+          >
+            <Text style={styles.quickIcon}>🕋</Text>
+            <Text style={styles.quickTitle}>{isAr ? 'القبلة' : 'Qibla'}</Text>
           </TouchableOpacity>
         </View>
 

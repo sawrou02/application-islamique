@@ -60,6 +60,11 @@ export async function fetchSurahList(): Promise<SurahMeta[]> {
   return data;
 }
 
+// URL de récitation audio de la sourate complète (Mishary Alafasy)
+export function surahAudioUrl(num: number): string {
+  return `https://cdn.islamic.network/quran/audio-surah/128/ar.alafasy/${num}.mp3`;
+}
+
 export async function fetchSurah(num: number): Promise<SurahFull> {
   const cached = await fromCache<SurahFull>(`surah_${num}`);
   if (cached) return cached;

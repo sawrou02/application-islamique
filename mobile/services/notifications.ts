@@ -4,6 +4,62 @@ import { Platform } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const PRAYER_PREFS_KEY = 'prayer_notification_prefs';
+const ADHKAR_PREFS_KEY = 'adhkar_notification_prefs';
+
+export interface AdhkarPrefs {
+  matin: { enabled: boolean; hour: number; minute: number };
+  soir:  { enabled: boolean; hour: number; minute: number };
+}
+
+export const DEFAULT_ADHKAR_PREFS: AdhkarPrefs = {
+  matin: { enabled: false, hour: 6,  minute: 30 },
+  soir:  { enabled: false, hour: 18, minute: 0  },
+};
+
+export async function loadAdhkarPrefs(): Promise<AdhkarPrefs> {
+  try {
+    const raw = await AsyncStorage.getItem(ADHKAR_PREFS_KEY);
+    if (!raw) return DEFAULT_ADHKAR_PREFS;
+    return { ...DEFAULT_ADHKAR_PREFS, ...JSON.parse(raw) };
+  } catch { return DEFAULT_ADHKAR_PREFS; }
+}
+
+export async function saveAdhkarPrefs(prefs: AdhkarPrefs): Promise<void> {
+  await AsyncStorage.setItem(ADHKAR_PREFS_KEY, JSON.stringify(prefs));
+}
+
+export async function scheduleAdhkarNotifications(prefs: AdhkarPrefs, lang = 'fr'): Promise<void> {
+  const scheduled = await Notifications.getAllScheduledNotificationsAsync();
+  for (const n of scheduled) {
+    if ((n.content.data as any)?.type === 'adhkar') {
+      await Notifications.cancelScheduledNotificationAsync(n.identifier);
+    }
+  }
+  const content = {
+    matin: {
+      fr: { title: '🌅 Adhkar du matin', body: 'Commence ta journée par le rappel d’Allah.' },
+      ar: { title: '🌅 أذكار الصباح', body: 'ابدأ يومك بذكر الله.' },
+      en: { title: '🌅 Morning adhkar', body: 'Begin your day with the remembrance of Allah.' },
+    },
+    soir: {
+      fr: { title: '🌙 Adhkar du soir', body: 'Récite les adhkar du soir pour ta protection.' },
+      ar: { title: '🌙 أذكار المساء', body: 'اذكر الله مساءً ليحفظك.' },
+      en: { title: '🌙 Evening adhkar', body: 'Recite the evening remembrance for your protection.' },
+    },
+  };
+  for (const key of ['matin', 'soir'] as const) {
+    if (!prefs[key].enabled) continue;
+    const c = content[key][lang as 'fr' | 'ar' | 'en'] || content[key].fr;
+    await Notifications.scheduleNotificationAsync({
+      content: { title: c.title, body: c.body, sound: true, data: { type: 'adhkar', period: key } },
+      trigger: {
+        type: Notifications.SchedulableTriggerInputTypes.DAILY,
+        hour: prefs[key].hour, minute: prefs[key].minute,
+      },
+    });
+  }
+}
+
 
 export interface PrayerPrefs {
   fajr:    { enabled: boolean; hour: number; minute: number };

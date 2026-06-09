@@ -12,7 +12,10 @@ import { useNetworkStatus } from '../hooks/useNetworkStatus';
 import { useQuizStore } from '../store/quizStore';
 import { OfflineBanner } from '../components/OfflineBanner';
 import * as Notifications from 'expo-notifications';
-import { loadPrayerPrefs, schedulePrayerNotifications } from '../services/notifications';
+import {
+  loadPrayerPrefs, schedulePrayerNotifications,
+  loadAdhkarPrefs, scheduleAdhkarNotifications,
+} from '../services/notifications';
 
 setupNotificationHandlers();
 
@@ -62,17 +65,20 @@ export default function RootLayout() {
         case 'prayer':
           // Pas de navigation — juste le rappel
           break;
+        case 'adhkar':
+          router.push('/adhkar');
+          break;
       }
     });
     return () => sub.remove();
   }, []);
 
-  // Applique les rappels de prière selon les préférences sauvegardées
+  // Applique les rappels de prière + adhkar selon les préférences sauvegardées
   useEffect(() => {
     if (isAuthenticated && user?.langue) {
-      loadPrayerPrefs().then(prefs =>
-        schedulePrayerNotifications(prefs, user.langue || 'fr').catch(() => {})
-      );
+      const lng = user.langue || 'fr';
+      loadPrayerPrefs().then(p => schedulePrayerNotifications(p, lng).catch(() => {}));
+      loadAdhkarPrefs().then(p => scheduleAdhkarNotifications(p, lng).catch(() => {}));
     }
   }, [isAuthenticated, user?.langue]);
 
@@ -108,6 +114,11 @@ export default function RootLayout() {
           <Stack.Screen name="quiz" />
           <Stack.Screen name="multi" />
           <Stack.Screen name="evenement" />
+          <Stack.Screen name="coran" />
+          <Stack.Screen name="adhkar" />
+          <Stack.Screen name="horaires" />
+          <Stack.Screen name="qibla" />
+          <Stack.Screen name="cgu" />
           </Stack>
         </View>
       </SafeAreaProvider>

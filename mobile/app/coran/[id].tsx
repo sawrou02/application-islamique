@@ -1,19 +1,23 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator,
 } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { Audio } from 'expo-av';
 import { IslamicIcon } from '../../components/IslamicIcon';
 import { COLORS } from '../../constants/colors';
 import { getCurrentLang } from '../../i18n';
-import { fetchSurah, SurahFull } from '../../services/quran';
+import { fetchSurah, SurahFull, surahAudioUrl } from '../../services/quran';
 
 export default function CoranSurah() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const [surah, setSurah] = useState<SurahFull | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
+  const [playing, setPlaying] = useState(false);
+  const [audioLoading, setAudioLoading] = useState(false);
+  const soundRef = useRef<Audio.Sound | null>(null);
   const lang = getCurrentLang();
   const isAr = lang === 'ar';
 
@@ -24,7 +28,30 @@ export default function CoranSurah() {
       .then(setSurah)
       .catch(() => setError(true))
       .finally(() => setLoading(false));
+    return () => { soundRef.current?.unloadAsync().catch(() => {}); };
   }, [id]);
+
+  async function togglePlay() {
+    if (!surah) return;
+    try {
+      if (soundRef.current) {
+        if (playing) { await soundRef.current.pauseAsync(); setPlaying(false); }
+        else { await soundRef.current.playAsync(); setPlaying(true); }
+        return;
+      }
+      setAudioLoading(true);
+      const { sound } = await Audio.Sound.createAsync(
+        { uri: surahAudioUrl(surah.number) },
+        { shouldPlay: true },
+        (status) => {
+          if ('didJustFinish' in status && status.didJustFinish) { setPlaying(false); }
+        }
+      );
+      soundRef.current = sound;
+      setPlaying(true);
+    } catch { /* silencieux */ }
+    finally { setAudioLoading(false); }
+  }
 
   return (
     <SafeAreaView style={styles.container}>
@@ -38,6 +65,13 @@ export default function CoranSurah() {
           </Text>
           {surah && <Text style={styles.headerSub}>{surah.englishNameTranslation}</Text>}
         </View>
+        {surah && (
+          <TouchableOpacity onPress={togglePlay} style={styles.playBtn} disabled={audioLoading}>
+            {audioLoading
+              ? <ActivityIndicator color="#FFD700" />
+              : <Text style={styles.playIcon}>{playing ? '⏸' : '▶'}</Text>}
+          </TouchableOpacity>
+        )}
         {surah && <Text style={styles.headerAr}>{surah.name}</Text>}
       </View>
 
@@ -90,6 +124,11 @@ const styles = StyleSheet.create({
   headerTitle: { fontSize: 16, fontWeight: '700', color: '#FFF' },
   headerSub: { fontSize: 11, color: '#FFFFFF99' },
   headerAr: { fontSize: 22, color: '#FFF', fontWeight: '700' },
+  playBtn: {
+    width: 40, height: 40, borderRadius: 20, backgroundColor: '#FFFFFF22',
+    justifyContent: 'center', alignItems: 'center',
+  },
+  playIcon: { fontSize: 18, color: '#FFD700' },
   errorBox: { padding: 40, alignItems: 'center' },
   errorText: { fontSize: 14, color: COLORS.textSecondary, textAlign: 'center' },
   basmala: {
