@@ -7,15 +7,22 @@ import { StyleSheet } from 'react-native';
 import { useAuthStore } from '../store/authStore';
 import { registerForPushNotifications, setupNotificationHandlers } from '../services/notifications';
 import { usersApi } from '../services/api';
+import { loadLang, setLang, type Lang } from '../i18n';
 
 setupNotificationHandlers();
 
 export default function RootLayout() {
-  const { loadUser, isAuthenticated, isLoading } = useAuthStore();
+  const { loadUser, isAuthenticated, isLoading, user } = useAuthStore();
 
   useEffect(() => {
-    loadUser();
+    loadLang().then(() => loadUser());
   }, []);
+
+  useEffect(() => {
+    if (user?.langue && (user.langue === 'fr' || user.langue === 'ar' || user.langue === 'en')) {
+      setLang(user.langue as Lang);
+    }
+  }, [user?.langue]);
 
   useEffect(() => {
     registerForPushNotifications().then((token) => {
