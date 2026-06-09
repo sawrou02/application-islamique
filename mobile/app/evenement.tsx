@@ -178,7 +178,7 @@ export default function EvenementScreen() {
               <Text style={styles.sectionTitle}>{lang === 'ar' ? 'الآية الكريمة' : lang === 'en' ? 'Quranic Verse' : 'Verset Coranique'}</Text>
             </View>
             <Text style={styles.ar}>{details.verset_ar}</Text>
-            <Text style={styles.fr}>« {details.verset_fr} »</Text>
+            {lang !== 'ar' && details.verset_fr && <Text style={styles.fr}>« {details.verset_fr} »</Text>}
             {details.verset_ref && <Text style={styles.ref}>— {details.verset_ref}</Text>}
           </View>
         )}
@@ -191,22 +191,24 @@ export default function EvenementScreen() {
               <Text style={styles.sectionTitle}>{lang === 'ar' ? 'الحديث الشريف' : lang === 'en' ? 'Hadith' : 'Hadith'}</Text>
             </View>
             <Text style={styles.ar}>{details.hadith_ar}</Text>
-            <Text style={styles.fr}>« {details.hadith_fr} »</Text>
+            {lang !== 'ar' && details.hadith_fr && <Text style={styles.fr}>« {details.hadith_fr} »</Text>}
             {details.hadith_ref && <Text style={styles.ref}>— {details.hadith_ref}</Text>}
           </View>
         )}
 
-        {/* Explication */}
-        <View style={styles.section}>
-          <View style={styles.sectionHeader}>
-            <Text style={[styles.sectionIcon, { color: COLORS.primary }]}>✦</Text>
-            <Text style={styles.sectionTitle}>{lang === 'ar' ? 'شرح وتفصيل' : lang === 'en' ? 'Explanation' : 'Explication'}</Text>
+        {/* Explication — masquée en arabe car texte en français */}
+        {lang !== 'ar' && (
+          <View style={styles.section}>
+            <View style={styles.sectionHeader}>
+              <Text style={[styles.sectionIcon, { color: COLORS.primary }]}>✦</Text>
+              <Text style={styles.sectionTitle}>{lang === 'en' ? 'Explanation' : 'Explication'}</Text>
+            </View>
+            <Text style={styles.explication}>{details.explication}</Text>
           </View>
-          <Text style={styles.explication}>{details.explication}</Text>
-        </View>
+        )}
 
-        {/* Vertus */}
-        {details.vertus && details.vertus.length > 0 && (
+        {/* Vertus — masquées en arabe car textes en français */}
+        {lang !== 'ar' && details.vertus && details.vertus.length > 0 && (
           <View style={styles.section}>
             <View style={styles.sectionHeader}>
               <Text style={[styles.sectionIcon, { color: COLORS.gold }]}>★</Text>
@@ -221,8 +223,8 @@ export default function EvenementScreen() {
           </View>
         )}
 
-        {/* Amals recommandés */}
-        {details.amals && details.amals.length > 0 && (
+        {/* Amals recommandés — masqués en arabe car textes en français */}
+        {lang !== 'ar' && details.amals && details.amals.length > 0 && (
           <View style={styles.section}>
             <View style={styles.sectionHeader}>
               <Text style={[styles.sectionIcon, { color: COLORS.primary }]}>❋</Text>

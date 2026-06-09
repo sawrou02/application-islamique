@@ -144,6 +144,8 @@ interface SectionProps {
 }
 
 function Section({ icon, title, ar, fr, source: refStr }: SectionProps) {
+  const lang = getCurrentLang();
+  const isAr = lang === 'ar';
   return (
     <View style={styles.section}>
       <View style={styles.sectionHeader}>
@@ -151,7 +153,7 @@ function Section({ icon, title, ar, fr, source: refStr }: SectionProps) {
         <Text style={styles.sectionTitle}>{title}</Text>
       </View>
       {ar && <Text style={styles.ar}>{ar}</Text>}
-      {fr && <Text style={styles.fr}>{ar ? `« ${fr} »` : fr}</Text>}
+      {!isAr && fr && <Text style={styles.fr}>{ar ? `« ${fr} »` : fr}</Text>}
       {refStr && <Text style={styles.ref}>— {refStr}</Text>}
     </View>
   );

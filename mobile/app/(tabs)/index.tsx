@@ -8,7 +8,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuthStore } from '../../store/authStore';
 import { useQuizSetupStore } from '../../store/quizSetupStore';
 import { COLORS } from '../../constants/colors';
-import { t } from '../../i18n';
+import { t, getCurrentLang } from '../../i18n';
 import {
   LEVELS, getTodayEvent, getTodayChallenge, getTodayHadithIndex,
   MOTIVATION_HADITHS,
@@ -74,6 +74,8 @@ interface PersonalizedData {
 export default function HomeScreen() {
   const { user } = useAuthStore();
   const { reset, setMode, setNb } = useQuizSetupStore();
+  const lang = getCurrentLang();
+  const isAr = lang === 'ar';
   const greeting = getGreeting();
   const todayEvent = getTodayEvent();
   const todayChallenge = getTodayChallenge();
@@ -278,7 +280,7 @@ export default function HomeScreen() {
         {/* ══════════════════════════════════════════════════════════════ */}
         {/* ── Section 1 : Pour toi aujourd'hui ── */}
         {/* ══════════════════════════════════════════════════════════════ */}
-        <Text style={styles.sectionTitle}>Pour toi aujourd'hui</Text>
+        <Text style={styles.sectionTitle}>{isAr ? 'لك اليوم' : lang === 'en' ? 'For you today' : "Pour toi aujourd'hui"}</Text>
 
         {personalizedLoading ? (
           /* Loading skeletons */
@@ -296,13 +298,17 @@ export default function HomeScreen() {
                   <Text style={styles.personalCardIcon}>🔄</Text>
                   <View style={styles.personalCardText}>
                     <Text style={styles.personalCardTitle}>
-                      {personalizedData.mistakesCount} erreur{personalizedData.mistakesCount > 1 ? 's' : ''} à revoir
+                      {isAr
+                        ? `${personalizedData.mistakesCount} خطأ للمراجعة`
+                        : lang === 'en'
+                          ? `${personalizedData.mistakesCount} mistake${personalizedData.mistakesCount > 1 ? 's' : ''} to review`
+                          : `${personalizedData.mistakesCount} erreur${personalizedData.mistakesCount > 1 ? 's' : ''} à revoir`}
                     </Text>
-                    <Text style={styles.personalCardSub}>Mode Muraja'ah — révision ciblée</Text>
+                    <Text style={styles.personalCardSub}>{isAr ? 'وضع المراجعة' : lang === 'en' ? "Muraja'ah mode — targeted review" : "Mode Muraja'ah — révision ciblée"}</Text>
                   </View>
                 </View>
                 <TouchableOpacity style={styles.personalCardBtn} onPress={handleMurajaahPress} activeOpacity={0.8}>
-                  <Text style={styles.personalCardBtnText}>Réviser</Text>
+                  <Text style={styles.personalCardBtnText}>{isAr ? 'راجع' : lang === 'en' ? 'Review' : 'Réviser'}</Text>
                 </TouchableOpacity>
               </View>
             )}
@@ -314,9 +320,9 @@ export default function HomeScreen() {
                   <Text style={styles.personalCardIcon}>🏅</Text>
                   <View style={styles.personalCardText}>
                     <Text style={styles.personalCardTitle}>
-                      Prochain badge : {personalizedData.nextBadge.nom ?? '—'}
+                      {isAr ? 'الشارة التالية : ' : lang === 'en' ? 'Next badge: ' : 'Prochain badge : '}{personalizedData.nextBadge.nom ?? '—'}
                     </Text>
-                    <Text style={styles.personalCardSub}>Continue à progresser pour le débloquer</Text>
+                    <Text style={styles.personalCardSub}>{isAr ? 'واصل التقدم لفتحه' : lang === 'en' ? 'Keep progressing to unlock it' : 'Continue à progresser pour le débloquer'}</Text>
                   </View>
                 </View>
               </View>
@@ -326,7 +332,7 @@ export default function HomeScreen() {
             {personalizedData?.totalParties !== null && personalizedData?.totalParties !== undefined && (
               <View style={[styles.personalCard, styles.personalCardCompact]}>
                 <Text style={styles.personalCardIcon}>🎮</Text>
-                <Text style={styles.personalCardStatLabel}>Parties jouées</Text>
+                <Text style={styles.personalCardStatLabel}>{isAr ? 'الجولات' : lang === 'en' ? 'Games played' : 'Parties jouées'}</Text>
                 <Text style={styles.personalCardStatValue}>{personalizedData.totalParties}</Text>
               </View>
             )}
@@ -339,8 +345,8 @@ export default function HomeScreen() {
                 <View style={styles.personalCard}>
                   <Text style={styles.personalCardIcon}>✦</Text>
                   <View style={styles.personalCardText}>
-                    <Text style={styles.personalCardTitle}>Bonne continuité !</Text>
-                    <Text style={styles.personalCardSub}>Aucune erreur en attente. Continue ainsi.</Text>
+                    <Text style={styles.personalCardTitle}>{isAr ? 'أحسنت!' : lang === 'en' ? 'Great progress!' : 'Bonne continuité !'}</Text>
+                    <Text style={styles.personalCardSub}>{isAr ? 'لا أخطاء في الانتظار. واصل هكذا.' : lang === 'en' ? 'No mistakes pending. Keep it up.' : 'Aucune erreur en attente. Continue ainsi.'}</Text>
                   </View>
                 </View>
               )}
@@ -350,28 +356,30 @@ export default function HomeScreen() {
         {/* ══════════════════════════════════════════════════════════════ */}
         {/* ── Section 2 : Contenu islamique du jour ── */}
         {/* ══════════════════════════════════════════════════════════════ */}
-        <Text style={[styles.sectionTitle, { marginTop: 24 }]}>Contenu islamique du jour</Text>
+        <Text style={[styles.sectionTitle, { marginTop: 24 }]}>{isAr ? 'المحتوى الإسلامي اليومي' : lang === 'en' ? 'Islamic content of the day' : 'Contenu islamique du jour'}</Text>
 
         {/* Verset du Jour */}
         <View style={styles.verseCard}>
-          <Text style={styles.verseLabel}>◉ VERSET DU JOUR</Text>
+          <Text style={styles.verseLabel}>◉ {isAr ? 'آية اليوم' : lang === 'en' ? 'VERSE OF THE DAY' : 'VERSET DU JOUR'}</Text>
           <Text style={styles.verseAr}>{todayVerse.ar}</Text>
-          <Text style={styles.verseFr}>« {todayVerse.fr} »</Text>
+          {!isAr && <Text style={styles.verseFr}>« {todayVerse.fr} »</Text>}
           <Text style={styles.verseRef}>— {todayVerse.ref}</Text>
         </View>
 
         {/* Parole du Jour */}
-        <View style={styles.quoteCard}>
-          <Text style={styles.quoteLabel}>✦ PAROLE DU JOUR</Text>
-          <Text style={styles.quoteText}>« {todayQuote.text} »</Text>
-          <Text style={styles.quoteScholar}>— {todayQuote.scholar}</Text>
-        </View>
+        {!isAr && (
+          <View style={styles.quoteCard}>
+            <Text style={styles.quoteLabel}>✦ {lang === 'en' ? 'QUOTE OF THE DAY' : 'PAROLE DU JOUR'}</Text>
+            <Text style={styles.quoteText}>« {todayQuote.text} »</Text>
+            <Text style={styles.quoteScholar}>— {todayQuote.scholar}</Text>
+          </View>
+        )}
 
         {/* ── Hadith du Jour ── */}
         <View style={styles.hadithCard}>
           <Text style={styles.hadithLabel}>◉ {t('hadith_du_jour').toUpperCase()}</Text>
           <Text style={styles.hadithAr}>{hadith.textAr}</Text>
-          <Text style={styles.hadithFr}>« {hadith.text} »</Text>
+          {!isAr && <Text style={styles.hadithFr}>« {hadith.text} »</Text>}
           {hadith.narrator && (
             <Text style={styles.hadithNarrator}>{hadith.narrator}</Text>
           )}
