@@ -24,7 +24,7 @@ const QUESTIONS_SAHABA: QuestionSeed[] = [
     texte_ar: 'من هو أول رجل بالغ أسلم؟',
     explication: "Abu Bakr as-Siddiq رضي الله عنه fut le premier homme libre et adulte à accepter l'islam, suite à l'invitation directe du Prophète ﷺ. Khadija fut la première femme, Ali le premier enfant et Zayd ibn Haritha le premier affranchi.",
     dalil_ref: 'Ibn Ishaq, Sirah Nabawiyyah ; Ibn Hisham',
-    grade_hadith: 'Tradition rapportée par les sirah-écrivains',
+    grade_hadith: 'Tradition',
     reponses: [
       { texte_fr: 'Abu Bakr as-Siddiq', texte_ar: 'أبو بكر الصديق', est_correcte: true },
       { texte_fr: 'Umar ibn al-Khattab', texte_ar: 'عمر بن الخطاب', est_correcte: false },
