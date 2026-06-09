@@ -1,6 +1,7 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, Alert,
+  Modal, Animated, Easing,
 } from 'react-native';
 import { router } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -20,6 +21,10 @@ interface Tournoi {
   date_fin: string;
 }
 
+interface TournoiPublic extends Tournoi {
+  nb_participants: number;
+}
+
 interface ClassementEntry {
   rang: number;
   user_id: string;
@@ -30,12 +35,45 @@ interface ClassementEntry {
   ligue: { id: string; nom: string; nom_ar: string };
 }
 
+function formatCountdown(ms: number): string {
+  if (ms <= 0) return 'Terminé';
+  const s = Math.floor(ms / 1000);
+  const h = Math.floor(s / 3600);
+  const m = Math.floor((s % 3600) / 60);
+  const sec = s % 60;
+  return `${h.toString().padStart(2, '0')}h ${m.toString().padStart(2, '0')}m ${sec.toString().padStart(2, '0')}s`;
+}
+
 export default function TournoiScreen() {
   const { user } = useAuthStore();
   const [tournoi, setTournoi] = useState<Tournoi | null>(null);
   const [classement, setClassement] = useState<ClassementEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [joining, setJoining] = useState(false);
+
+  // Tournoi public mondial
+  const [publicTournoi, setPublicTournoi] = useState<TournoiPublic | null>(null);
+  const [publicClassement, setPublicClassement] = useState<ClassementEntry[]>([]);
+  const [publicRegistered, setPublicRegistered] = useState(false);
+  const [joiningPublic, setJoiningPublic] = useState(false);
+  const [showPublicClass, setShowPublicClass] = useState(false);
+  const [now, setNow] = useState(Date.now());
+
+  const pulse = useRef(new Animated.Value(1)).current;
+
+  useEffect(() => {
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(pulse, { toValue: 1.04, duration: 900, easing: Easing.inOut(Easing.ease), useNativeDriver: true }),
+        Animated.timing(pulse, { toValue: 1, duration: 900, easing: Easing.inOut(Easing.ease), useNativeDriver: true }),
+      ])
+    ).start();
+  }, [pulse]);
+
+  useEffect(() => {
+    const id = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(id);
+  }, []);
 
   const load = async () => {
     try {
@@ -51,7 +89,22 @@ export default function TournoiScreen() {
     }
   };
 
-  useEffect(() => { load(); }, []);
+  const loadPublic = async () => {
+    try {
+      const pRes = await tournoisApi.getPublicActif();
+      const p = pRes.data.data;
+      setPublicTournoi(p);
+      if (p) {
+        const cRes = await tournoisApi.classementPublic();
+        setPublicClassement(cRes.data.data);
+        setPublicRegistered(cRes.data.data.some(c => c.user_id === user?.id));
+      }
+    } catch {
+      // silencieux : tournoi public optionnel
+    }
+  };
+
+  useEffect(() => { load(); loadPublic(); }, []);
 
   const handleJoin = async () => {
     if (!tournoi) return;
@@ -67,8 +120,31 @@ export default function TournoiScreen() {
     }
   };
 
+  const handleJoinPublic = async () => {
+    setJoiningPublic(true);
+    try {
+      await tournoisApi.rejoindrePublic();
+      Alert.alert('Bienvenue !', 'Vous êtes inscrit au Tournoi Mondial du jour.');
+      await loadPublic();
+    } catch {
+      Alert.alert('Erreur', 'Inscription impossible.');
+    } finally {
+      setJoiningPublic(false);
+    }
+  };
+
+  const openPublicClass = async () => {
+    try {
+      const cRes = await tournoisApi.classementPublic();
+      setPublicClassement(cRes.data.data);
+    } catch {}
+    setShowPublicClass(true);
+  };
+
   const ligueColor = (id: string) => LIGUES.find(l => l.id === id)?.color || COLORS.textLight;
   const isRegistered = classement.some(c => c.user_id === user?.id);
+
+  const remainingMs = publicTournoi ? new Date(publicTournoi.date_fin).getTime() - now : 0;
 
   return (
     <SafeAreaView style={styles.container}>
@@ -83,6 +159,34 @@ export default function TournoiScreen() {
         <ActivityIndicator style={styles.loader} color={COLORS.primary} size="large" />
       ) : (
         <ScrollView contentContainerStyle={styles.scroll}>
+          {publicTournoi && (
+            <Animated.View style={[styles.publicCard, { transform: [{ scale: pulse }] }]}>
+              <Text style={styles.publicBadge}>TOURNOI MONDIAL DU JOUR</Text>
+              <Text style={styles.publicIcon}>🌍</Text>
+              <Text style={styles.publicNom}>{publicTournoi.nom}</Text>
+              {publicTournoi.theme && (
+                <Text style={styles.publicTheme}>Thème : {publicTournoi.theme}</Text>
+              )}
+              <Text style={styles.publicCountdown}>{formatCountdown(remainingMs)}</Text>
+              <Text style={styles.publicParticipants}>
+                {publicTournoi.nb_participants} participant{publicTournoi.nb_participants > 1 ? 's' : ''}
+              </Text>
+              {!publicRegistered ? (
+                <TouchableOpacity
+                  style={[styles.publicBtn, joiningPublic && styles.disabled]}
+                  onPress={handleJoinPublic}
+                  disabled={joiningPublic}
+                >
+                  <Text style={styles.publicBtnText}>{joiningPublic ? '...' : 'Rejoindre'}</Text>
+                </TouchableOpacity>
+              ) : (
+                <TouchableOpacity style={styles.publicBtnAlt} onPress={openPublicClass}>
+                  <Text style={styles.publicBtnAltText}>Voir le classement</Text>
+                </TouchableOpacity>
+              )}
+            </Animated.View>
+          )}
+
           {tournoi && (
             <View style={styles.tournoiCard}>
               <Text style={styles.tournoiIcon}>🏆</Text>
@@ -131,6 +235,34 @@ export default function TournoiScreen() {
           ))}
         </ScrollView>
       )}
+
+      <Modal visible={showPublicClass} animationType="slide" onRequestClose={() => setShowPublicClass(false)}>
+        <SafeAreaView style={styles.container}>
+          <View style={styles.header}>
+            <TouchableOpacity onPress={() => setShowPublicClass(false)} style={styles.backBtn}>
+              <IslamicIcon name="back" size={28} color="#FFFFFF" />
+            </TouchableOpacity>
+            <Text style={styles.headerTitle}>Classement mondial</Text>
+          </View>
+          <ScrollView contentContainerStyle={styles.scroll}>
+            {publicClassement.length === 0 && (
+              <Text style={styles.empty}>Aucun participant inscrit.</Text>
+            )}
+            {publicClassement.map((c) => (
+              <View key={c.user_id} style={[styles.row, c.user_id === user?.id && styles.rowMe]}>
+                <Text style={styles.rang}>{c.rang}</Text>
+                <View style={styles.rowInfo}>
+                  <Text style={styles.pseudo}>{c.pseudo}</Text>
+                  <View style={[styles.ligueChip, { backgroundColor: ligueColor(c.ligue.id) }]}>
+                    <Text style={styles.ligueText}>{c.ligue.nom}</Text>
+                  </View>
+                </View>
+                <Text style={styles.points}>{c.points} pts</Text>
+              </View>
+            ))}
+          </ScrollView>
+        </SafeAreaView>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -145,6 +277,36 @@ const styles = StyleSheet.create({
   headerTitle: { fontSize: 18, fontWeight: 'bold', color: '#FFFFFF' },
   loader: { marginTop: 60 },
   scroll: { padding: 16, paddingBottom: 40 },
+
+  publicCard: {
+    backgroundColor: COLORS.gold || '#D4AF37',
+    borderRadius: 18, padding: 20, alignItems: 'center', marginBottom: 20,
+    shadowColor: '#D4AF37', shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.5, shadowRadius: 12, elevation: 8,
+  },
+  publicBadge: {
+    fontSize: 11, fontWeight: 'bold', color: '#FFFFFF',
+    letterSpacing: 1.5, marginBottom: 4,
+  },
+  publicIcon: { fontSize: 38, marginBottom: 4 },
+  publicNom: { fontSize: 18, fontWeight: 'bold', color: '#1a1a1a', textAlign: 'center' },
+  publicTheme: { fontSize: 13, color: '#3a3a3a', marginTop: 4, fontStyle: 'italic' },
+  publicCountdown: {
+    fontSize: 22, fontWeight: 'bold', color: '#FFFFFF', marginTop: 10,
+    fontVariant: ['tabular-nums'],
+  },
+  publicParticipants: { fontSize: 13, color: '#2a2a2a', marginTop: 6, fontWeight: '600' },
+  publicBtn: {
+    backgroundColor: '#1a1a1a', borderRadius: 12,
+    paddingVertical: 12, paddingHorizontal: 32, marginTop: 14,
+  },
+  publicBtnText: { color: '#FFD700', fontWeight: 'bold', fontSize: 16 },
+  publicBtnAlt: {
+    backgroundColor: '#FFFFFF', borderRadius: 12,
+    paddingVertical: 12, paddingHorizontal: 24, marginTop: 14,
+  },
+  publicBtnAltText: { color: '#1a1a1a', fontWeight: 'bold', fontSize: 14 },
+
   tournoiCard: {
     backgroundColor: COLORS.surface, borderRadius: 16, padding: 20,
     alignItems: 'center', marginBottom: 20,

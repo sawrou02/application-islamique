@@ -122,6 +122,15 @@ export const tournoisApi = {
 
   getClassement: (id: string) =>
     api.get<{ success: boolean; data: Array<{ rang: number; user_id: string; pseudo: string; pays: string; points: number; xp_total: number; ligue: { id: string; nom: string; nom_ar: string } }> }>(`/tournois/${id}/classement`),
+
+  getPublicActif: () =>
+    api.get<{ success: boolean; data: { id: string; nom: string; nom_ar: string; theme: string; description: string; date_debut: string; date_fin: string; nb_participants: number } | null }>('/tournois/public/actif'),
+
+  rejoindrePublic: () =>
+    api.post<{ success: boolean; message: string; tournoi_id: string }>('/tournois/public/rejoindre'),
+
+  classementPublic: () =>
+    api.get<{ success: boolean; data: Array<{ rang: number; user_id: string; pseudo: string; pays: string; points: number; xp_total: number; ligue: { id: string; nom: string; nom_ar: string } }> }>('/tournois/public/classement'),
 };
 
 // Halaqat
