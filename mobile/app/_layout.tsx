@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { Stack } from 'expo-router';
+import { Stack, router } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
@@ -11,7 +11,7 @@ import { usersApi } from '../services/api';
 setupNotificationHandlers();
 
 export default function RootLayout() {
-  const { loadUser } = useAuthStore();
+  const { loadUser, isAuthenticated, isLoading } = useAuthStore();
 
   useEffect(() => {
     loadUser();
@@ -24,6 +24,16 @@ export default function RootLayout() {
       }
     });
   }, []);
+
+  useEffect(() => {
+    if (!isLoading) {
+      if (isAuthenticated) {
+        router.replace('/(tabs)');
+      } else {
+        router.replace('/onboarding');
+      }
+    }
+  }, [isLoading, isAuthenticated]);
 
   return (
     <GestureHandlerRootView style={styles.container}>
