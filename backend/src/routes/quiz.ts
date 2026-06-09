@@ -2,6 +2,7 @@ import { Router, Request, Response } from 'express';
 import { z } from 'zod';
 import pool from '../db';
 import { authMiddleware, AuthRequest } from '../middleware/auth';
+import { getCurrentXpBoost } from '../utils/islamicBoosts';
 
 const router = Router();
 
@@ -87,6 +88,13 @@ router.post('/submit', authMiddleware, async (req: AuthRequest, res: Response): 
       );
     }
 
+    // Boost XP saisonnier (Ramadan, Vendredi, Arafat, etc.)
+    const boost = getCurrentXpBoost();
+    if (boost.multiplier > 1 && xp_gained > 0) {
+      xp_gained = Math.round(xp_gained * boost.multiplier);
+      console.log(`XP boost applied: ${boost.label} x${boost.multiplier}`);
+    }
+
     const score = Math.round((correct_count / answers.length) * 100);
 
     // Update user XP and streak
@@ -153,6 +161,7 @@ router.post('/submit', authMiddleware, async (req: AuthRequest, res: Response): 
         answers_detail,
         level_up,
         new_level: level_up ? newNiveau : undefined,
+        xp_boost: boost.multiplier > 1 ? boost : undefined,
       },
     });
   } catch (err) {

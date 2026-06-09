@@ -12,6 +12,7 @@ import {
   DOMAINS, LEVELS, getTodayEvent, getTodayChallenge, getTodayHadithIndex,
   MOTIVATION_HADITHS,
 } from '../../constants/islamic';
+import { getCurrentXpBoost } from '../../services/islamicBoosts';
 
 const { width } = Dimensions.get('window');
 
@@ -37,6 +38,21 @@ export default function HomeScreen() {
   const todayEvent = getTodayEvent();
   const todayChallenge = getTodayChallenge();
   const hadith = MOTIVATION_HADITHS[getTodayHadithIndex()];
+  const xpBoost = getCurrentXpBoost();
+
+  // Bannière pulsante (uniquement si boost actif)
+  const boostPulse = useRef(new Animated.Value(1)).current;
+  useEffect(() => {
+    if (xpBoost.multiplier <= 1) return;
+    const loop = Animated.loop(
+      Animated.sequence([
+        Animated.timing(boostPulse, { toValue: 1.04, duration: 800, useNativeDriver: true }),
+        Animated.timing(boostPulse, { toValue: 1, duration: 800, useNativeDriver: true }),
+      ])
+    );
+    loop.start();
+    return () => loop.stop();
+  }, [xpBoost.multiplier]);
 
   const level = LEVELS.find(l => l.id === (user?.niveau || 1)) || LEVELS[0];
   const xpForNextLevel = [0, 500, 2000, 5000, 10000, 20000, 999999];
@@ -79,6 +95,15 @@ export default function HomeScreen() {
             <Text style={styles.levelBadgeFr}>{level.name}</Text>
           </View>
         </View>
+
+        {/* ── Bannière boost XP saisonnier ── */}
+        {xpBoost.multiplier > 1 && (
+          <Animated.View style={[styles.boostBanner, { transform: [{ scale: boostPulse }] }]}>
+            <Text style={styles.boostText}>
+              ✨ {xpBoost.label} — XP ×{xpBoost.multiplier}
+            </Text>
+          </Animated.View>
+        )}
 
         {/* ── Stats Row ── */}
         <View style={styles.statsRow}>
@@ -247,6 +272,27 @@ const styles = StyleSheet.create({
   },
   levelBadgeAr: { fontSize: 14, color: '#FFFFFF', fontWeight: 'bold' },
   levelBadgeFr: { fontSize: 10, color: 'rgba(255,255,255,0.8)', marginTop: 2 },
+
+  // Boost banner
+  boostBanner: {
+    backgroundColor: COLORS.gold,
+    borderRadius: 14,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    marginBottom: 12,
+    alignItems: 'center',
+    shadowColor: COLORS.gold,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.45,
+    shadowRadius: 10,
+    elevation: 6,
+  },
+  boostText: {
+    fontSize: 14,
+    fontWeight: '800',
+    color: '#3D2A00',
+    letterSpacing: 0.3,
+  },
 
   // Stats
   statsRow: { flexDirection: 'row', gap: 10, marginBottom: 12 },

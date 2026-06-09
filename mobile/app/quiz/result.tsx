@@ -8,6 +8,7 @@ import { IslamicIcon } from '../../components/IslamicIcon';
 import { COLORS } from '../../constants/colors';
 import { useQuizStore } from '../../store/quizStore';
 import { MOTIVATION_HADITHS } from '../../constants/islamic';
+import { getCurrentXpBoost } from '../../services/islamicBoosts';
 
 function getMotivationHadith(score: number) {
   if (score >= 80) return MOTIVATION_HADITHS[0];
@@ -33,6 +34,7 @@ export default function QuizResult() {
   const correctCount = result?.correct_count || 0;
   const total = result?.total || answers.length;
   const xpGained = result?.xp_gained || 0;
+  const xpBoost = getCurrentXpBoost();
 
   const scoreColor = score >= 80 ? COLORS.success : score >= 50 ? COLORS.warning : COLORS.error;
 
