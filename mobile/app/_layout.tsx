@@ -53,6 +53,7 @@ export default function RootLayout() {
           <Stack.Screen name="(tabs)" />
           <Stack.Screen name="quiz" />
           <Stack.Screen name="multi" />
+          <Stack.Screen name="evenement" />
         </Stack>
       </SafeAreaProvider>
     </GestureHandlerRootView>

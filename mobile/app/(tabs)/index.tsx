@@ -142,10 +142,7 @@ export default function HomeScreen() {
         {/* ── Événement islamique du jour ── */}
         <TouchableOpacity
           style={[styles.eventCard, { borderLeftColor: todayEvent.color }]}
-          onPress={() => router.push({
-            pathname: '/(tabs)/quiz',
-            params: { presetDomain: todayEvent.quizDomaine },
-          })}
+          onPress={() => router.push('/evenement')}
           activeOpacity={0.85}
         >
           <View style={[styles.eventIconWrap, { backgroundColor: `${todayEvent.color}18` }]}>
@@ -163,10 +160,7 @@ export default function HomeScreen() {
         {/* ── Défi Quotidien ── */}
         <TouchableOpacity
           style={styles.challengeCard}
-          onPress={() => router.push({
-            pathname: '/(tabs)/quiz',
-            params: { presetDomain: todayChallenge.domaine, presetMode: 'quotidien' },
-          })}
+          onPress={() => router.push({ pathname: '/evenement', params: { type: 'challenge' } })}
           activeOpacity={0.85}
         >
           <View style={styles.challengeLeft}>
