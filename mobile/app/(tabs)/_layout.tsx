@@ -1,6 +1,12 @@
+import { Text } from 'react-native';
 import { Tabs } from 'expo-router';
-import { IslamicIcon } from '../../components/IslamicIcon';
 import { COLORS } from '../../constants/colors';
+
+function TabIcon({ symbol, color }: { symbol: string; color: string }) {
+  return (
+    <Text style={{ fontSize: 22, color, lineHeight: 26 }}>{symbol}</Text>
+  );
+}
 
 export default function TabsLayout() {
   return (
@@ -10,15 +16,22 @@ export default function TabsLayout() {
         tabBarActiveTintColor: COLORS.primary,
         tabBarInactiveTintColor: COLORS.textLight,
         tabBarStyle: {
-          backgroundColor: COLORS.surface,
-          borderTopColor: COLORS.border,
+          backgroundColor: '#FFFFFF',
+          borderTopColor: 'rgba(0,0,0,0.08)',
           borderTopWidth: 1,
-          height: 60,
-          paddingBottom: 8,
+          height: 64,
+          paddingBottom: 10,
+          paddingTop: 6,
+          shadowColor: '#000',
+          shadowOffset: { width: 0, height: -2 },
+          shadowOpacity: 0.06,
+          shadowRadius: 8,
+          elevation: 10,
         },
         tabBarLabelStyle: {
-          fontSize: 11,
-          fontWeight: '600',
+          fontSize: 10,
+          fontWeight: '700',
+          marginTop: 2,
         },
       }}
     >
@@ -26,45 +39,35 @@ export default function TabsLayout() {
         name="index"
         options={{
           title: 'Accueil',
-          tabBarIcon: ({ color, size }) => (
-            <IslamicIcon name="home" size={size} color={color} />
-          ),
+          tabBarIcon: ({ color }) => <TabIcon symbol="۞" color={color} />,
         }}
       />
       <Tabs.Screen
         name="quiz"
         options={{
           title: 'Quiz',
-          tabBarIcon: ({ color, size }) => (
-            <IslamicIcon name="quiz" size={size} color={color} />
-          ),
+          tabBarIcon: ({ color }) => <TabIcon symbol="❋" color={color} />,
         }}
       />
       <Tabs.Screen
         name="multi"
         options={{
           title: 'Multi',
-          tabBarIcon: ({ color, size }) => (
-            <IslamicIcon name="multi" size={size} color={color} />
-          ),
+          tabBarIcon: ({ color }) => <TabIcon symbol="✦" color={color} />,
         }}
       />
       <Tabs.Screen
         name="classement"
         options={{
           title: 'Classement',
-          tabBarIcon: ({ color, size }) => (
-            <IslamicIcon name="leaderboard" size={size} color={color} />
-          ),
+          tabBarIcon: ({ color }) => <TabIcon symbol="★" color={color} />,
         }}
       />
       <Tabs.Screen
         name="profil"
         options={{
           title: 'Profil',
-          tabBarIcon: ({ color, size }) => (
-            <IslamicIcon name="profile" size={size} color={color} />
-          ),
+          tabBarIcon: ({ color }) => <TabIcon symbol="◈" color={color} />,
         }}
       />
     </Tabs>
