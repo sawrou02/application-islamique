@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
   View, Text, ScrollView, TouchableOpacity, StyleSheet,
   Dimensions, Animated,
@@ -6,15 +6,57 @@ import {
 import { router } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuthStore } from '../../store/authStore';
+import { useQuizSetupStore } from '../../store/quizSetupStore';
 import { COLORS } from '../../constants/colors';
 import { t } from '../../i18n';
 import {
-  DOMAINS, LEVELS, getTodayEvent, getTodayChallenge, getTodayHadithIndex,
+  LEVELS, getTodayEvent, getTodayChallenge, getTodayHadithIndex,
   MOTIVATION_HADITHS,
 } from '../../constants/islamic';
 import { getCurrentXpBoost } from '../../services/islamicBoosts';
+import { quizApi, badgesApi, usersApi } from '../../services/api';
+import { Badge } from '../../types';
 
 const { width } = Dimensions.get('window');
+
+// ── Quran verses ──────────────────────────────────────────────────────────────
+const QURAN_VERSES = [
+  { ar: 'إِنَّ مَعَ الْعُسْرِ يُسْرًا', fr: 'Certes, avec la difficulté vient la facilité.', ref: 'Sourate Al-Inshirah (94:6)' },
+  { ar: 'وَمَن يَتَّقِ اللَّهَ يَجْعَل لَّهُ مَخْرَجًا', fr: 'Quiconque craint Allah, Il lui ménagera une issue.', ref: 'Sourate At-Talaq (65:2)' },
+  { ar: 'فَاذْكُرُونِي أَذْكُرْكُمْ', fr: 'Souvenez-vous de Moi, Je me souviendrai de vous.', ref: 'Sourate Al-Baqara (2:152)' },
+  { ar: 'وَإِذَا سَأَلَكَ عِبَادِي عَنِّي فَإِنِّي قَرِيبٌ', fr: 'Lorsque Mes serviteurs t\'interrogent sur Moi, Je suis proche.', ref: 'Sourate Al-Baqara (2:186)' },
+  { ar: 'اللَّهُ لَا إِلَهَ إِلَّا هُوَ الْحَيُّ الْقَيُّومُ', fr: 'Allah ! Pas de divinité sauf Lui, le Vivant, l\'Éternel Subsistant.', ref: 'Sourate Al-Baqara (2:255) — Al-Kursi' },
+  { ar: 'وَنَحْنُ أَقْرَبُ إِلَيْهِ مِنْ حَبْلِ الْوَرِيدِ', fr: 'Nous sommes plus proche de lui que sa veine jugulaire.', ref: 'Sourate Qaf (50:16)' },
+  { ar: 'إِنَّ اللَّهَ مَعَ الصَّابِرِينَ', fr: 'Certes, Allah est avec les patients.', ref: 'Sourate Al-Baqara (2:153)' },
+  { ar: 'وَلَا تَيْأَسُوا مِن رَّوْحِ اللَّهِ', fr: 'Ne désespérez pas de la miséricorde d\'Allah.', ref: 'Sourate Yusuf (12:87)' },
+  { ar: 'رَبَّنَا آتِنَا فِي الدُّنْيَا حَسَنَةً وَفِي الْآخِرَةِ حَسَنَةً', fr: 'Seigneur, accorde-nous le bien ici-bas et dans l\'Au-delà.', ref: 'Sourate Al-Baqara (2:201)' },
+  { ar: 'الَّذِينَ آمَنُوا وَتَطْمَئِنُّ قُلُوبُهُم بِذِكْرِ اللَّهِ', fr: 'Ceux qui croient et dont les cœurs se tranquillisent par le rappel d\'Allah.', ref: 'Sourate Ar-Ra\'d (13:28)' },
+  { ar: 'وَمَا خَلَقْتُ الْجِنَّ وَالْإِنسَ إِلَّا لِيَعْبُدُونِ', fr: 'Je n\'ai créé les djinns et les hommes que pour qu\'ils M\'adorent.', ref: 'Sourate Adh-Dhariyat (51:56)' },
+  { ar: 'قُلْ هُوَ اللَّهُ أَحَدٌ', fr: 'Dis : Il est Allah, Unique.', ref: 'Sourate Al-Ikhlas (112:1)' },
+  { ar: 'وَعَسَى أَن تَكْرَهُوا شَيْئًا وَهُوَ خَيْرٌ لَّكُمْ', fr: 'Il se peut que vous aimiez une chose alors qu\'elle vous est mauvaise.', ref: 'Sourate Al-Baqara (2:216)' },
+  { ar: 'إِنَّ اللَّهَ لَا يُغَيِّرُ مَا بِقَوْمٍ حَتَّى يُغَيِّرُوا مَا بِأَنفُسِهِمْ', fr: 'Allah ne change pas l\'état d\'un peuple tant que ses membres ne changent pas ce qui est en eux-mêmes.', ref: 'Sourate Ar-Ra\'d (13:11)' },
+  { ar: 'وَبَشِّرِ الصَّابِرِينَ', fr: 'Et annonce la bonne nouvelle aux endurants.', ref: 'Sourate Al-Baqara (2:155)' },
+];
+
+// ── Scholar quotes ─────────────────────────────────────────────────────────────
+const SCHOLAR_QUOTES = [
+  { text: 'Le savoir est une lumière qu\'Allah place dans le cœur de qui Il veut.', scholar: 'Ibn Masud رضي الله عنه' },
+  { text: 'Qui se connaît lui-même connaît son Seigneur.', scholar: 'Ibn Arabi رحمه الله' },
+  { text: 'L\'humilité est la couronne des savants.', scholar: 'Al-Hasan Al-Basri رحمه الله' },
+  { text: 'La patience est moitié de la foi, et la certitude est la foi tout entière.', scholar: 'Ibn Al-Qayyim رحمه الله' },
+  { text: 'Multiplie tes actes bons en secret ; c\'est la sincérité que les anges exaltent.', scholar: 'Ibn Rajab Al-Hanbali رحمه الله' },
+  { text: 'Le cœur ne se rectifie pas sans que la langue ne soit rectifiée d\'abord.', scholar: 'Ibn Taymiyya رحمه الله' },
+  { text: 'Traite les gens comme tu aimerais être traité; c\'est la quintessence de la jurisprudence.', scholar: 'Imam Shafi\'i رحمه الله' },
+  { text: 'Le meilleur des actions est celle qui est constante, même si elle est petite.', scholar: 'Aïcha رضي الله عنها' },
+  { text: 'Ne compte pas le nombre de tes prières, mais la qualité de ta présence en elles.', scholar: 'Imam Al-Ghazali رحمه الله' },
+  { text: 'Qui veut le monde, il lui faut le savoir ; qui veut l\'Au-delà, il lui faut le savoir.', scholar: 'Imam Al-Shafi\'i رحمه الله' },
+];
+
+function getDayOfYear(): number {
+  const now = new Date();
+  const start = new Date(now.getFullYear(), 0, 0);
+  return Math.floor((now.getTime() - start.getTime()) / (1000 * 60 * 60 * 24));
+}
 
 function getGreeting(): { ar: string; sub: string } {
   const h = new Date().getHours();
@@ -23,22 +65,70 @@ function getGreeting(): { ar: string; sub: string } {
   return { ar: 'ليلة طيبة', sub: t('salutation_soir') + ' —' };
 }
 
-const DOMAIN_TINTS: Record<string, string> = {
-  fiqh: '#E8F5E9',
-  aqida: '#E8EAF6',
-  tafsir: '#F3E5F5',
-  hadith: '#FBE9E7',
-  sirah: '#E1F5FE',
-  akhlaq: '#E0F2F1',
-};
+interface PersonalizedData {
+  mistakesCount: number;
+  nextBadge: Badge | null;
+  totalParties: number | null;
+}
 
 export default function HomeScreen() {
   const { user } = useAuthStore();
+  const { reset, setMode, setNb } = useQuizSetupStore();
   const greeting = getGreeting();
   const todayEvent = getTodayEvent();
   const todayChallenge = getTodayChallenge();
   const hadith = MOTIVATION_HADITHS[getTodayHadithIndex()];
   const xpBoost = getCurrentXpBoost();
+
+  const dayOfYear = getDayOfYear();
+  const todayVerse = QURAN_VERSES[dayOfYear % QURAN_VERSES.length];
+  const todayQuote = SCHOLAR_QUOTES[dayOfYear % SCHOLAR_QUOTES.length];
+
+  const [personalizedData, setPersonalizedData] = useState<PersonalizedData | null>(null);
+  const [personalizedLoading, setPersonalizedLoading] = useState(true);
+
+  useEffect(() => {
+    let cancelled = false;
+    async function fetchPersonalized() {
+      try {
+        const [mistakesRes, myBadgesRes, allBadgesRes, statsRes] = await Promise.allSettled([
+          quizApi.getMistakes(3),
+          badgesApi.getMyBadges(),
+          badgesApi.getAllBadges(),
+          usersApi.getStats(),
+        ]);
+
+        if (cancelled) return;
+
+        const mistakesCount =
+          mistakesRes.status === 'fulfilled' ? (mistakesRes.value.data.data?.length ?? 0) : 0;
+
+        let nextBadge: Badge | null = null;
+        if (myBadgesRes.status === 'fulfilled' && allBadgesRes.status === 'fulfilled') {
+          const earned = new Set(myBadgesRes.value.data.data.map((b: Badge) => b.id));
+          nextBadge = allBadgesRes.value.data.data.find((b: Badge) => !earned.has(b.id)) ?? null;
+        }
+
+        let totalParties: number | null = null;
+        if (statsRes.status === 'fulfilled') {
+          const stats = statsRes.value.data.data as Record<string, unknown> | null;
+          if (stats && typeof stats['total_parties'] === 'number') {
+            totalParties = stats['total_parties'];
+          } else if (stats && typeof stats['parties_jouees'] === 'number') {
+            totalParties = stats['parties_jouees'];
+          }
+        }
+
+        setPersonalizedData({ mistakesCount, nextBadge, totalParties });
+      } catch {
+        if (!cancelled) setPersonalizedData({ mistakesCount: 0, nextBadge: null, totalParties: null });
+      } finally {
+        if (!cancelled) setPersonalizedLoading(false);
+      }
+    }
+    fetchPersonalized();
+    return () => { cancelled = true; };
+  }, []);
 
   // Bannière pulsante (uniquement si boost actif)
   const boostPulse = useRef(new Animated.Value(1)).current;
@@ -75,6 +165,13 @@ export default function HomeScreen() {
     inputRange: [0, 1],
     outputRange: ['0%', '100%'],
   });
+
+  function handleMurajaahPress() {
+    reset();
+    setMode('murajaah');
+    setNb(10);
+    router.push('/quiz/setup/niveau');
+  }
 
   return (
     <SafeAreaView style={styles.container}>
@@ -178,27 +275,96 @@ export default function HomeScreen() {
           </View>
         </TouchableOpacity>
 
-        {/* ── Domaines — grille 2 colonnes ── */}
-        <Text style={styles.sectionTitle}>{t('choisir_domaine')}</Text>
-        <View style={styles.domainsGrid}>
-          {DOMAINS.map((domain) => (
-            <TouchableOpacity
-              key={domain.id}
-              style={[
-                styles.domainCard,
-                { backgroundColor: DOMAIN_TINTS[domain.id] || COLORS.cardBg },
-              ]}
-              onPress={() => router.push({
-                pathname: '/(tabs)/quiz',
-                params: { presetDomain: domain.id },
-              })}
-              activeOpacity={0.8}
-            >
-              <Text style={[styles.domainSymbol, { color: COLORS.gold }]}>{domain.icon}</Text>
-              <Text style={styles.domainName}>{domain.name}</Text>
-              <Text style={[styles.domainNameAr, { color: domain.color }]}>{domain.nameAr}</Text>
-            </TouchableOpacity>
-          ))}
+        {/* ══════════════════════════════════════════════════════════════ */}
+        {/* ── Section 1 : Pour toi aujourd'hui ── */}
+        {/* ══════════════════════════════════════════════════════════════ */}
+        <Text style={styles.sectionTitle}>Pour toi aujourd'hui</Text>
+
+        {personalizedLoading ? (
+          /* Loading skeletons */
+          <View style={styles.skeletonGroup}>
+            <View style={[styles.skeleton, { height: 90 }]} />
+            <View style={[styles.skeleton, { height: 72, marginTop: 10 }]} />
+            <View style={[styles.skeleton, { height: 60, marginTop: 10 }]} />
+          </View>
+        ) : (
+          <View style={styles.personalizedGroup}>
+            {/* Erreurs à revoir */}
+            {personalizedData && personalizedData.mistakesCount > 0 && (
+              <View style={styles.personalCard}>
+                <View style={styles.personalCardLeft}>
+                  <Text style={styles.personalCardIcon}>🔄</Text>
+                  <View style={styles.personalCardText}>
+                    <Text style={styles.personalCardTitle}>
+                      {personalizedData.mistakesCount} erreur{personalizedData.mistakesCount > 1 ? 's' : ''} à revoir
+                    </Text>
+                    <Text style={styles.personalCardSub}>Mode Muraja'ah — révision ciblée</Text>
+                  </View>
+                </View>
+                <TouchableOpacity style={styles.personalCardBtn} onPress={handleMurajaahPress} activeOpacity={0.8}>
+                  <Text style={styles.personalCardBtnText}>Réviser</Text>
+                </TouchableOpacity>
+              </View>
+            )}
+
+            {/* Prochain badge */}
+            {personalizedData?.nextBadge && (
+              <View style={styles.personalCard}>
+                <View style={styles.personalCardLeft}>
+                  <Text style={styles.personalCardIcon}>🏅</Text>
+                  <View style={styles.personalCardText}>
+                    <Text style={styles.personalCardTitle}>
+                      Prochain badge : {personalizedData.nextBadge.nom ?? '—'}
+                    </Text>
+                    <Text style={styles.personalCardSub}>Continue à progresser pour le débloquer</Text>
+                  </View>
+                </View>
+              </View>
+            )}
+
+            {/* Parties jouées */}
+            {personalizedData?.totalParties !== null && personalizedData?.totalParties !== undefined && (
+              <View style={[styles.personalCard, styles.personalCardCompact]}>
+                <Text style={styles.personalCardIcon}>🎮</Text>
+                <Text style={styles.personalCardStatLabel}>Parties jouées</Text>
+                <Text style={styles.personalCardStatValue}>{personalizedData.totalParties}</Text>
+              </View>
+            )}
+
+            {/* Fallback si rien à afficher */}
+            {personalizedData &&
+              personalizedData.mistakesCount === 0 &&
+              !personalizedData.nextBadge &&
+              personalizedData.totalParties === null && (
+                <View style={styles.personalCard}>
+                  <Text style={styles.personalCardIcon}>✦</Text>
+                  <View style={styles.personalCardText}>
+                    <Text style={styles.personalCardTitle}>Bonne continuité !</Text>
+                    <Text style={styles.personalCardSub}>Aucune erreur en attente. Continue ainsi.</Text>
+                  </View>
+                </View>
+              )}
+          </View>
+        )}
+
+        {/* ══════════════════════════════════════════════════════════════ */}
+        {/* ── Section 2 : Contenu islamique du jour ── */}
+        {/* ══════════════════════════════════════════════════════════════ */}
+        <Text style={[styles.sectionTitle, { marginTop: 24 }]}>Contenu islamique du jour</Text>
+
+        {/* Verset du Jour */}
+        <View style={styles.verseCard}>
+          <Text style={styles.verseLabel}>◉ VERSET DU JOUR</Text>
+          <Text style={styles.verseAr}>{todayVerse.ar}</Text>
+          <Text style={styles.verseFr}>« {todayVerse.fr} »</Text>
+          <Text style={styles.verseRef}>— {todayVerse.ref}</Text>
+        </View>
+
+        {/* Parole du Jour */}
+        <View style={styles.quoteCard}>
+          <Text style={styles.quoteLabel}>✦ PAROLE DU JOUR</Text>
+          <Text style={styles.quoteText}>« {todayQuote.text} »</Text>
+          <Text style={styles.quoteScholar}>— {todayQuote.scholar}</Text>
         </View>
 
         {/* ── Hadith du Jour ── */}
@@ -231,7 +397,6 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.25,
     shadowRadius: 10,
     elevation: 6,
-    // Simulate gradient with darker overlay at bottom
     overflow: 'hidden',
   },
   headerInner: { flex: 1 },
@@ -415,42 +580,156 @@ const styles = StyleSheet.create({
   },
   challengeArrow: { fontSize: 20, color: COLORS.gold, fontWeight: '700' },
 
-  // Domains
+  // Section titles
   sectionTitle: {
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: 'bold',
     color: COLORS.text,
     marginBottom: 12,
   },
-  domainsGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 10,
-    marginBottom: 20,
+
+  // Skeleton loading
+  skeletonGroup: { marginBottom: 20 },
+  skeleton: {
+    backgroundColor: '#E0E0E0',
+    borderRadius: 16,
+    width: '100%',
   },
-  domainCard: {
-    width: (width - 42) / 2,
-    borderRadius: 18,
+
+  // Personalized cards
+  personalizedGroup: { gap: 10, marginBottom: 8 },
+  personalCard: {
+    backgroundColor: COLORS.surface,
+    borderRadius: 16,
     padding: 16,
+    flexDirection: 'row',
     alignItems: 'center',
+    gap: 12,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.06,
     shadowRadius: 6,
     elevation: 2,
   },
-  domainSymbol: {
-    fontSize: 32,
-    marginBottom: 8,
+  personalCardCompact: {
+    justifyContent: 'flex-start',
+    gap: 10,
   },
-  domainName: {
+  personalCardLeft: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  personalCardIcon: { fontSize: 28 },
+  personalCardText: { flex: 1 },
+  personalCardTitle: {
     fontSize: 14,
     fontWeight: '700',
     color: COLORS.text,
-    marginBottom: 3,
+    marginBottom: 2,
   },
-  domainNameAr: {
+  personalCardSub: {
+    fontSize: 12,
+    color: COLORS.textSecondary,
+  },
+  personalCardBtn: {
+    backgroundColor: COLORS.primary,
+    borderRadius: 10,
+    paddingVertical: 8,
+    paddingHorizontal: 14,
+  },
+  personalCardBtnText: {
     fontSize: 13,
+    fontWeight: '700',
+    color: '#FFFFFF',
+  },
+  personalCardStatLabel: {
+    fontSize: 13,
+    color: COLORS.textSecondary,
+    fontWeight: '500',
+    flex: 1,
+  },
+  personalCardStatValue: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: COLORS.text,
+  },
+
+  // Verse card
+  verseCard: {
+    backgroundColor: '#FFFBF0',
+    borderRadius: 16,
+    padding: 16,
+    borderLeftWidth: 4,
+    borderLeftColor: COLORS.gold,
+    marginBottom: 10,
+    shadowColor: COLORS.gold,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.12,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  verseLabel: {
+    fontSize: 10,
+    fontWeight: '800',
+    color: COLORS.goldDark,
+    letterSpacing: 1.2,
+    marginBottom: 12,
+  },
+  verseAr: {
+    fontSize: 22,
+    color: COLORS.arabicText,
+    textAlign: 'right',
+    writingDirection: 'rtl',
+    lineHeight: 36,
+    marginBottom: 10,
+    fontWeight: '600',
+  },
+  verseFr: {
+    fontSize: 13,
+    color: COLORS.textSecondary,
+    fontStyle: 'italic',
+    lineHeight: 20,
+    marginBottom: 8,
+  },
+  verseRef: {
+    fontSize: 11,
+    color: COLORS.goldDark,
+    fontWeight: '600',
+  },
+
+  // Scholar quote card
+  quoteCard: {
+    backgroundColor: COLORS.surface,
+    borderRadius: 16,
+    padding: 16,
+    borderLeftWidth: 4,
+    borderLeftColor: COLORS.primary,
+    marginBottom: 10,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 6,
+    elevation: 2,
+  },
+  quoteLabel: {
+    fontSize: 10,
+    fontWeight: '800',
+    color: COLORS.primary,
+    letterSpacing: 1.2,
+    marginBottom: 10,
+  },
+  quoteText: {
+    fontSize: 14,
+    color: COLORS.text,
+    fontStyle: 'italic',
+    lineHeight: 22,
+    marginBottom: 8,
+  },
+  quoteScholar: {
+    fontSize: 12,
+    color: COLORS.textSecondary,
     fontWeight: '600',
   },
 
@@ -466,6 +745,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.12,
     shadowRadius: 8,
     elevation: 2,
+    marginTop: 14,
   },
   hadithLabel: {
     fontSize: 10,
