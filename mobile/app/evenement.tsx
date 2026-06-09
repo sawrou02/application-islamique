@@ -6,8 +6,6 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { COLORS } from '../constants/colors';
 import { getTodayEvent, getTodayChallenge } from '../constants/islamic';
-import { useQuizStore } from '../store/quizStore';
-import { questionsApi } from '../services/api';
 import { t, getCurrentLang } from '../i18n';
 
 // Rich content per event key
@@ -30,8 +28,8 @@ const EVENT_DETAILS: Record<string, {
     hadith_fr: "Celui qui jeûne le Ramadan par foi sincère et dans l'espoir de la récompense, ses péchés passés lui seront pardonnés.",
     hadith_ref: 'Bukhari 2014, Muslim 760',
     explication: "Ramadan est le 9e mois du calendrier hégirien, mois sacré durant lequel le Coran a été révélé. Le jeûne est l'un des cinq piliers de l'Islam. Il comprend l'abstention de nourriture, de boisson et de relations conjugales de l'aube (Fajr) jusqu'au coucher du soleil (Maghrib). C'est un mois de purification de l'âme, d'intensification du dhikr, de la prière nocturne (Qiyam al-Layl), et de générosité envers les autres.",
-    vertus: ['Pardon des péchés passés', 'Les portes du Paradis sont ouvertes', 'Les portes de l'Enfer sont fermées', 'Les shayatins sont enchaînés', 'Laylat al-Qadr : meilleure que 1000 mois'],
-    amals: ['Jeûner chaque jour', 'Prier les Tarawih', 'Réciter et mémoriser le Coran', 'Donner la Zakat al-Fitr', 'Faire I'tikaf (les 10 dernières nuits)'],
+    vertus: ["Pardon des péchés passés", "Les portes du Paradis sont ouvertes", "Les portes de l'Enfer sont fermées", "Les shayatins sont enchaînés", "Laylat al-Qadr : meilleure que 1000 mois"],
+    amals: ["Jeûner chaque jour", "Prier les Tarawih", "Réciter et mémoriser le Coran", "Donner la Zakat al-Fitr", "Faire I'tikaf (les 10 dernières nuits)"],
   },
   dhul_hijjah: {
     verset_ar: 'وَالْفَجْرِ ۝ وَلَيَالٍ عَشْرٍ',
@@ -41,8 +39,8 @@ const EVENT_DETAILS: Record<string, {
     hadith_fr: "Il n'y a pas de jours où les bonnes actions sont plus aimées d'Allah que ces jours-là (les dix premiers de Dhul Hijjah).",
     hadith_ref: 'Bukhari 969',
     explication: "Dhul Hijjah est le 12e mois hégirien, mois sacré du Hajj. Les dix premiers jours sont parmi les jours les plus bénis de l'année. Le 9e jour est le jour d'Arafat, le meilleur jour de l'année selon de nombreux savants. Le 10e jour est l'Aïd al-Adha et le début des jours de Tashriq.",
-    vertus: ['Les 10 premiers jours : actes les plus aimés d'Allah', 'Jour d'Arafat : expiation des péchés de 2 ans', 'Aïd al-Adha : Sunnah du Prophète Ibrahim (AS)', 'Qurbani : rapprochement vers Allah'],
-    amals: ['Jeûner le jour d'Arafat (pour les non-pèlerins)', 'Multiplier le Takbir (Allahu Akbar)', 'Offrir le sacrifice (Qurbani)', 'Réciter le Coran', 'Faire l'Aïd avec la communauté'],
+    vertus: ["Les 10 premiers jours : actes les plus aimés d'Allah", "Jour d'Arafat : expiation des péchés de 2 ans", "Aïd al-Adha : Sunnah du Prophète Ibrahim (AS)", "Qurbani : rapprochement vers Allah"],
+    amals: ["Jeûner le jour d'Arafat (pour les non-pèlerins)", "Multiplier le Takbir (Allahu Akbar)", "Offrir le sacrifice (Qurbani)", "Réciter le Coran", "Faire l'Aïd avec la communauté"],
   },
   muharram: {
     verset_ar: 'إِنَّ عِدَّةَ الشُّهُورِ عِندَ اللَّهِ اثْنَا عَشَرَ شَهْرًا فِي كِتَابِ اللَّهِ',
@@ -52,8 +50,8 @@ const EVENT_DETAILS: Record<string, {
     hadith_fr: "Le meilleur jeûne après Ramadan est le mois d'Allah, Muharram.",
     hadith_ref: 'Muslim 1163',
     explication: "Muharram est le 1er mois du calendrier islamique et l'un des quatre mois sacrés. Le 10e jour, Achoura, est un jour de grande importance. Le Prophète ﷺ jeûnait ce jour en reconnaissance de la délivrance de Moussa (AS) de Pharaon. Il est recommandé de jeûner le 9e et le 10e, ou le 10e et le 11e.",
-    vertus: ['Mois d'Allah — plus de récompense pour les actes', 'Jour d'Achoura : expiation des péchés de l'année précédente', 'Nouvelle année islamique'],
-    amals: ['Jeûner le 9 et 10 Muharram (Achoura)', 'Augmenter les actes d'adoration', 'Se repentir en ce début d'année'],
+    vertus: ["Mois d'Allah — plus de récompense pour les actes", "Jour d'Achoura : expiation des péchés de l'année précédente", "Nouvelle année islamique"],
+    amals: ["Jeûner le 9 et 10 Muharram (Achoura)", "Augmenter les actes d'adoration", "Se repentir en ce début d'année"],
   },
   rabi_awwal: {
     verset_ar: 'لَقَدْ جَاءَكُمْ رَسُولٌ مِّنْ أَنفُسِكُمْ عَزِيزٌ عَلَيْهِ مَا عَنِتُّمْ',
@@ -63,8 +61,8 @@ const EVENT_DETAILS: Record<string, {
     hadith_fr: "Aucun d'entre vous ne croit vraiment jusqu'à ce que je sois plus cher à son cœur que son père, son fils et tous les hommes.",
     hadith_ref: 'Bukhari 15, Muslim 44',
     explication: "Rabi' al-Awwal est le 3e mois hégirien, connu pour être le mois de naissance du Prophète Muhammad ﷺ (selon l'opinion la plus répandue, le 12 Rabi' al-Awwal). C'est un moment pour renouveler l'amour du Prophète, étudier sa Sirah, et augmenter la salawat.",
-    vertus: ['Mois de naissance du Sceau des Prophètes ﷺ', 'Occasion de renouveler l'amour prophétique'],
-    amals: ['Augmenter la Salawat sur le Prophète ﷺ', 'Lire la Sirah Nabawiyya', 'Enseigner la vie du Prophète aux enfants'],
+    vertus: ["Mois de naissance du Sceau des Prophètes ﷺ", "Occasion de renouveler l'amour prophétique"],
+    amals: ["Augmenter la Salawat sur le Prophète ﷺ", "Lire la Sirah Nabawiyya", "Enseigner la vie du Prophète aux enfants"],
   },
   jumuah: {
     verset_ar: 'يَا أَيُّهَا الَّذِينَ آمَنُوا إِذَا نُودِيَ لِلصَّلَاةِ مِن يَوْمِ الْجُمُعَةِ فَاسْعَوْا إِلَىٰ ذِكْرِ اللَّهِ',
@@ -74,7 +72,7 @@ const EVENT_DETAILS: Record<string, {
     hadith_fr: "Le meilleur jour sur lequel le soleil s'est levé est le Vendredi.",
     hadith_ref: 'Muslim 854',
     explication: "Al-Jumu'ah (le Vendredi) est le seigneur des jours en Islam. La prière du Vendredi est obligatoire pour les hommes libres, adultes, sains et résidents. Il est recommandé ce jour-là de se purifier, de se parfumer, de réciter Sourate Al-Kahf, d'envoyer beaucoup de Salawat sur le Prophète ﷺ et de chercher l'heure d'exaucement des du'as.",
-    vertus: ['Seigneur des jours', 'Une heure bénie où toute du'a est exaucée', 'Adam (AS) a été créé ce jour', 'La Résurrection aura lieu un Vendredi'],
+    vertus: ["Seigneur des jours", "Une heure bénie où toute du'a est exaucée", "Adam (AS) a été créé ce jour", "La Résurrection aura lieu un Vendredi"],
     amals: ['Prière du Vendredi (Jumu\'ah)', 'Réciter Sourate Al-Kahf', 'Envoyer beaucoup de Salawat', 'Se purifier et se parfumer'],
   },
   shaban: {
@@ -85,12 +83,12 @@ const EVENT_DETAILS: Record<string, {
     hadith_fr: "C'est un mois dont les gens sont inattentifs, entre Rajab et Ramadan.",
     hadith_ref: 'An-Nasa\'i 2357, sahih',
     explication: "Sha'ban est le 8e mois du calendrier islamique. Le Prophète ﷺ jeûnait beaucoup durant ce mois, plus que tout autre mois en dehors du Ramadan. La nuit du 15 Sha'ban (Laylat al-Bara'a) est mentionnée dans certains ahadith comme une nuit de pardon. C'est un mois de préparation spirituelle pour Ramadan.",
-    vertus: ['Mois préféré du Prophète ﷺ pour le jeûne volontaire', 'Les actes remontent à Allah durant ce mois', 'Nuit du 15 Sha\'ban : nuit de pardon selon certains ahadith'],
-    amals: ['Jeûner fréquemment (surtout lundi/jeudi)', 'Réciter le Coran', 'Préparer son cœur pour Ramadan'],
+    vertus: ["Mois préféré du Prophète ﷺ pour le jeûne volontaire", "Les actes remontent à Allah durant ce mois", "Nuit du 15 Sha'ban : nuit de pardon selon certains ahadith"],
+    amals: ["Jeûner fréquemment (surtout lundi/jeudi)", "Réciter le Coran", "Préparer son cœur pour Ramadan"],
   },
   hadith_du_jour: {
     explication: "Le savoir islamique est le fondement de tout acte d'adoration. Chaque jour est une occasion de grandir dans la connaissance de cette religion. Le Prophète ﷺ a dit : « Rechercher le savoir est une obligation pour tout musulman. » (Ibn Majah 224). Profite de ce jour pour apprendre, réviser, et progresser.",
-    amals: ['Lire un hadith et sa explication', 'Pratiquer ce que tu as appris', 'Partager le savoir avec un proche'],
+    amals: ["Lire un hadith et son explication", "Pratiquer ce que tu as appris", "Partager le savoir avec un proche"],
   },
 };
 
