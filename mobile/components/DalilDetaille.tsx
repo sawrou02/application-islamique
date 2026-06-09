@@ -93,7 +93,7 @@ export function DalilDetaille({ question, initialOpen = false }: Props) {
               title={t('verset_coran')}
               ar={question.verset_ar}
               fr={versetText}
-              ref={question.verset_ref}
+              source={question.verset_ref}
             />
           )}
           {hasHadith && (
@@ -102,7 +102,7 @@ export function DalilDetaille({ question, initialOpen = false }: Props) {
               title={t('hadith_label')}
               ar={question.hadith_texte_ar}
               fr={hadithText}
-              ref={question.hadith_ref}
+              source={question.hadith_ref}
             />
           )}
           {hasSavant && (
@@ -110,7 +110,7 @@ export function DalilDetaille({ question, initialOpen = false }: Props) {
               icon="profile"
               title={t('parole_savants')}
               fr={savantText}
-              ref={question.parole_savant_ref}
+              source={question.parole_savant_ref}
             />
           )}
           {hasExplication && (
@@ -126,7 +126,7 @@ export function DalilDetaille({ question, initialOpen = false }: Props) {
               title={getCurrentLang() === 'en' ? 'Source' : 'Source'}
               ar={question.dalil_texte_ar}
               fr={question.dalil_texte_fr}
-              ref={question.dalil_ref}
+              source={question.dalil_ref}
             />
           )}
         </View>
@@ -140,10 +140,10 @@ interface SectionProps {
   title: string;
   ar?: string;
   fr?: string;
-  ref?: string;
+  source?: string;
 }
 
-function Section({ icon, title, ar, fr, ref: refStr }: SectionProps) {
+function Section({ icon, title, ar, fr, source: refStr }: SectionProps) {
   return (
     <View style={styles.section}>
       <View style={styles.sectionHeader}>
