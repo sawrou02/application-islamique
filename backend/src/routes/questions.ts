@@ -1,12 +1,34 @@
 import { Router, Request, Response } from 'express';
 import pool from '../db';
+import { optionalAuthMiddleware, AuthRequest } from '../middleware/auth';
+import { userHasAccess, userCanTournament } from './progression';
 
 const router = Router();
 
 // GET /api/questions
-router.get('/', async (req: Request, res: Response): Promise<void> => {
+router.get('/', optionalAuthMiddleware, async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const { domaine, niveau, limit = '10', offset = '0' } = req.query;
+
+    // Gating progression : l'utilisateur ne peut accéder qu'aux niveaux débloqués
+    if (req.user && domaine && niveau) {
+      const n = Number(niveau);
+      if (n >= 1 && n <= 5) {
+        const ok = await userHasAccess(req.user.id, String(domaine), n);
+        if (!ok) {
+          res.status(403).json({ success: false, error: 'Niveau verrouillé : terminez le niveau précédent à 100%.' });
+          return;
+        }
+      }
+    }
+    // Mode mixte : exige niveau 5 dans tous les domaines
+    if (req.user && !niveau) {
+      const allMaxed = await userCanTournament(req.user.id);
+      if (!allMaxed) {
+        res.status(403).json({ success: false, error: 'Mode mixte verrouillé : atteignez le niveau 5 dans tous les domaines.' });
+        return;
+      }
+    }
 
     const conditions: string[] = ["q.statut = 'valide'"];
     const params: unknown[] = [];

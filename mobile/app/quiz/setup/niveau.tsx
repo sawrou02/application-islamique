@@ -1,13 +1,17 @@
 import { useEffect, useRef } from 'react';
-import { View, Text, Animated, StyleSheet } from 'react-native';
+import { View, Text, Animated, StyleSheet, Alert } from 'react-native';
 import { router } from 'expo-router';
 import { QuizSetupShell, SelectCard } from '../../../components/QuizSetupShell';
 import { useQuizSetupStore, SETUP_LEVELS } from '../../../store/quizSetupStore';
+import { useProgressionStore, getLevelStat, isLevelUnlocked } from '../../../store/progressionStore';
 import { COLORS } from '../../../constants/colors';
 import { t } from '../../../i18n';
 
 export default function StepNiveau() {
-  const { setup_niveau, setNiveau } = useQuizSetupStore();
+  const { setup_niveau, setNiveau, setup_domaine } = useQuizSetupStore();
+  const { data, load } = useProgressionStore();
+
+  useEffect(() => { load(); }, []);
 
   const anims = useRef([...SETUP_LEVELS, { id: 'mixte' }].map(() => new Animated.Value(0))).current;
   useEffect(() => {
@@ -16,9 +20,33 @@ export default function StepNiveau() {
     )).start();
   }, []);
 
+  const canMixte = data?.can_mixte ?? false;
+
   const handleNext = () => {
     if (setup_niveau === null) return;
     router.push('/quiz/setup/questions');
+  };
+
+  const tryPickLevel = (id: number) => {
+    if (!setup_domaine) { setNiveau(id); return; }
+    if (!isLevelUnlocked(data, setup_domaine, id)) {
+      const prev = id - 1;
+      const stat = getLevelStat(data, setup_domaine, prev);
+      Alert.alert(
+        '🔒 Niveau verrouillé',
+        `Terminez d'abord le niveau ${prev} à 100% (${stat.answered}/${stat.total} bonnes réponses).`
+      );
+      return;
+    }
+    setNiveau(id);
+  };
+
+  const tryPickMixte = () => {
+    if (!canMixte) {
+      Alert.alert('🔒 Mode mixte verrouillé', 'Atteignez le niveau 5 dans les 6 domaines pour débloquer le mode mixte.');
+      return;
+    }
+    setNiveau('mixte');
   };
 
   return (
@@ -31,33 +59,41 @@ export default function StepNiveau() {
       onNext={handleNext}
     >
       <View style={{ gap: 10 }}>
-        {SETUP_LEVELS.map((lv, i) => (
-          <Animated.View
-            key={lv.id}
-            style={{
-              opacity: anims[i],
-              transform: [
-                { translateX: anims[i].interpolate({ inputRange: [0, 1], outputRange: [-24, 0] }) },
-              ],
-            }}
-          >
-            <SelectCard
-              selected={setup_niveau === lv.id}
-              accent="#FFD700"
-              onPress={() => setNiveau(lv.id)}
+        {SETUP_LEVELS.map((lv, i) => {
+          const unlocked = !setup_domaine || isLevelUnlocked(data, setup_domaine, lv.id);
+          const stat = setup_domaine ? getLevelStat(data, setup_domaine, lv.id) : null;
+          return (
+            <Animated.View
+              key={lv.id}
+              style={{
+                opacity: anims[i],
+                transform: [
+                  { translateX: anims[i].interpolate({ inputRange: [0, 1], outputRange: [-24, 0] }) },
+                ],
+              }}
             >
-              <View style={styles.row}>
-                <View style={styles.numBadge}>
-                  <Text style={styles.numTxt}>{lv.id}</Text>
+              <SelectCard
+                selected={setup_niveau === lv.id}
+                accent={unlocked ? '#FFD700' : '#999'}
+                onPress={() => tryPickLevel(lv.id)}
+                style={!unlocked ? { opacity: 0.5 } : undefined}
+              >
+                <View style={styles.row}>
+                  <View style={[styles.numBadge, !unlocked && { backgroundColor: '#EEE', borderColor: '#999' }]}>
+                    <Text style={[styles.numTxt, !unlocked && { color: '#666' }]}>{unlocked ? lv.id : '🔒'}</Text>
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.name}>{lv.name}  <Text style={styles.descInline}>· {lv.desc}</Text></Text>
+                    <Text style={styles.nameAr}>{lv.nameAr}</Text>
+                    {stat && stat.total > 0 && (
+                      <Text style={styles.progress}>{stat.answered}/{stat.total} {stat.completed ? '✓' : ''}</Text>
+                    )}
+                  </View>
                 </View>
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.name}>{lv.name}  <Text style={styles.descInline}>· {lv.desc}</Text></Text>
-                  <Text style={styles.nameAr}>{lv.nameAr}</Text>
-                </View>
-              </View>
-            </SelectCard>
-          </Animated.View>
-        ))}
+              </SelectCard>
+            </Animated.View>
+          );
+        })}
 
         <Animated.View
           style={{
@@ -67,16 +103,20 @@ export default function StepNiveau() {
         >
           <SelectCard
             selected={setup_niveau === 'mixte'}
-            accent="#1B5E20"
-            onPress={() => setNiveau('mixte')}
+            accent={canMixte ? '#1B5E20' : '#999'}
+            onPress={tryPickMixte}
+            style={!canMixte ? { opacity: 0.5 } : undefined}
           >
             <View style={styles.row}>
               <View style={[styles.numBadge, { backgroundColor: '#1B5E2010' }]}>
-                <Text style={[styles.numTxt, { color: COLORS.primary }]}>✦</Text>
+                <Text style={[styles.numTxt, { color: COLORS.primary }]}>{canMixte ? '✦' : '🔒'}</Text>
               </View>
               <View style={{ flex: 1 }}>
                 <Text style={styles.name}>Mixte</Text>
                 <Text style={styles.nameAr}>متنوع · Tous niveaux confondus</Text>
+                {!canMixte && (
+                  <Text style={styles.progress}>Atteignez le niveau 5 dans les 6 domaines</Text>
+                )}
               </View>
             </View>
           </SelectCard>
@@ -97,4 +137,5 @@ const styles = StyleSheet.create({
   name: { fontSize: 15, fontWeight: '800', color: COLORS.text },
   descInline: { fontSize: 12, color: COLORS.textSecondary, fontWeight: '500' },
   nameAr: { fontSize: 12, color: COLORS.arabicText, marginTop: 2 },
+  progress: { fontSize: 11, color: COLORS.textSecondary, marginTop: 4, fontWeight: '600' },
 });

@@ -10,6 +10,7 @@ import { COLORS } from '../../constants/colors';
 import { LIGUES } from '../../constants/islamic';
 import { tournoisApi } from '../../services/api';
 import { useAuthStore } from '../../store/authStore';
+import { useProgressionStore } from '../../store/progressionStore';
 
 interface Tournoi {
   id: string;
@@ -46,6 +47,9 @@ function formatCountdown(ms: number): string {
 
 export default function TournoiScreen() {
   const { user } = useAuthStore();
+  const { data: progression, load: loadProgression } = useProgressionStore();
+  useEffect(() => { loadProgression(); }, []);
+  const canTournament = progression?.can_tournament ?? false;
   const [tournoi, setTournoi] = useState<Tournoi | null>(null);
   const [classement, setClassement] = useState<ClassementEntry[]>([]);
   const [loading, setLoading] = useState(true);
@@ -157,6 +161,37 @@ export default function TournoiScreen() {
 
       {loading ? (
         <ActivityIndicator style={styles.loader} color={COLORS.primary} size="large" />
+      ) : !canTournament ? (
+        <View style={styles.lockedContainer}>
+          <Text style={styles.lockedIcon}>🔒</Text>
+          <Text style={styles.lockedTitle}>Tournoi verrouillé</Text>
+          <Text style={styles.lockedTitleAr}>التورنوي مغلق</Text>
+          <Text style={styles.lockedText}>
+            Pour participer au tournoi, vous devez atteindre le niveau 5 (100%) dans les 6 domaines.
+          </Text>
+          <View style={styles.progressGrid}>
+            {progression && Object.entries(progression.domains).map(([d, p]) => {
+              const lv5 = p.levels[5];
+              const done = lv5?.completed;
+              return (
+                <View key={d} style={[styles.progressChip, done && styles.progressChipDone]}>
+                  <Text style={[styles.progressChipText, done && { color: '#FFF' }]}>
+                    {done ? '✓ ' : ''}{d}
+                  </Text>
+                  {!done && lv5 && (
+                    <Text style={styles.progressChipSub}>{lv5.answered}/{lv5.total} N5</Text>
+                  )}
+                </View>
+              );
+            })}
+          </View>
+          <Text style={styles.lockedHint}>
+            Vous pouvez toujours jouer entre amis dans les salons privés.
+          </Text>
+          <TouchableOpacity style={styles.lockedBtn} onPress={() => router.replace('/multi/room')}>
+            <Text style={styles.lockedBtnText}>Créer un salon privé</Text>
+          </TouchableOpacity>
+        </View>
       ) : (
         <ScrollView contentContainerStyle={styles.scroll}>
           {publicTournoi && (
@@ -339,4 +374,23 @@ const styles = StyleSheet.create({
   ligueChip: { borderRadius: 8, paddingHorizontal: 8, paddingVertical: 2 },
   ligueText: { fontSize: 10, fontWeight: 'bold', color: '#FFFFFF' },
   points: { fontSize: 14, fontWeight: 'bold', color: COLORS.primary },
+
+  lockedContainer: { padding: 24, alignItems: 'center' },
+  lockedIcon: { fontSize: 64, marginTop: 20 },
+  lockedTitle: { fontSize: 22, fontWeight: 'bold', color: COLORS.text, marginTop: 12 },
+  lockedTitleAr: { fontSize: 16, color: COLORS.arabicText, marginTop: 4 },
+  lockedText: { fontSize: 14, color: COLORS.textSecondary, textAlign: 'center', marginTop: 16, lineHeight: 20 },
+  progressGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, justifyContent: 'center', marginTop: 20 },
+  progressChip: {
+    backgroundColor: COLORS.surface, borderRadius: 12, paddingHorizontal: 12, paddingVertical: 8,
+    borderWidth: 1, borderColor: '#DDD', alignItems: 'center', minWidth: 90,
+  },
+  progressChipDone: { backgroundColor: COLORS.success, borderColor: COLORS.success },
+  progressChipText: { fontSize: 13, fontWeight: '700', color: COLORS.text, textTransform: 'capitalize' },
+  progressChipSub: { fontSize: 10, color: COLORS.textSecondary, marginTop: 2 },
+  lockedHint: { fontSize: 13, color: COLORS.textSecondary, textAlign: 'center', marginTop: 24, fontStyle: 'italic' },
+  lockedBtn: {
+    backgroundColor: COLORS.primary, borderRadius: 12, paddingHorizontal: 24, paddingVertical: 12, marginTop: 16,
+  },
+  lockedBtnText: { color: '#FFF', fontWeight: '700', fontSize: 15 },
 });

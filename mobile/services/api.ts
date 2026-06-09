@@ -50,6 +50,19 @@ export const questionsApi = {
     api.get<{ success: boolean; data: Question }>(`/questions/${id}`),
 };
 
+// Progression
+export interface LevelStat { answered: number; total: number; completed: boolean }
+export interface DomainProgress { unlocked_max: number; levels: Record<number, LevelStat> }
+export interface ProgressionData {
+  domains: Record<string, DomainProgress>;
+  can_tournament: boolean;
+  can_mixte: boolean;
+}
+
+export const progressionApi = {
+  getMine: () => api.get<{ success: boolean; data: ProgressionData }>('/progression/me'),
+};
+
 // Quiz
 export const quizApi = {
   submitQuiz: (data: {

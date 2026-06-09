@@ -1,6 +1,7 @@
 import { Router, Request, Response } from 'express';
 import pool from '../db';
 import { authMiddleware, AuthRequest } from '../middleware/auth';
+import { userCanTournament } from './progression';
 
 const router = Router();
 
@@ -93,6 +94,10 @@ router.get('/public/actif', async (_req: Request, res: Response): Promise<void> 
 router.post('/public/rejoindre', authMiddleware, async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const user_id = req.user!.id;
+    if (!(await userCanTournament(user_id))) {
+      res.status(403).json({ success: false, error: 'Tournoi verrouillé : atteignez le niveau 5 dans les 6 domaines.' });
+      return;
+    }
     const t = await pool.query(
       `SELECT id FROM tournois
        WHERE est_public = true AND date_debut <= NOW() AND date_fin > NOW()
@@ -151,6 +156,10 @@ router.post('/:id/join', authMiddleware, async (req: AuthRequest, res: Response)
   try {
     const { id } = req.params;
     const user_id = req.user!.id;
+    if (!(await userCanTournament(user_id))) {
+      res.status(403).json({ success: false, error: 'Tournoi verrouillé : atteignez le niveau 5 dans les 6 domaines.' });
+      return;
+    }
 
     const t = await pool.query("SELECT id FROM tournois WHERE id = $1 AND statut = 'ouvert'", [id]);
     if (t.rows.length === 0) {
