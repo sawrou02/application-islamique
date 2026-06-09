@@ -6,14 +6,32 @@ import { router } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { IslamicIcon } from '../../components/IslamicIcon';
 import { useAuthStore } from '../../store/authStore';
-import { badgesApi } from '../../services/api';
+import { badgesApi, usersApi } from '../../services/api';
+import { t, setLang, getCurrentLang, type Lang } from '../../i18n';
 import { Badge } from '../../types';
 import { COLORS } from '../../constants/colors';
 import { LEVELS, DOMAINS } from '../../constants/islamic';
 
 export default function ProfilScreen() {
-  const { user, logout } = useAuthStore();
+  const { user, logout, updateUser } = useAuthStore();
   const [badges, setBadges] = useState<Badge[]>([]);
+  const [currentLang, setCurrentLang] = useState<Lang>((user?.langue as Lang) || getCurrentLang());
+
+  const handleChangeLang = async (lang: Lang) => {
+    setCurrentLang(lang);
+    setLang(lang);
+    try {
+      const res = await usersApi.updateProfile({ langue: lang });
+      if (res?.data?.data) updateUser(res.data.data);
+    } catch {}
+    Alert.alert(t('language_changed', lang), t('restart_required', lang), [{ text: t('ok', lang) }]);
+  };
+
+  const LANGS: { code: Lang; flag: string; name: string }[] = [
+    { code: 'fr', flag: '🇫🇷', name: 'Français' },
+    { code: 'ar', flag: '🇸🇦', name: 'العربية' },
+    { code: 'en', flag: '🇬🇧', name: 'English' },
+  ];
 
   useEffect(() => {
     badgesApi.getMyBadges()
@@ -30,12 +48,12 @@ export default function ProfilScreen() {
 
   const handleLogout = () => {
     Alert.alert(
-      'Déconnexion',
+      t('deconnexion'),
       'Êtes-vous sûr de vouloir vous déconnecter ?',
       [
-        { text: 'Annuler', style: 'cancel' },
+        { text: t('annuler'), style: 'cancel' },
         {
-          text: 'Déconnecter',
+          text: t('deconnexion'),
           style: 'destructive',
           onPress: async () => {
             await logout();
@@ -89,7 +107,7 @@ export default function ProfilScreen() {
         {/* Level Progress */}
         <View style={styles.progressCard}>
           <View style={styles.progressHeader}>
-            <Text style={styles.progressTitle}>Progression</Text>
+            <Text style={styles.progressTitle}>{t('ma_progression')}</Text>
             <Text style={styles.progressXp}>{currentXp} / {nextXp === 999999 ? '∞' : nextXp} XP</Text>
           </View>
           <View style={styles.progressBar}>
@@ -103,7 +121,7 @@ export default function ProfilScreen() {
         {/* Badges */}
         {badges.length > 0 && (
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Badges obtenus ({badges.length})</Text>
+            <Text style={styles.sectionTitle}>{t('mes_badges')} ({badges.length})</Text>
             <View style={styles.badgesGrid}>
               {badges.map((badge) => (
                 <View key={badge.id} style={styles.badgeItem}>
@@ -127,7 +145,7 @@ export default function ProfilScreen() {
             <View style={styles.divider} />
             <View style={styles.infoRow}>
               <IslamicIcon name="language" size={18} color={COLORS.primary} />
-              <Text style={styles.infoLabel}>Langue</Text>
+              <Text style={styles.infoLabel}>{t('langue')}</Text>
               <Text style={styles.infoValue}>{user?.langue || 'fr'}</Text>
             </View>
             <View style={styles.divider} />
@@ -139,10 +157,31 @@ export default function ProfilScreen() {
           </View>
         </View>
 
+        {/* Langue / اللغة / Language */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Langue / اللغة / Language</Text>
+          <View style={styles.langGrid}>
+            {LANGS.map((l) => {
+              const selected = currentLang === l.code;
+              return (
+                <TouchableOpacity
+                  key={l.code}
+                  style={[styles.langCard, selected && styles.langCardSelected]}
+                  onPress={() => handleChangeLang(l.code)}
+                  activeOpacity={0.85}
+                >
+                  <Text style={styles.langFlag}>{l.flag}</Text>
+                  <Text style={[styles.langName, selected && styles.langNameSelected]}>{l.name}</Text>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+        </View>
+
         {/* Logout */}
         <TouchableOpacity style={styles.logoutButton} onPress={handleLogout} activeOpacity={0.8}>
           <IslamicIcon name="logout" size={20} color={COLORS.error} />
-          <Text style={styles.logoutText}>Se déconnecter</Text>
+          <Text style={styles.logoutText}>{t('deconnexion')}</Text>
         </TouchableOpacity>
       </ScrollView>
     </SafeAreaView>
@@ -216,4 +255,13 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   logoutText: { fontSize: 16, fontWeight: '600', color: COLORS.error },
+  langGrid: { flexDirection: 'row', gap: 10 },
+  langCard: {
+    flex: 1, backgroundColor: COLORS.surface, borderRadius: 14, padding: 14,
+    alignItems: 'center', borderWidth: 2, borderColor: COLORS.border, gap: 6,
+  },
+  langCardSelected: { borderColor: COLORS.gold, backgroundColor: '#FFFBF0' },
+  langFlag: { fontSize: 28 },
+  langName: { fontSize: 13, fontWeight: '600', color: COLORS.textSecondary },
+  langNameSelected: { color: COLORS.text, fontWeight: '800' },
 });

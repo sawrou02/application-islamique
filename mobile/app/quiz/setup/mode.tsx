@@ -4,6 +4,7 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { QuizSetupShell, SelectCard } from '../../../components/QuizSetupShell';
 import { useQuizSetupStore, SETUP_MODES, madhabApplicable } from '../../../store/quizSetupStore';
 import { COLORS } from '../../../constants/colors';
+import { t } from '../../../i18n';
 
 const { width } = Dimensions.get('window');
 const CARD_W = (width - 16 * 2 - 12) / 2;
@@ -50,7 +51,7 @@ export default function StepMode() {
   return (
     <QuizSetupShell
       step={1} total={6}
-      title="Mode de jeu"
+      title={t('choisir_mode')}
       titleAr="نمط اللعب"
       subtitle="Choisissez la manière dont vous souhaitez réviser."
       canNext={!!setup_mode}

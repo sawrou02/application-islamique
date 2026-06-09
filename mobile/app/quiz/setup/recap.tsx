@@ -6,6 +6,7 @@ import {
   madhabApplicable,
 } from '../../../store/quizSetupStore';
 import { COLORS } from '../../../constants/colors';
+import { t } from '../../../i18n';
 
 export default function StepRecap() {
   const s = useQuizSetupStore();
@@ -33,7 +34,7 @@ export default function StepRecap() {
       titleAr="ملخّص"
       subtitle="Vérifiez vos choix avant de commencer."
       canNext={!!mode}
-      nextLabel="Commencer le Quiz"
+      nextLabel={t('commencer_quiz')}
       onNext={() => router.push('/quiz/setup/countdown')}
     >
       <View style={styles.card}>

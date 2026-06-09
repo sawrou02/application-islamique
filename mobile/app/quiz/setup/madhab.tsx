@@ -4,6 +4,7 @@ import { router } from 'expo-router';
 import { QuizSetupShell, SelectCard } from '../../../components/QuizSetupShell';
 import { useQuizSetupStore, SETUP_MADHABS } from '../../../store/quizSetupStore';
 import { COLORS } from '../../../constants/colors';
+import { t } from '../../../i18n';
 
 const { width } = Dimensions.get('window');
 const CARD_W = (width - 16 * 2 - 12) / 2;
@@ -21,7 +22,7 @@ export default function StepMadhab() {
   return (
     <QuizSetupShell
       step={4} total={6}
-      title="École juridique"
+      title={t('choisir_madhab')}
       titleAr="المذهب الفقهي"
       subtitle="Selon quelle école souhaitez-vous être interrogé ?"
       canNext={!!setup_madhab}

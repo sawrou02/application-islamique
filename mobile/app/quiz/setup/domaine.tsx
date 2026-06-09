@@ -4,6 +4,7 @@ import { router } from 'expo-router';
 import { QuizSetupShell, SelectCard } from '../../../components/QuizSetupShell';
 import { useQuizSetupStore, SETUP_DOMAINS } from '../../../store/quizSetupStore';
 import { COLORS } from '../../../constants/colors';
+import { t } from '../../../i18n';
 
 const { width } = Dimensions.get('window');
 const CARD_W = (width - 16 * 2 - 12) / 2;
@@ -21,7 +22,7 @@ export default function StepDomaine() {
   return (
     <QuizSetupShell
       step={2} total={6}
-      title="Domaine de savoir"
+      title={t('choisir_domaine')}
       titleAr="مجال العلم"
       subtitle="Sur quelle science voulez-vous être interrogé ?"
       canNext={!!setup_domaine}

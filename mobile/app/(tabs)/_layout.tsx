@@ -1,6 +1,7 @@
 import { Text } from 'react-native';
 import { Tabs } from 'expo-router';
 import { COLORS } from '../../constants/colors';
+import { t } from '../../i18n';
 
 function TabIcon({ symbol, color }: { symbol: string; color: string }) {
   return (
@@ -38,35 +39,35 @@ export default function TabsLayout() {
       <Tabs.Screen
         name="index"
         options={{
-          title: 'Accueil',
+          title: t('accueil'),
           tabBarIcon: ({ color }) => <TabIcon symbol="۞" color={color} />,
         }}
       />
       <Tabs.Screen
         name="quiz"
         options={{
-          title: 'Quiz',
+          title: t('quiz'),
           tabBarIcon: ({ color }) => <TabIcon symbol="❋" color={color} />,
         }}
       />
       <Tabs.Screen
         name="multi"
         options={{
-          title: 'Multi',
+          title: t('multi'),
           tabBarIcon: ({ color }) => <TabIcon symbol="✦" color={color} />,
         }}
       />
       <Tabs.Screen
         name="classement"
         options={{
-          title: 'Classement',
+          title: t('classement'),
           tabBarIcon: ({ color }) => <TabIcon symbol="★" color={color} />,
         }}
       />
       <Tabs.Screen
         name="profil"
         options={{
-          title: 'Profil',
+          title: t('profil'),
           tabBarIcon: ({ color }) => <TabIcon symbol="◈" color={color} />,
         }}
       />

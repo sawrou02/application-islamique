@@ -5,6 +5,7 @@ import {
 import { router, useLocalSearchParams } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { COLORS } from '../../constants/colors';
+import { t } from '../../i18n';
 
 const { width } = Dimensions.get('window');
 
@@ -70,7 +71,7 @@ export default function QuizHome() {
             onPress={() => router.push('/quiz/setup/mode')}
           >
             <Text style={styles.startIcon}>▶</Text>
-            <Text style={styles.startTxt}>Commencer un quiz</Text>
+            <Text style={styles.startTxt}>{t('commencer_quiz')}</Text>
             <Text style={styles.startArrow}>›</Text>
           </TouchableOpacity>
         </Animated.View>

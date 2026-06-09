@@ -4,6 +4,7 @@ import { router } from 'expo-router';
 import { QuizSetupShell, SelectCard } from '../../../components/QuizSetupShell';
 import { useQuizSetupStore, SETUP_LEVELS, madhabApplicable } from '../../../store/quizSetupStore';
 import { COLORS } from '../../../constants/colors';
+import { t } from '../../../i18n';
 
 export default function StepNiveau() {
   const { setup_niveau, setNiveau, setup_domaine } = useQuizSetupStore();
@@ -27,7 +28,7 @@ export default function StepNiveau() {
   return (
     <QuizSetupShell
       step={3} total={6}
-      title="Niveau de difficulté"
+      title={t('choisir_niveau')}
       titleAr="مستوى الصعوبة"
       subtitle="Adaptons les questions à votre maîtrise."
       canNext={setup_niveau !== null}

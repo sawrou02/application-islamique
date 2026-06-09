@@ -4,6 +4,7 @@ import { router } from 'expo-router';
 import { QuizSetupShell, SelectCard } from '../../../components/QuizSetupShell';
 import { useQuizSetupStore, SETUP_NB_QUESTIONS } from '../../../store/quizSetupStore';
 import { COLORS } from '../../../constants/colors';
+import { t } from '../../../i18n';
 
 const { width } = Dimensions.get('window');
 const CARD_W = (width - 16 * 2 - 12) / 2;
@@ -21,7 +22,7 @@ export default function StepQuestions() {
   return (
     <QuizSetupShell
       step={5} total={6}
-      title="Nombre de questions"
+      title={t('nombre_questions')}
       titleAr="عدد الأسئلة"
       subtitle="Combien de questions souhaitez-vous ?"
       canNext={!!setup_nb}

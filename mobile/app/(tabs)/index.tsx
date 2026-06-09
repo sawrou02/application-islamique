@@ -7,6 +7,7 @@ import { router } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuthStore } from '../../store/authStore';
 import { COLORS } from '../../constants/colors';
+import { t } from '../../i18n';
 import {
   DOMAINS, LEVELS, getTodayEvent, getTodayChallenge, getTodayHadithIndex,
   MOTIVATION_HADITHS,
@@ -16,9 +17,9 @@ const { width } = Dimensions.get('window');
 
 function getGreeting(): { ar: string; sub: string } {
   const h = new Date().getHours();
-  if (h >= 5 && h < 12) return { ar: 'صباح الخير', sub: "Bonjour —" };
-  if (h >= 12 && h < 18) return { ar: 'مساء الخير', sub: "Bon après-midi —" };
-  return { ar: 'ليلة طيبة', sub: "Bonne soirée —" };
+  if (h >= 5 && h < 12) return { ar: 'صباح الخير', sub: t('salutation_matin') + ' —' };
+  if (h >= 12 && h < 18) return { ar: 'مساء الخير', sub: t('salutation_apres_midi') + ' —' };
+  return { ar: 'ليلة طيبة', sub: t('salutation_soir') + ' —' };
 }
 
 const DOMAIN_TINTS: Record<string, string> = {
@@ -102,7 +103,7 @@ export default function HomeScreen() {
         <View style={styles.xpCard}>
           <View style={styles.xpHeader}>
             <Text style={styles.xpLabel}>
-              Progression vers {LEVELS[(user?.niveau || 1)]?.name || 'Mufti'}
+              {t('home.progress')} {LEVELS[(user?.niveau || 1)]?.name || 'Mufti'}
             </Text>
             <Text style={styles.xpValue}>
               {currentXp} / {nextXp === 999999 ? '∞' : nextXp} XP
@@ -126,7 +127,7 @@ export default function HomeScreen() {
             <Text style={styles.eventIconText}>{todayEvent.icon}</Text>
           </View>
           <View style={styles.eventContent}>
-            <Text style={styles.eventLabel}>ÉVÉNEMENT DU JOUR</Text>
+            <Text style={styles.eventLabel}>{t('evenement_du_jour').toUpperCase()}</Text>
             <Text style={styles.eventName}>{todayEvent.name}</Text>
             <Text style={styles.eventNameAr}>{todayEvent.nameAr}</Text>
             <Text style={styles.eventDesc} numberOfLines={2}>{todayEvent.description}</Text>
@@ -159,7 +160,7 @@ export default function HomeScreen() {
         </TouchableOpacity>
 
         {/* ── Domaines — grille 2 colonnes ── */}
-        <Text style={styles.sectionTitle}>Choisir un domaine</Text>
+        <Text style={styles.sectionTitle}>{t('choisir_domaine')}</Text>
         <View style={styles.domainsGrid}>
           {DOMAINS.map((domain) => (
             <TouchableOpacity
@@ -183,7 +184,7 @@ export default function HomeScreen() {
 
         {/* ── Hadith du Jour ── */}
         <View style={styles.hadithCard}>
-          <Text style={styles.hadithLabel}>◉ HADITH DU JOUR</Text>
+          <Text style={styles.hadithLabel}>◉ {t('hadith_du_jour').toUpperCase()}</Text>
           <Text style={styles.hadithAr}>{hadith.textAr}</Text>
           <Text style={styles.hadithFr}>« {hadith.text} »</Text>
           <Text style={styles.hadithSource}>— {hadith.source}</Text>
