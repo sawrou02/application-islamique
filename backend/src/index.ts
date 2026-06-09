@@ -5,7 +5,7 @@ import { createServer } from 'http';
 import { Server as SocketServer } from 'socket.io';
 import app from './app';
 import { setupSocket } from './socket';
-import { sendDailyReminder } from './services/notifications';
+import { sendDailyReminder, sendStreakReminder } from './services/notifications';
 import { startTournoiAuto } from './services/tournoiAuto';
 import pool from './db';
 
