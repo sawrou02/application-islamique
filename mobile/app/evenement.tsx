@@ -101,10 +101,29 @@ export default function EvenementScreen() {
   const todayEvent = getTodayEvent();
   const todayChallenge = getTodayChallenge();
   const isChallenge = params.type === 'challenge';
-  const event = todayEvent;
-  const details = EVENT_DETAILS[event.key] || EVENT_DETAILS['hadith_du_jour'];
   const lang = getCurrentLang();
   const { setMode, setDomaine, setNb, reset } = useQuizSetupStore();
+
+  // Challenge uses its own domain info; event uses calendar event
+  const DOMAIN_LABELS: Record<string, { name: string; nameAr: string; icon: string; color: string }> = {
+    fiqh: { name: 'Fiqh', nameAr: 'فقه', icon: '⚖', color: '#1B5E20' },
+    aqida: { name: 'Aqida', nameAr: 'عقيدة', icon: '☪', color: '#1A237E' },
+    tafsir: { name: 'Tafsir / Coran', nameAr: 'تفسير', icon: '۩', color: '#4A148C' },
+    hadith: { name: 'Hadith', nameAr: 'حديث', icon: '◉', color: '#BF360C' },
+    sirah: { name: 'Sirah', nameAr: 'سيرة', icon: '✦', color: '#01579B' },
+    akhlaq: { name: 'Akhlaq', nameAr: 'أخلاق', icon: '✧', color: '#006064' },
+    general: { name: 'Général', nameAr: 'عام', icon: '۞', color: '#1B5E20' },
+  };
+
+  const challengeDomainInfo = DOMAIN_LABELS[todayChallenge.domaine] || DOMAIN_LABELS['general'];
+  const event = todayEvent;
+  const details = EVENT_DETAILS[event.key] || EVENT_DETAILS['hadith_du_jour'];
+
+  const heroColor = isChallenge ? challengeDomainInfo.color : event.color;
+  const heroIcon = isChallenge ? challengeDomainInfo.icon : event.icon;
+  const heroName = isChallenge ? todayChallenge.title : event.name;
+  const heroNameAr = isChallenge ? todayChallenge.titleAr : event.nameAr;
+  const heroDesc = isChallenge ? todayChallenge.desc : event.description;
 
   useEffect(() => {
     Animated.parallel([
@@ -120,14 +139,13 @@ export default function EvenementScreen() {
     setMode('quotidien');
     setDomaine(domaine);
     setNb(nb);
-    // Skip mode/domain steps, go directly to niveau
-    router.push('/quiz/setup/niveau');
+    router.push('/quiz/setup/recap');
   };
 
   return (
     <SafeAreaView style={styles.container}>
       {/* Header */}
-      <View style={[styles.headerBar, { backgroundColor: event.color }]}>
+      <View style={[styles.headerBar, { backgroundColor: heroColor }]}>
         <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
           <Text style={styles.backIcon}>‹</Text>
         </TouchableOpacity>
@@ -140,16 +158,16 @@ export default function EvenementScreen() {
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scroll}>
         {/* Hero card */}
         <Animated.View style={[styles.heroCard, {
-          borderColor: event.color,
+          borderColor: heroColor,
           opacity: fadeAnim,
           transform: [{ translateY: slideAnim }],
         }]}>
-          <View style={[styles.heroIconWrap, { backgroundColor: `${event.color}22` }]}>
-            <Text style={styles.heroIcon}>{event.icon}</Text>
+          <View style={[styles.heroIconWrap, { backgroundColor: `${heroColor}22` }]}>
+            <Text style={styles.heroIcon}>{heroIcon}</Text>
           </View>
-          <Text style={styles.heroName}>{event.name}</Text>
-          <Text style={styles.heroNameAr}>{event.nameAr}</Text>
-          <Text style={styles.heroDesc}>{event.description}</Text>
+          <Text style={styles.heroName}>{heroName}</Text>
+          <Text style={styles.heroNameAr}>{heroNameAr}</Text>
+          <Text style={styles.heroDesc}>{heroDesc}</Text>
         </Animated.View>
 
         {/* Verset */}

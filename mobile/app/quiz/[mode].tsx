@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import {
-  View, Text, TouchableOpacity, StyleSheet, Animated, Dimensions, Pressable,
+  View, Text, TouchableOpacity, StyleSheet, Animated, Dimensions, Pressable, ScrollView,
 } from 'react-native';
 import { router } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -165,59 +165,67 @@ export default function ActiveQuiz() {
         <Text style={styles.questionFr}>{question.texte_fr}</Text>
       </Animated.View>
 
-      {/* Answers */}
-      <View style={styles.answersContainer}>
-        {reponses.map((reponse: Reponse, index: number) => {
-          const state = getAnswerState(reponse);
-          return (
-            <TouchableOpacity
-              key={reponse.id}
-              style={[styles.answerButton, getAnswerStyle(state)]}
-              onPress={() => handleAnswer(reponse.id)}
-              disabled={hasAnswered}
-              activeOpacity={0.85}
+      {/* Answers + Dalil + Next in a scrollable area */}
+      <ScrollView
+        style={{ flex: 1 }}
+        contentContainerStyle={{ paddingBottom: 16 }}
+        showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
+      >
+        {/* Answers */}
+        <View style={styles.answersContainer}>
+          {reponses.map((reponse: Reponse, index: number) => {
+            const state = getAnswerState(reponse);
+            return (
+              <TouchableOpacity
+                key={reponse.id}
+                style={[styles.answerButton, getAnswerStyle(state)]}
+                onPress={() => handleAnswer(reponse.id)}
+                disabled={hasAnswered}
+                activeOpacity={0.85}
+              >
+                <View style={[styles.answerLabel, state === 'correct' && styles.answerLabelCorrect, state === 'incorrect' && styles.answerLabelIncorrect]}>
+                  <Text style={styles.answerLabelText}>{ANSWER_LABELS[index]}</Text>
+                </View>
+                <View style={styles.answerTextContainer}>
+                  <Text style={[styles.answerText, state !== 'default' && styles.answerTextAnswered]}>
+                    {reponse.texte_fr}
+                  </Text>
+                </View>
+                {state === 'correct' && <IslamicIcon name="check" size={22} color={COLORS.success} />}
+                {state === 'incorrect' && <IslamicIcon name="close" size={22} color={COLORS.error} />}
+              </TouchableOpacity>
+            );
+          })}
+        </View>
+
+        {/* Dalil détaillé */}
+        {showDalil && (
+          <Animated.View style={{ opacity: dalilAnim }}>
+            <DalilDetaille question={question} initialOpen={true} />
+            <Pressable
+              style={styles.signalerBtn}
+              onPress={() => router.push({
+                pathname: '/quiz/signaler',
+                params: { question_id: question.id, question_fr: question.texte_fr },
+              })}
             >
-              <View style={[styles.answerLabel, state === 'correct' && styles.answerLabelCorrect, state === 'incorrect' && styles.answerLabelIncorrect]}>
-                <Text style={styles.answerLabelText}>{ANSWER_LABELS[index]}</Text>
-              </View>
-              <View style={styles.answerTextContainer}>
-                <Text style={[styles.answerText, state !== 'default' && styles.answerTextAnswered]}>
-                  {reponse.texte_fr}
-                </Text>
-              </View>
-              {state === 'correct' && <IslamicIcon name="check" size={22} color={COLORS.success} />}
-              {state === 'incorrect' && <IslamicIcon name="close" size={22} color={COLORS.error} />}
-            </TouchableOpacity>
-          );
-        })}
-      </View>
+              <IslamicIcon name="flag" size={13} color={COLORS.textLight} />
+              <Text style={styles.signalerText}>Signaler une erreur</Text>
+            </Pressable>
+          </Animated.View>
+        )}
 
-      {/* Dalil détaillé (panneau expansible avec sections Coran/Hadith/Savants/Explication) */}
-      {showDalil && (
-        <Animated.View style={{ opacity: dalilAnim }}>
-          <DalilDetaille question={question} initialOpen={true} />
-          <Pressable
-            style={styles.signalerBtn}
-            onPress={() => router.push({
-              pathname: '/quiz/signaler',
-              params: { question_id: question.id, question_fr: question.texte_fr },
-            })}
-          >
-            <IslamicIcon name="flag" size={13} color={COLORS.textLight} />
-            <Text style={styles.signalerText}>Signaler une erreur</Text>
-          </Pressable>
-        </Animated.View>
-      )}
-
-      {/* Next button */}
-      {hasAnswered && (
-        <TouchableOpacity style={styles.nextButton} onPress={handleNext} activeOpacity={0.85}>
-          <Text style={styles.nextButtonText}>
-            {currentIndex + 1 < questions.length ? 'Question suivante' : 'Voir les résultats'}
-          </Text>
-          <IslamicIcon name="next" size={22} color="#FFFFFF" />
-        </TouchableOpacity>
-      )}
+        {/* Next button */}
+        {hasAnswered && (
+          <TouchableOpacity style={styles.nextButton} onPress={handleNext} activeOpacity={0.85}>
+            <Text style={styles.nextButtonText}>
+              {currentIndex + 1 < questions.length ? 'Question suivante' : 'Voir les résultats'}
+            </Text>
+            <IslamicIcon name="next" size={22} color="#FFFFFF" />
+          </TouchableOpacity>
+        )}
+      </ScrollView>
     </SafeAreaView>
   );
 }

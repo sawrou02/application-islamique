@@ -170,7 +170,7 @@ export default function HomeScreen() {
     reset();
     setMode('murajaah');
     setNb(10);
-    router.push('/quiz/setup/niveau');
+    router.push('/quiz/setup/recap');
   }
 
   return (
