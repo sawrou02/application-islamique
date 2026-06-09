@@ -213,18 +213,32 @@ router.get('/questions', authMiddleware, async (req: AuthRequest, res: Response)
       res.status(403).json({ success: false, error: 'Tournoi verrouillé : atteignez le niveau 5 dans les 6 domaines.' });
       return;
     }
-    const { limit = '10' } = req.query;
+    const { perDomain = '5' } = req.query;
+    // Pioche `perDomain` questions aléatoires PAR domaine — la sélection
+    // change à chaque tournoi tant que le pool par domaine > perDomain.
+    const picked = await pool.query(
+      `SELECT id FROM (
+         SELECT id, ROW_NUMBER() OVER (PARTITION BY domaine ORDER BY RANDOM()) AS rn
+         FROM questions
+         WHERE statut = 'valide' AND is_tournoi = TRUE
+       ) s WHERE rn <= $1`,
+      [Number(perDomain)]
+    );
+    const ids = picked.rows.map(r => r.id);
+    if (ids.length === 0) {
+      res.json({ success: true, data: [] });
+      return;
+    }
     const result = await pool.query(
       `SELECT q.*, json_agg(json_build_object(
          'id', r.id, 'texte_fr', r.texte_fr, 'texte_ar', r.texte_ar, 'est_correcte', r.est_correcte
        ) ORDER BY r.id) AS reponses
        FROM questions q
        LEFT JOIN reponses r ON r.question_id = q.id
-       WHERE q.statut = 'valide' AND q.is_tournoi = TRUE
+       WHERE q.id = ANY($1::int[])
        GROUP BY q.id
-       ORDER BY RANDOM()
-       LIMIT $1`,
-      [Number(limit)]
+       ORDER BY RANDOM()`,
+      [ids]
     );
     res.json({ success: true, data: result.rows });
   } catch (err) {
