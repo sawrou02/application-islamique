@@ -8,7 +8,7 @@ import { Audio } from 'expo-av';
 import { IslamicIcon } from '../../components/IslamicIcon';
 import { COLORS } from '../../constants/colors';
 import { getCurrentLang } from '../../i18n';
-import { fetchSurah, SurahFull, surahAudioUrl } from '../../services/quran';
+import { fetchSurah, fetchSurahTafsir, SurahFull, Ayah, surahAudioUrl } from '../../services/quran';
 
 export default function CoranSurah() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -17,6 +17,9 @@ export default function CoranSurah() {
   const [error, setError] = useState(false);
   const [playing, setPlaying] = useState(false);
   const [audioLoading, setAudioLoading] = useState(false);
+  const [showTafsir, setShowTafsir] = useState(false);
+  const [tafsirAyahs, setTafsirAyahs] = useState<Ayah[] | null>(null);
+  const [tafsirLoading, setTafsirLoading] = useState(false);
   const soundRef = useRef<Audio.Sound | null>(null);
   const lang = getCurrentLang();
   const isAr = lang === 'ar';
@@ -30,6 +33,18 @@ export default function CoranSurah() {
       .finally(() => setLoading(false));
     return () => { soundRef.current?.unloadAsync().catch(() => {}); };
   }, [id]);
+
+  function toggleTafsir() {
+    if (!surah) return;
+    if (tafsirAyahs === null) {
+      setTafsirLoading(true);
+      fetchSurahTafsir(surah.number)
+        .then(setTafsirAyahs)
+        .catch(() => {})
+        .finally(() => setTafsirLoading(false));
+    }
+    setShowTafsir(prev => !prev);
+  }
 
   async function togglePlay() {
     if (!surah) return;
@@ -65,6 +80,17 @@ export default function CoranSurah() {
           </Text>
           {surah && <Text style={styles.headerSub}>{surah.englishNameTranslation}</Text>}
         </View>
+        {surah && (
+          <TouchableOpacity
+            onPress={toggleTafsir}
+            style={[styles.tafsirBtn, showTafsir && styles.tafsirBtnActive]}
+            disabled={tafsirLoading}
+          >
+            {tafsirLoading
+              ? <ActivityIndicator size="small" color="#FFD700" />
+              : <Text style={styles.tafsirBtnText}>📖</Text>}
+          </TouchableOpacity>
+        )}
         {surah && (
           <TouchableOpacity onPress={togglePlay} style={styles.playBtn} disabled={audioLoading}>
             {audioLoading
@@ -105,6 +131,12 @@ export default function CoranSurah() {
                 </View>
                 <Text style={styles.ayahAr}>{arText}</Text>
                 {!isAr && trad && <Text style={styles.ayahTrad}>{trad}</Text>}
+                {showTafsir && tafsirAyahs && tafsirAyahs[i] && (
+                  <View style={styles.tafsirBox}>
+                    <Text style={styles.tafsirLabel}>📖 Tafsir</Text>
+                    <Text style={styles.tafsirText}>{tafsirAyahs[i].text}</Text>
+                  </View>
+                )}
               </View>
             );
           })}
@@ -153,4 +185,16 @@ const styles = StyleSheet.create({
     fontSize: 14, color: COLORS.textSecondary, marginTop: 10,
     lineHeight: 22, fontStyle: 'italic',
   },
+  tafsirBox: {
+    marginTop: 10, padding: 10, backgroundColor: '#FFF8E1',
+    borderRadius: 8, borderLeftWidth: 3, borderLeftColor: '#FFD700',
+  },
+  tafsirLabel: { fontSize: 11, fontWeight: '700', color: '#B8860B', marginBottom: 4 },
+  tafsirText: { fontSize: 13, color: '#5D4037', lineHeight: 20, fontStyle: 'italic' },
+  tafsirBtn: {
+    width: 40, height: 40, borderRadius: 20, backgroundColor: '#FFFFFF22',
+    justifyContent: 'center', alignItems: 'center',
+  },
+  tafsirBtnText: { fontSize: 16 },
+  tafsirBtnActive: { backgroundColor: '#FFD70044' },
 });

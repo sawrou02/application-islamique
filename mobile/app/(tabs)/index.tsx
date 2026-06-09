@@ -314,6 +314,16 @@ export default function HomeScreen() {
             <Text style={styles.quickTitle}>{isAr ? 'القبلة' : 'Qibla'}</Text>
           </TouchableOpacity>
         </View>
+        <View style={[styles.quickRow, { marginBottom: 0 }]}>
+          <TouchableOpacity
+            style={[styles.quickCard, { backgroundColor: '#37474F' }]}
+            onPress={() => router.push('/search')}
+            activeOpacity={0.85}
+          >
+            <Text style={styles.quickIcon}>🔍</Text>
+            <Text style={styles.quickTitle}>{isAr ? 'بحث' : lang === 'en' ? 'Search' : 'Recherche'}</Text>
+          </TouchableOpacity>
+        </View>
 
         {/* ══════════════════════════════════════════════════════════════ */}
         {/* ── Section 1 : Pour toi aujourd'hui ── */}

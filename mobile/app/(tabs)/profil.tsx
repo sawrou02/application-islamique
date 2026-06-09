@@ -281,6 +281,15 @@ export default function ProfilScreen() {
           </View>
         </View>
 
+        {/* Statistiques détaillées */}
+        <TouchableOpacity
+          style={styles.cguBtn}
+          onPress={() => router.push('/stats')}
+          activeOpacity={0.7}
+        >
+          <Text style={styles.cguText}>📊 Statistiques détaillées</Text>
+        </TouchableOpacity>
+
         {/* Lien CGU */}
         <TouchableOpacity
           style={styles.cguBtn}

@@ -8,25 +8,28 @@ const router = Router();
 // GET /api/questions
 router.get('/', optionalAuthMiddleware, async (req: AuthRequest, res: Response): Promise<void> => {
   try {
-    const { domaine, niveau, limit = '10', offset = '0' } = req.query;
+    const { domaine, niveau, search, limit = '10', offset = '0' } = req.query;
 
-    // Gating progression : l'utilisateur ne peut accéder qu'aux niveaux débloqués
-    if (req.user && domaine && niveau) {
-      const n = Number(niveau);
-      if (n >= 1 && n <= 5) {
-        const ok = await userHasAccess(req.user.id, String(domaine), n);
-        if (!ok) {
-          res.status(403).json({ success: false, error: 'Niveau verrouillé : terminez le niveau précédent à 100%.' });
-          return;
+    // Skip progression gating when search is present (browsing/learning mode)
+    if (!search) {
+      // Gating progression : l'utilisateur ne peut accéder qu'aux niveaux débloqués
+      if (req.user && domaine && niveau) {
+        const n = Number(niveau);
+        if (n >= 1 && n <= 5) {
+          const ok = await userHasAccess(req.user.id, String(domaine), n);
+          if (!ok) {
+            res.status(403).json({ success: false, error: 'Niveau verrouillé : terminez le niveau précédent à 100%.' });
+            return;
+          }
         }
       }
-    }
-    // Mode mixte : exige niveau 5 dans tous les domaines
-    if (req.user && !niveau) {
-      const allMaxed = await userCanTournament(req.user.id);
-      if (!allMaxed) {
-        res.status(403).json({ success: false, error: 'Mode mixte verrouillé : atteignez le niveau 5 dans tous les domaines.' });
-        return;
+      // Mode mixte : exige niveau 5 dans tous les domaines
+      if (req.user && !niveau) {
+        const allMaxed = await userCanTournament(req.user.id);
+        if (!allMaxed) {
+          res.status(403).json({ success: false, error: 'Mode mixte verrouillé : atteignez le niveau 5 dans tous les domaines.' });
+          return;
+        }
       }
     }
 
@@ -36,8 +39,14 @@ router.get('/', optionalAuthMiddleware, async (req: AuthRequest, res: Response):
 
     if (domaine) { conditions.push(`q.domaine = $${idx++}`); params.push(domaine); }
     if (niveau) { conditions.push(`q.niveau = $${idx++}`); params.push(Number(niveau)); }
+    if (search) {
+      conditions.push(`(q.texte_fr ILIKE $${idx++} OR q.texte_ar ILIKE $${idx++})`);
+      params.push(`%${search}%`, `%${search}%`);
+    }
 
     params.push(Number(limit), Number(offset));
+
+    const orderBy = search ? 'ORDER BY q.domaine, q.niveau' : 'ORDER BY RANDOM()';
 
     const query = `
       SELECT q.*, json_agg(json_build_object(
@@ -47,7 +56,7 @@ router.get('/', optionalAuthMiddleware, async (req: AuthRequest, res: Response):
       LEFT JOIN reponses r ON r.question_id = q.id
       WHERE ${conditions.join(' AND ')}
       GROUP BY q.id
-      ORDER BY RANDOM()
+      ${orderBy}
       LIMIT $${idx++} OFFSET $${idx}
     `;
 

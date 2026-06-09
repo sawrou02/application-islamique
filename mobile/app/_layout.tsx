@@ -119,6 +119,8 @@ export default function RootLayout() {
           <Stack.Screen name="horaires" />
           <Stack.Screen name="qibla" />
           <Stack.Screen name="cgu" />
+          <Stack.Screen name="stats" />
+          <Stack.Screen name="search" />
           </Stack>
         </View>
       </SafeAreaProvider>

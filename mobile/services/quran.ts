@@ -32,6 +32,7 @@ export interface SurahFull {
   ayahs_ar: Ayah[];
   ayahs_fr: Ayah[];
   ayahs_en: Ayah[];
+  ayahs_tafsir?: Ayah[];
 }
 
 async function fromCache<T>(key: string): Promise<T | null> {
@@ -85,4 +86,14 @@ export async function fetchSurah(num: number): Promise<SurahFull> {
   };
   await toCache(`surah_${num}`, full);
   return full;
+}
+
+export async function fetchSurahTafsir(num: number): Promise<Ayah[]> {
+  const cached = await fromCache<Ayah[]>(`quran_tafsir_${num}`);
+  if (cached) return cached;
+  const res = await fetch(`${API}/surah/${num}/en.ahmedraza`);
+  const json = await res.json();
+  const ayahs: Ayah[] = json.data.ayahs;
+  await toCache(`quran_tafsir_${num}`, ayahs);
+  return ayahs;
 }
