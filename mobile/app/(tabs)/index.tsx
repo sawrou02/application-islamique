@@ -314,7 +314,7 @@ export default function HomeScreen() {
             <Text style={styles.quickTitle}>{isAr ? 'القبلة' : 'Qibla'}</Text>
           </TouchableOpacity>
         </View>
-        <View style={[styles.quickRow, { marginBottom: 0 }]}>
+        <View style={styles.quickRow}>
           <TouchableOpacity
             style={[styles.quickCard, { backgroundColor: '#37474F' }]}
             onPress={() => router.push('/search')}
@@ -322,6 +322,14 @@ export default function HomeScreen() {
           >
             <Text style={styles.quickIcon}>🔍</Text>
             <Text style={styles.quickTitle}>{isAr ? 'بحث' : lang === 'en' ? 'Search' : 'Recherche'}</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.quickCard, { backgroundColor: '#6A1B9A' }]}
+            onPress={() => router.push('/sahaba')}
+            activeOpacity={0.85}
+          >
+            <Text style={styles.quickIcon}>☆</Text>
+            <Text style={styles.quickTitle}>{isAr ? 'الصحابة' : lang === 'en' ? 'Sahaba' : 'Sahaba'}</Text>
           </TouchableOpacity>
         </View>
 

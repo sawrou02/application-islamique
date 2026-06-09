@@ -121,6 +121,7 @@ export default function RootLayout() {
           <Stack.Screen name="cgu" />
           <Stack.Screen name="stats" />
           <Stack.Screen name="search" />
+          <Stack.Screen name="sahaba" />
           </Stack>
         </View>
       </SafeAreaProvider>
