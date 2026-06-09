@@ -12,6 +12,7 @@
       "resizeMode": "contain",
       "backgroundColor": "#1B5E20"
     },
+    "sdkVersion": "53.0.0",
     "ios": {
       "supportsTablet": false,
       "bundleIdentifier": "com.quizislamique.app"
