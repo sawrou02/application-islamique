@@ -205,4 +205,32 @@ router.get('/:id/classement', async (req: Request, res: Response): Promise<void>
   }
 });
 
+// GET /api/tournois/questions — questions spéciales tournoi (is_tournoi = TRUE)
+router.get('/questions', authMiddleware, async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const user_id = req.user!.id;
+    if (!(await userCanTournament(user_id))) {
+      res.status(403).json({ success: false, error: 'Tournoi verrouillé : atteignez le niveau 5 dans les 6 domaines.' });
+      return;
+    }
+    const { limit = '10' } = req.query;
+    const result = await pool.query(
+      `SELECT q.*, json_agg(json_build_object(
+         'id', r.id, 'texte_fr', r.texte_fr, 'texte_ar', r.texte_ar, 'est_correcte', r.est_correcte
+       ) ORDER BY r.id) AS reponses
+       FROM questions q
+       LEFT JOIN reponses r ON r.question_id = q.id
+       WHERE q.statut = 'valide' AND q.is_tournoi = TRUE
+       GROUP BY q.id
+       ORDER BY RANDOM()
+       LIMIT $1`,
+      [Number(limit)]
+    );
+    res.json({ success: true, data: result.rows });
+  } catch (err) {
+    console.error('Tournoi questions error:', err);
+    res.status(500).json({ success: false, error: 'Erreur serveur' });
+  }
+});
+
 export default router;
