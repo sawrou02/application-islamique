@@ -12,11 +12,19 @@ import { t, setLang, getCurrentLang, type Lang } from '../../i18n';
 import { Badge } from '../../types';
 import { COLORS } from '../../constants/colors';
 import { LEVELS, DOMAINS } from '../../constants/islamic';
+import { Switch } from 'react-native';
+import {
+  loadPrayerPrefs, savePrayerPrefs, schedulePrayerNotifications,
+  PrayerPrefs, DEFAULT_PRAYER_PREFS,
+} from '../../services/notifications';
 
 export default function ProfilScreen() {
   const { user, logout, updateUser } = useAuthStore();
   const [badges, setBadges] = useState<Badge[]>([]);
   const [currentLang, setCurrentLang] = useState<Lang>((user?.langue as Lang) || getCurrentLang());
+  const [prayerPrefs, setPrayerPrefs] = useState<PrayerPrefs>(DEFAULT_PRAYER_PREFS);
+  const lang = getCurrentLang();
+  const isAr = lang === 'ar';
 
   const handleChangeLang = async (lang: Lang) => {
     setCurrentLang(lang);
@@ -38,7 +46,15 @@ export default function ProfilScreen() {
     badgesApi.getMyBadges()
       .then(r => setBadges(r.data.data))
       .catch(() => {});
+    loadPrayerPrefs().then(setPrayerPrefs);
   }, []);
+
+  const handlePrayerToggle = async (key: keyof PrayerPrefs, value: boolean) => {
+    const updated = { ...prayerPrefs, [key]: { ...prayerPrefs[key], enabled: value } };
+    setPrayerPrefs(updated);
+    await savePrayerPrefs(updated);
+    await schedulePrayerNotifications(updated, lang).catch(() => {});
+  };
 
   const level = LEVELS.find(l => l.id === (user?.niveau || 1)) || LEVELS[0];
   const xpThresholds = [0, 500, 2000, 5000, 10000, 20000, 999999];
@@ -186,6 +202,43 @@ export default function ProfilScreen() {
           </View>
         </View>
 
+        {/* Rappels de prière */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>
+            {isAr ? '🕌 تذكيرات الصلاة' : lang === 'en' ? '🕌 Prayer Reminders' : '🕌 Rappels de prière'}
+          </Text>
+          <View style={styles.infoCard}>
+            {(Object.entries(prayerPrefs) as [keyof PrayerPrefs, PrayerPrefs[keyof PrayerPrefs]][]).map(([key, pref], i, arr) => {
+              const names: Record<keyof PrayerPrefs, string> = {
+                fajr:    isAr ? 'الفجر'  : lang === 'en' ? 'Fajr'    : 'Fajr',
+                dhuhr:   isAr ? 'الظهر'  : lang === 'en' ? 'Dhuhr'   : 'Dhuhr',
+                asr:     isAr ? 'العصر'  : lang === 'en' ? 'Asr'     : 'Asr',
+                maghrib: isAr ? 'المغرب' : lang === 'en' ? 'Maghrib' : 'Maghrib',
+                isha:    isAr ? 'العشاء' : lang === 'en' ? 'Isha'    : 'Isha',
+              };
+              const pad = (n: number) => String(n).padStart(2, '0');
+              return (
+                <View key={key}>
+                  <View style={styles.prayerRow}>
+                    <Text style={styles.prayerName}>{names[key]}</Text>
+                    <Text style={styles.prayerTime}>{pad(pref.hour)}:{pad(pref.minute)}</Text>
+                    <Switch
+                      value={pref.enabled}
+                      onValueChange={(v) => handlePrayerToggle(key, v)}
+                      trackColor={{ false: COLORS.border, true: COLORS.primary }}
+                      thumbColor={pref.enabled ? COLORS.gold : '#FFF'}
+                    />
+                  </View>
+                  {i < arr.length - 1 && <View style={styles.divider} />}
+                </View>
+              );
+            })}
+          </View>
+          <Text style={styles.prayerHint}>
+            {isAr ? 'الأوقات تقريبية — عدّلها حسب منطقتك' : lang === 'en' ? 'Times are approximate — adjust to your location' : 'Horaires indicatifs — ajustez selon votre lieu'}
+          </Text>
+        </View>
+
         {/* Logout */}
         <TouchableOpacity style={styles.logoutButton} onPress={handleLogout} activeOpacity={0.8}>
           <IslamicIcon name="logout" size={20} color={COLORS.error} />
@@ -258,6 +311,15 @@ const styles = StyleSheet.create({
   infoLabel: { flex: 1, fontSize: 14, color: COLORS.textSecondary },
   infoValue: { fontSize: 14, fontWeight: '600', color: COLORS.text },
   divider: { height: 1, backgroundColor: COLORS.border, marginHorizontal: 14 },
+  prayerRow: {
+    flexDirection: 'row', alignItems: 'center', paddingVertical: 10, gap: 12,
+  },
+  prayerName: { flex: 1, fontSize: 15, color: COLORS.text, fontWeight: '600' },
+  prayerTime: { fontSize: 13, color: COLORS.textSecondary, fontWeight: '500', minWidth: 40 },
+  prayerHint: {
+    fontSize: 11, color: COLORS.textSecondary, fontStyle: 'italic',
+    marginTop: 8, textAlign: 'center',
+  },
   logoutButton: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
     marginHorizontal: 16, marginTop: 24, padding: 16,

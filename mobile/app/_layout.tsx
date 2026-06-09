@@ -11,6 +11,8 @@ import { loadLang, setLang, type Lang } from '../i18n';
 import { useNetworkStatus } from '../hooks/useNetworkStatus';
 import { useQuizStore } from '../store/quizStore';
 import { OfflineBanner } from '../components/OfflineBanner';
+import * as Notifications from 'expo-notifications';
+import { loadPrayerPrefs, schedulePrayerNotifications } from '../services/notifications';
 
 setupNotificationHandlers();
 
@@ -35,6 +37,44 @@ export default function RootLayout() {
       syncPending().catch(() => {});
     }
   }, [isOnline]);
+
+  // Navigation au tap d'une notification
+  useEffect(() => {
+    const sub = Notifications.addNotificationResponseReceivedListener((response) => {
+      const data = response.notification.request.content.data as any;
+      if (!data) return;
+      switch (data.type) {
+        case 'daily':
+          router.push('/quiz/setup/mode');
+          break;
+        case 'streak':
+          router.push('/quiz/setup/mode');
+          break;
+        case 'duel':
+          router.push('/(tabs)/multi');
+          break;
+        case 'tournoi':
+          router.push('/(tabs)/multi');
+          break;
+        case 'badge':
+          router.push('/(tabs)/profil');
+          break;
+        case 'prayer':
+          // Pas de navigation — juste le rappel
+          break;
+      }
+    });
+    return () => sub.remove();
+  }, []);
+
+  // Applique les rappels de prière selon les préférences sauvegardées
+  useEffect(() => {
+    if (isAuthenticated && user?.langue) {
+      loadPrayerPrefs().then(prefs =>
+        schedulePrayerNotifications(prefs, user.langue || 'fr').catch(() => {})
+      );
+    }
+  }, [isAuthenticated, user?.langue]);
 
   useEffect(() => {
     registerForPushNotifications().then((token) => {
