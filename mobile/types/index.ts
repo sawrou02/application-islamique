@@ -41,6 +41,16 @@ export interface Question {
   explication?: string;
   savant_reference?: string;
   grade_hadith?: string;
+  // Dalil détaillé (migration 009)
+  verset_ref?: string;
+  verset_ar?: string;
+  verset_fr?: string;
+  hadith_texte_ar?: string;
+  hadith_texte_fr?: string;
+  hadith_ref?: string;
+  parole_savant_texte?: string;
+  parole_savant_ref?: string;
+  explication_detaillee?: string;
   reponses?: Reponse[];
 }
 

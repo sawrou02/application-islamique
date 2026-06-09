@@ -1,0 +1,192 @@
+import { useState } from 'react';
+import { View, Text, StyleSheet, Pressable, LayoutAnimation, Platform, UIManager } from 'react-native';
+import { COLORS } from '../constants/colors';
+import { IslamicIcon } from './IslamicIcon';
+import { Question } from '../types';
+
+if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
+  UIManager.setLayoutAnimationEnabledExperimental(true);
+}
+
+interface Props {
+  question: Question;
+  initialOpen?: boolean;
+}
+
+/**
+ * DalilDetaille — Panneau "Dalil détaillé" cliquable qui s'expand
+ * pour afficher 4 sections distinctes (Coran, Hadith, Savants, Explication).
+ * Les sections vides sont automatiquement masquées.
+ */
+export function DalilDetaille({ question, initialOpen = false }: Props) {
+  const [open, setOpen] = useState(initialOpen);
+
+  const hasCoran = !!(question.verset_ar || question.verset_fr || question.verset_ref);
+  const hasHadith = !!(question.hadith_texte_ar || question.hadith_texte_fr || question.hadith_ref);
+  const hasSavant = !!(question.parole_savant_texte || question.parole_savant_ref);
+  const hasExplication = !!(question.explication_detaillee || question.explication);
+  // Fallback legacy (anciennes questions sans nouvelles colonnes)
+  const hasLegacyDalil = !!(question.dalil_texte_ar || question.dalil_texte_fr || question.dalil_ref);
+
+  if (!hasCoran && !hasHadith && !hasSavant && !hasExplication && !hasLegacyDalil) {
+    return null;
+  }
+
+  const toggle = () => {
+    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+    setOpen(o => !o);
+  };
+
+  return (
+    <View style={styles.container}>
+      <Pressable onPress={toggle} style={styles.header}>
+        <IslamicIcon name="book" size={18} color={COLORS.gold} />
+        <Text style={styles.headerTitle}>Dalil détaillé</Text>
+        <View style={{ flex: 1 }} />
+        <IslamicIcon name={open ? 'up' : 'down'} size={16} color={COLORS.primary} />
+      </Pressable>
+
+      {open && (
+        <View style={styles.body}>
+          {hasCoran && (
+            <Section
+              icon="book"
+              title="Coran"
+              ar={question.verset_ar}
+              fr={question.verset_fr}
+              ref={question.verset_ref}
+            />
+          )}
+          {hasHadith && (
+            <Section
+              icon="quiz"
+              title="Hadith"
+              ar={question.hadith_texte_ar}
+              fr={question.hadith_texte_fr}
+              ref={question.hadith_ref}
+            />
+          )}
+          {hasSavant && (
+            <Section
+              icon="profile"
+              title="Parole des Savants"
+              fr={question.parole_savant_texte}
+              ref={question.parole_savant_ref}
+            />
+          )}
+          {hasExplication && (
+            <Section
+              icon="info"
+              title="Explication"
+              fr={question.explication_detaillee || question.explication}
+            />
+          )}
+          {!hasCoran && !hasHadith && !hasSavant && !hasExplication && hasLegacyDalil && (
+            <Section
+              icon="book"
+              title="Source"
+              ar={question.dalil_texte_ar}
+              fr={question.dalil_texte_fr}
+              ref={question.dalil_ref}
+            />
+          )}
+        </View>
+      )}
+    </View>
+  );
+}
+
+interface SectionProps {
+  icon: string;
+  title: string;
+  ar?: string;
+  fr?: string;
+  ref?: string;
+}
+
+function Section({ icon, title, ar, fr, ref: refStr }: SectionProps) {
+  return (
+    <View style={styles.section}>
+      <View style={styles.sectionHeader}>
+        <IslamicIcon name={icon} size={14} color={COLORS.gold} />
+        <Text style={styles.sectionTitle}>{title}</Text>
+      </View>
+      {ar && <Text style={styles.ar}>{ar}</Text>}
+      {fr && <Text style={styles.fr}>{ar ? `« ${fr} »` : fr}</Text>}
+      {refStr && <Text style={styles.ref}>— {refStr}</Text>}
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: {
+    marginHorizontal: 16,
+    marginTop: 12,
+    backgroundColor: 'rgba(27,94,32,0.06)',
+    borderRadius: 14,
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: 'rgba(255,215,0,0.3)',
+  },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingVertical: 12,
+    paddingHorizontal: 14,
+  },
+  headerTitle: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: COLORS.primary,
+    letterSpacing: 0.3,
+  },
+  body: {
+    paddingHorizontal: 12,
+    paddingBottom: 12,
+    gap: 10,
+  },
+  section: {
+    backgroundColor: COLORS.surface,
+    borderRadius: 10,
+    padding: 12,
+    borderLeftWidth: 3,
+    borderLeftColor: COLORS.gold,
+  },
+  sectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginBottom: 6,
+  },
+  sectionTitle: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: COLORS.primary,
+    textTransform: 'uppercase',
+    letterSpacing: 0.6,
+  },
+  ar: {
+    fontSize: 17,
+    color: COLORS.arabicText,
+    textAlign: 'right',
+    writingDirection: 'rtl',
+    lineHeight: 28,
+    marginBottom: 6,
+    fontWeight: '500',
+  },
+  fr: {
+    fontSize: 13.5,
+    color: COLORS.text,
+    lineHeight: 20,
+    fontStyle: 'italic',
+  },
+  ref: {
+    fontSize: 11.5,
+    color: COLORS.textSecondary,
+    fontWeight: '600',
+    marginTop: 6,
+  },
+});
+
+export default DalilDetaille;

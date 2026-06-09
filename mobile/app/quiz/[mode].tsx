@@ -4,7 +4,8 @@ import {
 } from 'react-native';
 import { router } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Ionicons } from '@expo/vector-icons';
+import { IslamicIcon } from '../../components/IslamicIcon';
+import { DalilDetaille } from '../../components/DalilDetaille';
 import { COLORS } from '../../constants/colors';
 import { useQuizStore } from '../../store/quizStore';
 import { Reponse } from '../../types';
@@ -130,7 +131,7 @@ export default function ActiveQuiz() {
       {/* Header with progress and timer */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-          <Ionicons name="close" size={24} color={COLORS.textSecondary} />
+          <IslamicIcon name="close" size={22} color={COLORS.textSecondary} />
         </TouchableOpacity>
         <View style={styles.progressContainer}>
           <View style={styles.progressBar}>
@@ -178,8 +179,8 @@ export default function ActiveQuiz() {
                   {reponse.texte_fr}
                 </Text>
               </View>
-              {state === 'correct' && <Ionicons name="checkmark-circle" size={22} color={COLORS.success} />}
-              {state === 'incorrect' && <Ionicons name="close-circle" size={22} color={COLORS.error} />}
+              {state === 'correct' && <IslamicIcon name="check" size={22} color={COLORS.success} />}
+              {state === 'incorrect' && <IslamicIcon name="close" size={22} color={COLORS.error} />}
             </TouchableOpacity>
           );
         })}
