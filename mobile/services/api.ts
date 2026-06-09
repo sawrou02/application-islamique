@@ -2,7 +2,7 @@ import axios from 'axios';
 import * as SecureStore from 'expo-secure-store';
 import { User, Question, QuizConfig, QuizResult, LeaderboardEntry, Badge, Room } from '../types';
 
-const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:3000/api';
+const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'https://application-islamique-production.up.railway.app/api';
 
 const api = axios.create({
   baseURL: API_BASE_URL,
