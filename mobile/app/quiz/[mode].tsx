@@ -23,6 +23,7 @@ export default function ActiveQuiz() {
   } = useQuizStore();
 
   const [selectedReponseId, setSelectedReponseId] = useState<string | null>(null);
+  const [timedOut, setTimedOut] = useState(false);
   const [showDalil, setShowDalil] = useState(false);
   const [timeLeft, setTimeLeft] = useState(config?.temps_par_question || 30);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -47,6 +48,7 @@ export default function ActiveQuiz() {
 
   useEffect(() => {
     setSelectedReponseId(null);
+    setTimedOut(false);
     setShowDalil(false);
     setTimeLeft(config?.temps_par_question || 30);
     questionStartRef.current = Date.now();
@@ -74,10 +76,22 @@ export default function ActiveQuiz() {
 
   const handleTimeOut = () => {
     if (hasAnswered) return;
-    const firstReponse = reponses[0];
-    if (firstReponse) {
-      handleAnswer(firstReponse.id);
-    }
+    // Choisit une mauvaise réponse pour marquer la question comme perdue côté backend
+    const wrong = reponses.find((r: Reponse) => !r.est_correcte);
+    if (!wrong) return;
+    setTimedOut(true);
+    setSelectedReponseId(wrong.id);
+    answerQuestion(wrong.id);
+
+    Animated.sequence([
+      Animated.timing(flashAnim, { toValue: 1, duration: 200, useNativeDriver: true }),
+      Animated.timing(flashAnim, { toValue: 0, duration: 200, useNativeDriver: true }),
+    ]).start();
+
+    setTimeout(() => {
+      setShowDalil(true);
+      Animated.timing(dalilAnim, { toValue: 1, duration: 400, useNativeDriver: true }).start();
+    }, 300);
   };
 
   const handleAnswer = (reponse_id: string) => {
@@ -107,7 +121,7 @@ export default function ActiveQuiz() {
   const getAnswerState = (reponse: Reponse): AnswerState => {
     if (!hasAnswered) return 'default';
     if (reponse.id === correctReponse?.id) return 'correct';
-    if (reponse.id === selectedReponseId) return 'incorrect';
+    if (reponse.id === selectedReponseId && !timedOut) return 'incorrect';
     return 'default';
   };
 
@@ -156,6 +170,13 @@ export default function ActiveQuiz() {
         <View style={styles.domainBadge}>
           <Text style={styles.domainText}>{question.domaine.toUpperCase()} • {isAr ? `المستوى ${question.niveau}` : lang === 'en' ? `Level ${question.niveau}` : `Niveau ${question.niveau}`}</Text>
         </View>
+        {timedOut && (
+          <View style={styles.timeoutBadge}>
+            <Text style={styles.timeoutText}>
+              ⏰ {isAr ? 'انتهى الوقت' : lang === 'en' ? 'Time out' : 'Temps écoulé'}
+            </Text>
+          </View>
+        )}
       </View>
 
       {/* Question */}
@@ -257,7 +278,12 @@ const styles = StyleSheet.create({
     justifyContent: 'center', alignItems: 'center',
   },
   timerText: { fontSize: 14, fontWeight: 'bold' },
-  domainRow: { paddingHorizontal: 16, marginBottom: 8 },
+  domainRow: { paddingHorizontal: 16, marginBottom: 8, flexDirection: 'row', alignItems: 'center', gap: 8 },
+  timeoutBadge: {
+    backgroundColor: 'rgba(198,40,40,0.12)', borderRadius: 8,
+    paddingVertical: 4, paddingHorizontal: 10,
+  },
+  timeoutText: { fontSize: 11, fontWeight: '700', color: COLORS.error },
   domainBadge: {
     alignSelf: 'flex-start', backgroundColor: 'rgba(27,94,32,0.1)',
     borderRadius: 8, paddingVertical: 4, paddingHorizontal: 10,
