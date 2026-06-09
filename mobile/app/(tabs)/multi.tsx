@@ -111,6 +111,20 @@ export default function MultiScreen() {
 
         <Text style={styles.sectionTitle}>Autres modes</Text>
 
+        {/* Duel 1v1 temps réel */}
+        <TouchableOpacity
+          style={styles.navCard}
+          onPress={() => router.push('/multi/duel')}
+          activeOpacity={0.85}
+        >
+          <Text style={styles.navIcon}>⚔️</Text>
+          <View style={styles.navTextContainer}>
+            <Text style={styles.navTitle}>Duel 1 vs 1 — Mubara'a</Text>
+            <Text style={styles.navDesc}>Affronte un ami en temps réel</Text>
+          </View>
+          <IslamicIcon name="next" size={20} color={COLORS.textLight} />
+        </TouchableOpacity>
+
         {/* Tournoi */}
         <TouchableOpacity
           style={styles.navCard}
