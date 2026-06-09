@@ -82,6 +82,34 @@ export async function redistribDomaines(client: Client): Promise<void> {
     }
   }
 
+  // Sous-domaines non standard → vers les 6 domaines principaux
+  const mapping: Array<{ from: string; to: string }> = [
+    { from: 'mustalah_hadith', to: 'hadith' },
+    { from: 'faraid',          to: 'fiqh'   },
+    { from: 'furu_fiqh',       to: 'fiqh'   },
+    { from: 'qira_at',         to: 'tafsir' },
+    { from: 'tafsir_avance',   to: 'tafsir' },
+    { from: 'tarikh_islam',    to: 'sirah'  },
+  ];
+  for (const { from, to } of mapping) {
+    const r = await client.query(
+      `UPDATE questions SET domaine = $1, madhab = 'general' WHERE domaine = $2`,
+      [to, from]
+    );
+    if (r.rowCount && r.rowCount > 0) {
+      console.log(`  ✓ ${r.rowCount} questions ${from} → ${to}`);
+    }
+  }
+
+  // Tout domaine restant non-standard → fiqh
+  const rOther = await client.query(`
+    UPDATE questions SET domaine = 'fiqh', madhab = 'general'
+    WHERE domaine NOT IN ('fiqh','aqida','tafsir','hadith','sirah','akhlaq','general')
+  `);
+  if (rOther.rowCount && rOther.rowCount > 0) {
+    console.log(`  ✓ ${rOther.rowCount} questions autres domaines → fiqh`);
+  }
+
   // Reste de 'general' → fiqh par défaut
   const rFallback = await client.query(`
     UPDATE questions
