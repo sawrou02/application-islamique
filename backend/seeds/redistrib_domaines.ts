@@ -55,24 +55,28 @@ export async function redistribDomaines(client: Client): Promise<void> {
   `);
   console.log(`  ✓ ${r3.rowCount} questions Usul Hadith → hadith niveau 4+`);
 
-  // 4. Domaine 'general' → redistribuer par mots-clés
+  // 4. Domaine 'general' → redistribuer par mots-clés (parametres prepares)
   const keywords: Array<{ domaine: string; patterns: string[] }> = [
-    { domaine: 'aqida', patterns: ['tawhid', 'aqida', 'croyance', 'foi', 'shirk', 'kufr', 'attributs', 'noms d\'allah', 'qadar', 'destin', 'prédestination', 'paradis', 'enfer', 'résurrection', 'jugement dernier', 'anges', 'prophètes', 'livres révélés'] },
-    { domaine: 'hadith', patterns: ['hadith', 'sunnah', 'sohih', 'sahih', 'bukhari', 'muslim', 'abu dawud', 'tirmidhi', 'nasai', 'ibn majah'] },
-    { domaine: 'sirah', patterns: ['prophète', 'sirah', 'hijra', 'hégire', 'médine', 'la mecque', 'compagnon', 'sahaba', 'bataille', 'ghazwa', 'mawlid', 'naissance du prophète', 'ascension', 'isra'] },
-    { domaine: 'tafsir', patterns: ['coran', 'verset', 'sourate', 'tafsir', 'exégèse', 'révélation', 'récitation', 'tajwid', 'qiraat'] },
-    { domaine: 'akhlaq', patterns: ['akhlaq', 'moral', 'éthique', 'caractère', 'vertu', 'patience', 'gratitude', 'humilité', 'générosité', 'honnêteté', 'sincérité', 'ikhlas', 'tawadu'] },
-    { domaine: 'fiqh', patterns: ['salat', 'prière', 'wudu', 'ablution', 'zakat', 'sawm', 'jeûne', 'hajj', 'pèlerinage', 'halal', 'haram', 'nikah', 'mariage', 'divorce', 'taharah', 'purification', 'janaza', 'funérailles', 'riba', 'usure'] },
+    { domaine: 'aqida', patterns: ['tawhid', 'aqida', 'croyance', 'foi', 'shirk', 'kufr', 'attributs', 'noms d allah', 'qadar', 'destin', 'predestination', 'paradis', 'enfer', 'resurrection', 'jugement dernier', 'anges', 'prophetes', 'livres reveles'] },
+    { domaine: 'hadith', patterns: ['hadith', 'sunnah', 'sahih', 'bukhari', 'muslim', 'abu dawud', 'tirmidhi', 'nasai', 'ibn majah'] },
+    { domaine: 'sirah', patterns: ['prophete', 'sirah', 'hijra', 'hegire', 'medine', 'la mecque', 'compagnon', 'sahaba', 'bataille', 'ghazwa', 'mawlid', 'naissance du prophete', 'ascension', 'isra'] },
+    { domaine: 'tafsir', patterns: ['coran', 'verset', 'sourate', 'tafsir', 'exegese', 'revelation', 'recitation', 'tajwid', 'qiraat'] },
+    { domaine: 'akhlaq', patterns: ['akhlaq', 'moral', 'ethique', 'caractere', 'vertu', 'patience', 'gratitude', 'humilite', 'generosite', 'honnetete', 'sincerite', 'ikhlas', 'tawadu'] },
+    { domaine: 'fiqh', patterns: ['salat', 'priere', 'wudu', 'ablution', 'zakat', 'sawm', 'jeune', 'hajj', 'pelerinage', 'halal', 'haram', 'nikah', 'mariage', 'divorce', 'taharah', 'purification', 'janaza', 'funerailles', 'riba', 'usure'] },
   ];
 
   for (const { domaine, patterns } of keywords) {
-    const conditions = patterns.map(p => `(texte_fr ILIKE '%${p}%' OR COALESCE(sous_domaine,'') ILIKE '%${p}%')`).join(' OR ');
-    const res = await client.query(`
-      UPDATE questions
-      SET domaine = '${domaine}', madhab = 'general'
-      WHERE domaine = 'general'
-        AND (${conditions})
-    `);
+    const conditions = patterns
+      .map((_, i) => `(texte_fr ILIKE $${i + 2} OR COALESCE(sous_domaine,'') ILIKE $${i + 2})`)
+      .join(' OR ');
+    const values = [domaine, ...patterns.map(p => `%${p}%`)];
+    const res = await client.query(
+      `UPDATE questions
+       SET domaine = $1, madhab = 'general'
+       WHERE domaine = 'general'
+         AND (${conditions})`,
+      values
+    );
     if (res.rowCount && res.rowCount > 0) {
       console.log(`  ✓ ${res.rowCount} questions général → ${domaine}`);
     }
