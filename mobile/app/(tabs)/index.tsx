@@ -277,6 +277,36 @@ export default function HomeScreen() {
           </View>
         </TouchableOpacity>
 
+        {/* ── Accès rapide : Coran & Adhkar ── */}
+        <View style={styles.quickRow}>
+          <TouchableOpacity
+            style={[styles.quickCard, { backgroundColor: '#1B5E20' }]}
+            onPress={() => router.push('/coran')}
+            activeOpacity={0.85}
+          >
+            <Text style={styles.quickIcon}>۩</Text>
+            <Text style={styles.quickTitle}>
+              {isAr ? 'القرآن' : lang === 'en' ? 'Qur’an' : 'Le Coran'}
+            </Text>
+            <Text style={styles.quickSub}>
+              {isAr ? '١١٤ سورة' : lang === 'en' ? '114 surahs' : '114 sourates'}
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.quickCard, { backgroundColor: '#4A148C' }]}
+            onPress={() => router.push('/adhkar')}
+            activeOpacity={0.85}
+          >
+            <Text style={styles.quickIcon}>☪</Text>
+            <Text style={styles.quickTitle}>
+              {isAr ? 'الأذكار' : 'Adhkar'}
+            </Text>
+            <Text style={styles.quickSub}>
+              {isAr ? 'الصباح والمساء' : lang === 'en' ? 'Morning & evening' : 'Matin & soir'}
+            </Text>
+          </TouchableOpacity>
+        </View>
+
         {/* ══════════════════════════════════════════════════════════════ */}
         {/* ── Section 1 : Pour toi aujourd'hui ── */}
         {/* ══════════════════════════════════════════════════════════════ */}
@@ -593,6 +623,15 @@ const styles = StyleSheet.create({
   challengeArrow: { fontSize: 20, color: COLORS.gold, fontWeight: '700' },
 
   // Section titles
+  quickRow: { flexDirection: 'row', gap: 12, marginTop: 14, marginBottom: 4 },
+  quickCard: {
+    flex: 1, borderRadius: 16, padding: 16, alignItems: 'center',
+    shadowColor: '#000', shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15, shadowRadius: 6, elevation: 4,
+  },
+  quickIcon: { fontSize: 34, color: '#FFD700', marginBottom: 6 },
+  quickTitle: { fontSize: 16, fontWeight: '800', color: '#FFFFFF' },
+  quickSub: { fontSize: 11, color: '#FFFFFFCC', marginTop: 2 },
   sectionTitle: {
     fontSize: 16,
     fontWeight: 'bold',
