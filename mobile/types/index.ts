@@ -24,6 +24,7 @@ export interface Reponse {
   question_id: string;
   texte_fr: string;
   texte_ar?: string;
+  texte_en?: string;
   est_correcte: boolean;
 }
 
@@ -35,6 +36,7 @@ export interface Question {
   madhab: Madhab;
   texte_fr: string;
   texte_ar?: string;
+  texte_en?: string;
   dalil_ref?: string;
   dalil_texte_ar?: string;
   dalil_texte_fr?: string;
@@ -45,13 +47,18 @@ export interface Question {
   verset_ref?: string;
   verset_ar?: string;
   verset_fr?: string;
+  verset_en?: string;
   hadith_texte_ar?: string;
   hadith_texte_fr?: string;
+  hadith_texte_en?: string;
   hadith_ref?: string;
   parole_savant_texte?: string;
+  parole_savant_en?: string;
   parole_savant_ref?: string;
   explication_detaillee?: string;
+  explication_en?: string;
   reponses?: Reponse[];
+  reponses_en?: unknown;
 }
 
 export interface Badge {

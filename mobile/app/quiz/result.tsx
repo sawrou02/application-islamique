@@ -5,6 +5,7 @@ import {
 import { router } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { IslamicIcon } from '../../components/IslamicIcon';
+import { ShareButton } from '../../components/ShareButton';
 import { COLORS } from '../../constants/colors';
 import { useQuizStore } from '../../store/quizStore';
 import { MOTIVATION_HADITHS } from '../../constants/islamic';
@@ -123,6 +124,15 @@ export default function QuizResult() {
             <IslamicIcon name="home" size={18} color={COLORS.primary} />
             <Text style={styles.homeText}>Accueil</Text>
           </TouchableOpacity>
+        </View>
+
+        {/* Share Button */}
+        <View style={{ marginTop: 12 }}>
+          <ShareButton
+            label="Partager mon score"
+            url="https://quizislamique.app"
+            message={`🕌 Quiz Islamique\n\nJ'ai obtenu ${correctCount}/${total} (${score}%) en ${config?.mode || 'quiz'} sur ${config?.domaine || 'Islam'} !\nXP gagnés : +${xpGained}\n\n"${hadith.text}"\n\nRejoins-moi sur Quiz Islamique 📱`}
+          />
         </View>
       </ScrollView>
     </SafeAreaView>
