@@ -66,6 +66,14 @@ export default function QuizResult() {
             <Text style={styles.xpText}>+{xpGained} XP gagnés</Text>
           </View>
 
+          {xpBoost.multiplier > 1 && (
+            <View style={styles.boostBadge}>
+              <Text style={styles.boostBadgeText}>
+                Boost {xpBoost.label} actif : +{Math.round((xpBoost.multiplier - 1) * 100)}% XP
+              </Text>
+            </View>
+          )}
+
           {result?.level_up && (
             <View style={styles.levelUpBadge}>
               <Text style={styles.levelUpText}>🎉 Niveau supérieur !</Text>
@@ -147,6 +155,14 @@ const styles = StyleSheet.create({
     paddingVertical: 8, paddingHorizontal: 16,
   },
   levelUpText: { fontSize: 15, fontWeight: 'bold', color: '#FFFFFF' },
+  boostBadge: {
+    backgroundColor: COLORS.gold,
+    borderRadius: 20,
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    marginBottom: 8,
+  },
+  boostBadgeText: { fontSize: 13, fontWeight: '800', color: '#3D2A00' },
   hadithCard: {
     backgroundColor: COLORS.surface, borderRadius: 14, padding: 16,
     marginBottom: 20, borderLeftWidth: 3, borderLeftColor: COLORS.gold,
