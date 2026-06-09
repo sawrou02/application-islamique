@@ -40,16 +40,16 @@ const QURAN_VERSES = [
 
 // ── Scholar quotes ─────────────────────────────────────────────────────────────
 const SCHOLAR_QUOTES = [
-  { text: 'Le savoir est une lumière qu\'Allah place dans le cœur de qui Il veut.', scholar: 'Ibn Masud رضي الله عنه' },
-  { text: 'Qui se connaît lui-même connaît son Seigneur.', scholar: 'Ibn Arabi رحمه الله' },
-  { text: 'L\'humilité est la couronne des savants.', scholar: 'Al-Hasan Al-Basri رحمه الله' },
-  { text: 'La patience est moitié de la foi, et la certitude est la foi tout entière.', scholar: 'Ibn Al-Qayyim رحمه الله' },
-  { text: 'Multiplie tes actes bons en secret ; c\'est la sincérité que les anges exaltent.', scholar: 'Ibn Rajab Al-Hanbali رحمه الله' },
-  { text: 'Le cœur ne se rectifie pas sans que la langue ne soit rectifiée d\'abord.', scholar: 'Ibn Taymiyya رحمه الله' },
-  { text: 'Traite les gens comme tu aimerais être traité; c\'est la quintessence de la jurisprudence.', scholar: 'Imam Shafi\'i رحمه الله' },
-  { text: 'Le meilleur des actions est celle qui est constante, même si elle est petite.', scholar: 'Aïcha رضي الله عنها' },
-  { text: 'Ne compte pas le nombre de tes prières, mais la qualité de ta présence en elles.', scholar: 'Imam Al-Ghazali رحمه الله' },
-  { text: 'Qui veut le monde, il lui faut le savoir ; qui veut l\'Au-delà, il lui faut le savoir.', scholar: 'Imam Al-Shafi\'i رحمه الله' },
+  { text: "Le savoir est une lumière qu'Allah place dans le cœur de qui Il veut.", ar: 'العلم نور يضعه الله في قلب من يشاء.', scholar: 'Ibn Masud رضي الله عنه' },
+  { text: 'Qui se connaît lui-même connaît son Seigneur.', ar: 'من عرف نفسه عرف ربه.', scholar: 'Ibn Arabi رحمه الله' },
+  { text: "L'humilité est la couronne des savants.", ar: 'التواضع تاج العلماء.', scholar: 'Al-Hasan Al-Basri رحمه الله' },
+  { text: 'La patience est moitié de la foi, et la certitude est la foi tout entière.', ar: 'الصبر نصف الإيمان، واليقين الإيمان كله.', scholar: 'Ibn Al-Qayyim رحمه الله' },
+  { text: "Multiplie tes actes bons en secret ; c'est la sincérité que les anges exaltent.", ar: 'أكثر من الأعمال الصالحة في السر، فإنَّ الإخلاص ما خفي عن الناس.', scholar: 'Ibn Rajab Al-Hanbali رحمه الله' },
+  { text: 'Le cœur ne se rectifie pas sans que la langue ne soit rectifiée d\'abord.', ar: 'لا يستقيم القلب حتى تستقيم اللسان أولاً.', scholar: 'Ibn Taymiyya رحمه الله' },
+  { text: "Traite les gens comme tu aimerais être traité ; c'est la quintessence de la jurisprudence.", ar: 'عامل الناس كما تحبّ أن يعاملوك، فهذا جوهر الفقه.', scholar: "Imam Shafi'i رحمه الله" },
+  { text: 'Le meilleur des actions est celle qui est constante, même si elle est petite.', ar: 'خير الأعمال أدومها وإن قلَّ.', scholar: 'Aïcha رضي الله عنها' },
+  { text: 'Ne compte pas le nombre de tes prières, mais la qualité de ta présence en elles.', ar: 'لا تحصِ عدد صلواتك، بل اهتمَّ بحضور قلبك فيها.', scholar: 'Imam Al-Ghazali رحمه الله' },
+  { text: "Qui veut le monde, il lui faut le savoir ; qui veut l'Au-delà, il lui faut le savoir.", ar: 'من أراد الدنيا فعليه بالعلم، ومن أراد الآخرة فعليه بالعلم.', scholar: "Imam Al-Shafi'i رحمه الله" },
 ];
 
 function getDayOfYear(): number {
@@ -209,17 +209,17 @@ export default function HomeScreen() {
           <View style={styles.statCard}>
             <Text style={[styles.statIcon, { color: COLORS.gold }]}>✦</Text>
             <Text style={styles.statValue}>{currentXp}</Text>
-            <Text style={styles.statLabel}>XP Total</Text>
+            <Text style={styles.statLabel}>{t('home.xp')}</Text>
           </View>
           <View style={styles.statCard}>
             <Text style={[styles.statIcon, { color: COLORS.error }]}>❋</Text>
             <Text style={styles.statValue}>{user?.streak_days || 0}</Text>
-            <Text style={styles.statLabel}>Streak</Text>
+            <Text style={styles.statLabel}>{t('home.streak')}</Text>
           </View>
           <View style={styles.statCard}>
             <Text style={[styles.statIcon, { color: COLORS.primary }]}>◈</Text>
             <Text style={styles.statValue}>{user?.niveau || 1}/6</Text>
-            <Text style={styles.statLabel}>Niveau</Text>
+            <Text style={styles.statLabel}>{t('home.level')}</Text>
           </View>
         </View>
 
@@ -367,13 +367,14 @@ export default function HomeScreen() {
         </View>
 
         {/* Parole du Jour */}
-        {!isAr && (
-          <View style={styles.quoteCard}>
-            <Text style={styles.quoteLabel}>✦ {lang === 'en' ? 'QUOTE OF THE DAY' : 'PAROLE DU JOUR'}</Text>
-            <Text style={styles.quoteText}>« {todayQuote.text} »</Text>
-            <Text style={styles.quoteScholar}>— {todayQuote.scholar}</Text>
-          </View>
-        )}
+        <View style={styles.quoteCard}>
+          <Text style={styles.quoteLabel}>✦ {isAr ? 'قول اليوم' : lang === 'en' ? 'QUOTE OF THE DAY' : 'PAROLE DU JOUR'}</Text>
+          {isAr
+            ? <Text style={[styles.quoteText, { textAlign: 'right', writingDirection: 'rtl', fontStyle: 'normal', fontSize: 16 }]}>{todayQuote.ar}</Text>
+            : <Text style={styles.quoteText}>« {todayQuote.text} »</Text>
+          }
+          <Text style={styles.quoteScholar}>— {todayQuote.scholar}</Text>
+        </View>
 
         {/* ── Hadith du Jour ── */}
         <View style={styles.hadithCard}>

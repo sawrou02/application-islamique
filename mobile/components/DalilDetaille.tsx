@@ -33,7 +33,8 @@ export function pickText(
     case 'explication': {
       const en = question.explication_en;
       const fr = question.explication_detaillee || question.explication;
-      return (lang === 'en' && en) ? en : (fr || '');
+      if (lang === 'en' && en) return en;
+      return fr || '';
     }
   }
 }
@@ -184,7 +185,7 @@ function Section({ icon, title, ar, fr, source: refStr, type }: SectionProps) {
       </View>
 
       {ar && <Text style={styles.ar}>{ar}</Text>}
-      {!isAr && fr && <Text style={styles.fr}>{ar ? `« ${fr} »` : fr}</Text>}
+      {(!isAr || (!ar && fr)) && fr && <Text style={styles.fr}>{ar ? `« ${fr} »` : fr}</Text>}
 
       {parsed && (
         <View style={styles.sourceBlock}>

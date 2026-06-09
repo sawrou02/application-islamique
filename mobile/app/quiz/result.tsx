@@ -10,6 +10,7 @@ import { COLORS } from '../../constants/colors';
 import { useQuizStore } from '../../store/quizStore';
 import { MOTIVATION_HADITHS } from '../../constants/islamic';
 import { getCurrentXpBoost } from '../../services/islamicBoosts';
+import { getCurrentLang } from '../../i18n';
 
 function getMotivationHadith(score: number) {
   if (score >= 80) return MOTIVATION_HADITHS[0];
@@ -21,6 +22,8 @@ export default function QuizResult() {
   const { result, questions, answers, resetQuiz, config } = useQuizStore();
   const scaleAnim = useRef(new Animated.Value(0)).current;
   const hadith = getMotivationHadith(result?.score || 0);
+  const lang = getCurrentLang();
+  const isAr = lang === 'ar';
 
   useEffect(() => {
     Animated.spring(scaleAnim, {
@@ -59,25 +62,31 @@ export default function QuizResult() {
             <Text style={styles.scoreLabel}>Score</Text>
           </Animated.View>
 
-          <Text style={styles.correctText}>{correctCount}/{total} correctes</Text>
+          <Text style={styles.correctText}>
+            {correctCount}/{total} {isAr ? 'إجابات صحيحة' : lang === 'en' ? 'correct' : 'correctes'}
+          </Text>
 
           {/* XP gained */}
           <View style={styles.xpBadge}>
             <IslamicIcon name="star" size={16} color={COLORS.gold} />
-            <Text style={styles.xpText}>+{xpGained} XP gagnés</Text>
+            <Text style={styles.xpText}>+{xpGained} {isAr ? 'نقطة مكتسبة' : lang === 'en' ? 'XP earned' : 'XP gagnés'}</Text>
           </View>
 
           {xpBoost.multiplier > 1 && (
             <View style={styles.boostBadge}>
               <Text style={styles.boostBadgeText}>
-                Boost {xpBoost.label} actif : +{Math.round((xpBoost.multiplier - 1) * 100)}% XP
+                {isAr
+                  ? `تعزيز ${xpBoost.label} نشط: +${Math.round((xpBoost.multiplier - 1) * 100)}% نقاط`
+                  : `Boost ${xpBoost.label} actif : +${Math.round((xpBoost.multiplier - 1) * 100)}% XP`}
               </Text>
             </View>
           )}
 
           {result?.level_up && (
             <View style={styles.levelUpBadge}>
-              <Text style={styles.levelUpText}>🎉 Niveau supérieur !</Text>
+              <Text style={styles.levelUpText}>
+                {isAr ? '🎉 مستوى أعلى!' : lang === 'en' ? '🎉 Level up!' : '🎉 Niveau supérieur !'}
+              </Text>
             </View>
           )}
         </View>
@@ -85,13 +94,15 @@ export default function QuizResult() {
         {/* Hadith de motivation */}
         <View style={styles.hadithCard}>
           <Text style={styles.hadithAr}>{hadith.textAr}</Text>
-          <Text style={styles.hadithFr}>"{hadith.text}"</Text>
+          {!isAr && <Text style={styles.hadithFr}>"{hadith.text}"</Text>}
           <Text style={styles.hadithSource}>— {hadith.source}</Text>
         </View>
 
         {/* Answers review */}
         <View style={styles.reviewSection}>
-          <Text style={styles.reviewTitle}>Révision des réponses</Text>
+          <Text style={styles.reviewTitle}>
+            {isAr ? 'مراجعة الإجابات' : lang === 'en' ? 'Answers review' : 'Révision des réponses'}
+          </Text>
           {answers.map((answer, index) => {
             const question = questions[index];
             const detail = result?.answers_detail[index];
@@ -104,7 +115,9 @@ export default function QuizResult() {
                     ? <IslamicIcon name="check-circle" size={18} color={COLORS.success} />
                     : <IslamicIcon name="close-circle" size={18} color={COLORS.error} />
                   }
-                  <Text style={styles.reviewQ} numberOfLines={2}>{question.texte_fr}</Text>
+                  <Text style={styles.reviewQ} numberOfLines={2}>
+                    {isAr && question.texte_ar ? question.texte_ar : question.texte_fr}
+                  </Text>
                 </View>
                 {!detail?.est_correcte && question.explication && (
                   <Text style={styles.reviewExplication}>{question.explication}</Text>
@@ -118,11 +131,11 @@ export default function QuizResult() {
         <View style={styles.buttonsContainer}>
           <TouchableOpacity style={styles.playAgainButton} onPress={handlePlayAgain} activeOpacity={0.85}>
             <IslamicIcon name="refresh" size={18} color="#FFFFFF" />
-            <Text style={styles.playAgainText}>Rejouer</Text>
+            <Text style={styles.playAgainText}>{isAr ? 'إعادة اللعب' : lang === 'en' ? 'Play again' : 'Rejouer'}</Text>
           </TouchableOpacity>
           <TouchableOpacity style={styles.homeButton} onPress={handleGoHome} activeOpacity={0.85}>
             <IslamicIcon name="home" size={18} color={COLORS.primary} />
-            <Text style={styles.homeText}>Accueil</Text>
+            <Text style={styles.homeText}>{isAr ? 'الرئيسية' : lang === 'en' ? 'Home' : 'Accueil'}</Text>
           </TouchableOpacity>
         </View>
 

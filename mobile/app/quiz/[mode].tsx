@@ -8,6 +8,7 @@ import { IslamicIcon } from '../../components/IslamicIcon';
 import { DalilDetaille } from '../../components/DalilDetaille';
 import { COLORS } from '../../constants/colors';
 import { useQuizStore } from '../../store/quizStore';
+import { getCurrentLang } from '../../i18n';
 import { Reponse } from '../../types';
 
 const { width } = Dimensions.get('window');
@@ -29,6 +30,9 @@ export default function ActiveQuiz() {
   const dalilAnim = useRef(new Animated.Value(0)).current;
   const flashAnim = useRef(new Animated.Value(0)).current;
   const questionAnim = useRef(new Animated.Value(0)).current;
+
+  const lang = getCurrentLang();
+  const isAr = lang === 'ar';
 
   const question = questions[currentIndex];
   const reponses = question?.reponses || [];
@@ -123,7 +127,7 @@ export default function ActiveQuiz() {
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.loadingContainer}>
-          <Text style={styles.loadingText}>Chargement...</Text>
+          <Text style={styles.loadingText}>{isAr ? 'جارٍ التحميل...' : lang === 'en' ? 'Loading...' : 'Chargement...'}</Text>
         </View>
       </SafeAreaView>
     );
@@ -150,7 +154,7 @@ export default function ActiveQuiz() {
       {/* Domaine badge */}
       <View style={styles.domainRow}>
         <View style={styles.domainBadge}>
-          <Text style={styles.domainText}>{question.domaine.toUpperCase()} • Niveau {question.niveau}</Text>
+          <Text style={styles.domainText}>{question.domaine.toUpperCase()} • {isAr ? `المستوى ${question.niveau}` : lang === 'en' ? `Level ${question.niveau}` : `Niveau ${question.niveau}`}</Text>
         </View>
       </View>
 
@@ -159,10 +163,14 @@ export default function ActiveQuiz() {
         opacity: questionAnim,
         transform: [{ scale: questionAnim.interpolate({ inputRange: [0, 1], outputRange: [0.95, 1] }) }],
       }]}>
-        {question.texte_ar && (
-          <Text style={styles.questionAr}>{question.texte_ar}</Text>
+        {isAr ? (
+          <Text style={[styles.questionAr, { fontSize: 20 }]}>{question.texte_ar || question.texte_fr}</Text>
+        ) : (
+          <>
+            {question.texte_ar && <Text style={styles.questionAr}>{question.texte_ar}</Text>}
+            <Text style={styles.questionFr}>{question.texte_fr}</Text>
+          </>
         )}
-        <Text style={styles.questionFr}>{question.texte_fr}</Text>
       </Animated.View>
 
       {/* Answers + Dalil + Next in a scrollable area */}
@@ -188,8 +196,8 @@ export default function ActiveQuiz() {
                   <Text style={styles.answerLabelText}>{ANSWER_LABELS[index]}</Text>
                 </View>
                 <View style={styles.answerTextContainer}>
-                  <Text style={[styles.answerText, state !== 'default' && styles.answerTextAnswered]}>
-                    {reponse.texte_fr}
+                  <Text style={[styles.answerText, state !== 'default' && styles.answerTextAnswered, isAr && { textAlign: 'right', writingDirection: 'rtl' }]}>
+                    {isAr && reponse.texte_ar ? reponse.texte_ar : reponse.texte_fr}
                   </Text>
                 </View>
                 {state === 'correct' && <IslamicIcon name="check" size={22} color={COLORS.success} />}
@@ -211,7 +219,7 @@ export default function ActiveQuiz() {
               })}
             >
               <IslamicIcon name="flag" size={13} color={COLORS.textLight} />
-              <Text style={styles.signalerText}>Signaler une erreur</Text>
+              <Text style={styles.signalerText}>{isAr ? 'الإبلاغ عن خطأ' : lang === 'en' ? 'Report an error' : 'Signaler une erreur'}</Text>
             </Pressable>
           </Animated.View>
         )}
@@ -220,7 +228,9 @@ export default function ActiveQuiz() {
         {hasAnswered && (
           <TouchableOpacity style={styles.nextButton} onPress={handleNext} activeOpacity={0.85}>
             <Text style={styles.nextButtonText}>
-              {currentIndex + 1 < questions.length ? 'Question suivante' : 'Voir les résultats'}
+              {currentIndex + 1 < questions.length
+                ? (isAr ? 'السؤال التالي' : lang === 'en' ? 'Next question' : 'Question suivante')
+                : (isAr ? 'عرض النتائج' : lang === 'en' ? 'See results' : 'Voir les résultats')}
             </Text>
             <IslamicIcon name="next" size={22} color="#FFFFFF" />
           </TouchableOpacity>
