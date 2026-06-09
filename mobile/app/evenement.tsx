@@ -6,6 +6,7 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { COLORS } from '../constants/colors';
 import { getTodayEvent, getTodayChallenge } from '../constants/islamic';
+import { useQuizSetupStore } from '../store/quizSetupStore';
 import { t, getCurrentLang } from '../i18n';
 
 // Rich content per event key
@@ -103,6 +104,7 @@ export default function EvenementScreen() {
   const event = todayEvent;
   const details = EVENT_DETAILS[event.key] || EVENT_DETAILS['hadith_du_jour'];
   const lang = getCurrentLang();
+  const { setMode, setDomaine, setNb, reset } = useQuizSetupStore();
 
   useEffect(() => {
     Animated.parallel([
@@ -113,9 +115,13 @@ export default function EvenementScreen() {
 
   const handleStartQuiz = () => {
     const domaine = isChallenge ? todayChallenge.domaine : (event.quizDomaine || 'general');
-    router.push({
-      pathname: '/quiz/setup/mode',
-    });
+    const nb = isChallenge ? todayChallenge.nb : 10;
+    reset();
+    setMode('quotidien');
+    setDomaine(domaine);
+    setNb(nb);
+    // Skip mode/domain steps, go directly to niveau
+    router.push('/quiz/setup/niveau');
   };
 
   return (
