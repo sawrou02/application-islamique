@@ -1,13 +1,15 @@
 import { useEffect } from 'react';
 import { View, ActivityIndicator, StyleSheet } from 'react-native';
-import { router } from 'expo-router';
+import { router, useRootNavigationState } from 'expo-router';
 import { useAuthStore } from '../store/authStore';
 import { COLORS } from '../constants/colors';
 
 export default function Index() {
   const { isAuthenticated, isLoading } = useAuthStore();
+  const rootState = useRootNavigationState();
 
   useEffect(() => {
+    if (!rootState?.key) return;
     if (!isLoading) {
       if (isAuthenticated) {
         router.replace('/(tabs)');
@@ -15,7 +17,7 @@ export default function Index() {
         router.replace('/onboarding');
       }
     }
-  }, [isAuthenticated, isLoading]);
+  }, [isAuthenticated, isLoading, rootState?.key]);
 
   return (
     <View style={styles.container}>
