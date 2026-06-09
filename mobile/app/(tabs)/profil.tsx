@@ -5,6 +5,7 @@ import {
 import { router } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { IslamicIcon } from '../../components/IslamicIcon';
+import { ShareButton } from '../../components/ShareButton';
 import { useAuthStore } from '../../store/authStore';
 import { badgesApi, usersApi } from '../../services/api';
 import { t, setLang, getCurrentLang, type Lang } from '../../i18n';
@@ -125,6 +126,13 @@ export default function ProfilScreen() {
             <View style={styles.badgesGrid}>
               {badges.map((badge) => (
                 <View key={badge.id} style={styles.badgeItem}>
+                  <View style={styles.badgeShareWrap}>
+                    <ShareButton
+                      compact
+                      message={`J'ai débloqué le badge '${badge.nom}' sur Quiz Islamique ! 🏆 ${badge.description || ''}`}
+                      url="https://quizislamique.app"
+                    />
+                  </View>
                   <Text style={styles.badgeIcon}>{badge.icone || '🏅'}</Text>
                   <Text style={styles.badgeName} numberOfLines={2}>{badge.nom}</Text>
                 </View>
@@ -240,7 +248,9 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.surface, borderRadius: 12, padding: 12,
     alignItems: 'center', width: 80,
     borderWidth: 1, borderColor: COLORS.border,
+    position: 'relative',
   },
+  badgeShareWrap: { position: 'absolute', top: 4, right: 4, zIndex: 2 },
   badgeIcon: { fontSize: 28, marginBottom: 4 },
   badgeName: { fontSize: 10, color: COLORS.textSecondary, textAlign: 'center' },
   infoCard: { backgroundColor: COLORS.surface, borderRadius: 14, overflow: 'hidden', borderWidth: 1, borderColor: COLORS.border },

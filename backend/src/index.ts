@@ -6,6 +6,7 @@ import { Server as SocketServer } from 'socket.io';
 import app from './app';
 import { setupSocket } from './socket';
 import { sendDailyReminder } from './services/notifications';
+import { startTournoiAuto } from './services/tournoiAuto';
 import pool from './db';
 
 const httpServer = createServer(app);
@@ -45,6 +46,7 @@ setInterval(async () => {
 const PORT = process.env.PORT || 3000;
 httpServer.listen(PORT, () => {
   console.log(`Quiz Islamique API running on port ${PORT}`);
+  startTournoiAuto();
 });
 
 export default app;

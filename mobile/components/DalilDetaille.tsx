@@ -3,6 +3,40 @@ import { View, Text, StyleSheet, Pressable, LayoutAnimation, Platform, UIManager
 import { COLORS } from '../constants/colors';
 import { IslamicIcon } from './IslamicIcon';
 import { Question } from '../types';
+import { getCurrentLang, t } from '../i18n';
+
+/**
+ * pickText — sélectionne la version EN si la langue courante est 'en' et qu'elle
+ * existe, sinon retombe sur la version FR. L'arabe reste affiché à part.
+ */
+export function pickText(
+  question: Question,
+  field: 'verset' | 'hadith' | 'parole_savant' | 'explication',
+): string {
+  const lang = getCurrentLang();
+  switch (field) {
+    case 'verset': {
+      const en = question.verset_en;
+      const fr = question.verset_fr;
+      return (lang === 'en' && en) ? en : (fr || '');
+    }
+    case 'hadith': {
+      const en = question.hadith_texte_en;
+      const fr = question.hadith_texte_fr;
+      return (lang === 'en' && en) ? en : (fr || '');
+    }
+    case 'parole_savant': {
+      const en = question.parole_savant_en;
+      const fr = question.parole_savant_texte;
+      return (lang === 'en' && en) ? en : (fr || '');
+    }
+    case 'explication': {
+      const en = question.explication_en;
+      const fr = question.explication_detaillee || question.explication;
+      return (lang === 'en' && en) ? en : (fr || '');
+    }
+  }
+}
 
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
   UIManager.setLayoutAnimationEnabledExperimental(true);
@@ -21,10 +55,15 @@ interface Props {
 export function DalilDetaille({ question, initialOpen = false }: Props) {
   const [open, setOpen] = useState(initialOpen);
 
-  const hasCoran = !!(question.verset_ar || question.verset_fr || question.verset_ref);
-  const hasHadith = !!(question.hadith_texte_ar || question.hadith_texte_fr || question.hadith_ref);
-  const hasSavant = !!(question.parole_savant_texte || question.parole_savant_ref);
-  const hasExplication = !!(question.explication_detaillee || question.explication);
+  const versetText = pickText(question, 'verset');
+  const hadithText = pickText(question, 'hadith');
+  const savantText = pickText(question, 'parole_savant');
+  const explicationText = pickText(question, 'explication');
+
+  const hasCoran = !!(question.verset_ar || versetText || question.verset_ref);
+  const hasHadith = !!(question.hadith_texte_ar || hadithText || question.hadith_ref);
+  const hasSavant = !!(savantText || question.parole_savant_ref);
+  const hasExplication = !!explicationText;
   // Fallback legacy (anciennes questions sans nouvelles colonnes)
   const hasLegacyDalil = !!(question.dalil_texte_ar || question.dalil_texte_fr || question.dalil_ref);
 
@@ -41,7 +80,7 @@ export function DalilDetaille({ question, initialOpen = false }: Props) {
     <View style={styles.container}>
       <Pressable onPress={toggle} style={styles.header}>
         <IslamicIcon name="book" size={18} color={COLORS.gold} />
-        <Text style={styles.headerTitle}>Dalil détaillé</Text>
+        <Text style={styles.headerTitle}>{getCurrentLang() === 'en' ? 'Detailed Dalil' : 'Dalil détaillé'}</Text>
         <View style={{ flex: 1 }} />
         <IslamicIcon name={open ? 'up' : 'down'} size={16} color={COLORS.primary} />
       </Pressable>
@@ -51,40 +90,40 @@ export function DalilDetaille({ question, initialOpen = false }: Props) {
           {hasCoran && (
             <Section
               icon="book"
-              title="Coran"
+              title={t('verset_coran')}
               ar={question.verset_ar}
-              fr={question.verset_fr}
+              fr={versetText}
               ref={question.verset_ref}
             />
           )}
           {hasHadith && (
             <Section
               icon="quiz"
-              title="Hadith"
+              title={t('hadith_label')}
               ar={question.hadith_texte_ar}
-              fr={question.hadith_texte_fr}
+              fr={hadithText}
               ref={question.hadith_ref}
             />
           )}
           {hasSavant && (
             <Section
               icon="profile"
-              title="Parole des Savants"
-              fr={question.parole_savant_texte}
+              title={t('parole_savants')}
+              fr={savantText}
               ref={question.parole_savant_ref}
             />
           )}
           {hasExplication && (
             <Section
               icon="info"
-              title="Explication"
-              fr={question.explication_detaillee || question.explication}
+              title={t('explication')}
+              fr={explicationText}
             />
           )}
           {!hasCoran && !hasHadith && !hasSavant && !hasExplication && hasLegacyDalil && (
             <Section
               icon="book"
-              title="Source"
+              title={getCurrentLang() === 'en' ? 'Source' : 'Source'}
               ar={question.dalil_texte_ar}
               fr={question.dalil_texte_fr}
               ref={question.dalil_ref}
