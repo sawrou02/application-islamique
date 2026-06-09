@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { Question, QuizConfig, PlayerAnswer, QuizResult } from '../types';
 import { questionsApi, quizApi, srsApi } from '../services/api';
 import { offlineCache } from '../services/offlineCache';
+import { checkOnline } from '../hooks/useNetworkStatus';
 
 interface QuizState {
   config: QuizConfig | null;
@@ -12,6 +13,7 @@ interface QuizState {
   xpGained: number;
   result: QuizResult | null;
   isLoading: boolean;
+  isOffline: boolean;
   status: 'idle' | 'loading' | 'playing' | 'finished';
   questionStartTime: number;
 
@@ -20,6 +22,7 @@ interface QuizState {
   nextQuestion: () => void;
   finishQuiz: () => Promise<void>;
   resetQuiz: () => void;
+  syncPending: () => Promise<void>;
 }
 
 export const useQuizStore = create<QuizState>((set, get) => ({
@@ -31,11 +34,32 @@ export const useQuizStore = create<QuizState>((set, get) => ({
   xpGained: 0,
   result: null,
   isLoading: false,
+  isOffline: false,
   status: 'idle',
   questionStartTime: 0,
 
   startQuiz: async (config) => {
-    set({ isLoading: true, status: 'loading', config, answers: [], currentIndex: 0, score: 0, xpGained: 0, result: null });
+    set({ isLoading: true, status: 'loading', config, answers: [], currentIndex: 0, score: 0, xpGained: 0, result: null, isOffline: false });
+
+    const online = await checkOnline();
+
+    // Mode murajaah et quotidien : pas de cache offline (données personnalisées)
+    const canUsCache = config.mode !== 'murajaah';
+
+    if (!online && canUsCache) {
+      const cached = await offlineCache.loadQuestions(
+        config.mode,
+        config.domaine,
+        config.niveau,
+      );
+      if (cached.length > 0) {
+        set({ questions: cached, isLoading: false, status: 'playing', isOffline: true, questionStartTime: Date.now() });
+        return;
+      }
+      set({ isLoading: false, status: 'idle' });
+      throw new Error('offline_no_cache');
+    }
+
     try {
       let response;
       if (config.mode === 'quotidien') {
@@ -43,7 +67,6 @@ export const useQuizStore = create<QuizState>((set, get) => ({
       } else if (config.mode === 'murajaah') {
         response = await quizApi.getMistakes(config.nb_questions);
       } else if (config.mode === 'talallum') {
-        // Mode Ta'allum : priorité aux cartes SRS échues, sinon nouvelles questions
         response = await srsApi.getDue(config.nb_questions);
         if (response.data.data.length === 0) {
           response = await questionsApi.getQuestions({
@@ -61,18 +84,20 @@ export const useQuizStore = create<QuizState>((set, get) => ({
           limit: config.nb_questions,
         });
       }
-      set({
-        questions: response.data.data,
-        isLoading: false,
-        status: 'playing',
-        questionStartTime: Date.now(),
-      });
-      offlineCache.saveQuestions(response.data.data);
+
+      const questions: Question[] = response.data.data;
+      set({ questions, isLoading: false, status: 'playing', questionStartTime: Date.now() });
+
+      // Mise en cache pour usage hors-ligne
+      if (canUsCache) {
+        offlineCache.saveQuestions(questions, config.mode, config.domaine, config.niveau);
+      }
     } catch (err) {
-      if (config.mode !== 'quotidien' && config.mode !== 'murajaah') {
-        const cached = await offlineCache.loadQuestions();
+      // Fallback cache si réseau défaillant
+      if (canUsCache) {
+        const cached = await offlineCache.loadQuestions(config.mode, config.domaine, config.niveau);
         if (cached.length > 0) {
-          set({ questions: cached, status: 'playing', isLoading: false });
+          set({ questions: cached, isLoading: false, status: 'playing', isOffline: true, questionStartTime: Date.now() });
           return;
         }
       }
@@ -85,14 +110,11 @@ export const useQuizStore = create<QuizState>((set, get) => ({
     const { questions, currentIndex, answers, questionStartTime } = get();
     const question = questions[currentIndex];
     if (!question) return;
-
-    const temps_ms = Date.now() - questionStartTime;
     const answer: PlayerAnswer = {
       question_id: question.id,
       reponse_id,
-      temps_ms,
+      temps_ms: Date.now() - questionStartTime,
     };
-
     set({ answers: [...answers, answer] });
   },
 
@@ -106,26 +128,31 @@ export const useQuizStore = create<QuizState>((set, get) => ({
   },
 
   finishQuiz: async () => {
-    const { answers } = get();
+    const { answers, config, isOffline } = get();
     if (answers.length === 0) {
       set({ status: 'finished' });
       return;
     }
-    try {
-      const response = await quizApi.submitQuiz({
-        answers: answers.map(a => ({
-          question_id: a.question_id,
-          reponse_id: a.reponse_id,
-          temps_ms: a.temps_ms,
-        })),
-      });
 
-      // Mode Ta'allum : reprogramme chaque question via le SRS
-      const { config } = get();
+    const payload = answers.map(a => ({
+      question_id: a.question_id,
+      reponse_id: a.reponse_id,
+      temps_ms: a.temps_ms,
+    }));
+
+    // Si hors-ligne : mettre en file d'attente et terminer sans score serveur
+    if (isOffline) {
+      await offlineCache.enqueuePendingResult(payload);
+      set({ status: 'finished', result: null });
+      return;
+    }
+
+    try {
+      const response = await quizApi.submitQuiz({ answers: payload });
+
       if (config?.mode === 'talallum' && response.data.data.answers_detail) {
         await Promise.all(
           response.data.data.answers_detail.map((d) => {
-            // qualité : 0 = faux, 2 = correct, 3 = correct & rapide (< 5s)
             const answer = answers.find(a => a.question_id === d.question_id);
             const quality = !d.est_correcte ? 0 : (answer && answer.temps_ms < 5000 ? 3 : 2);
             return srsApi.review(d.question_id, quality).catch(() => {});
@@ -135,7 +162,27 @@ export const useQuizStore = create<QuizState>((set, get) => ({
 
       set({ result: response.data.data, status: 'finished' });
     } catch {
-      set({ status: 'finished' });
+      // Réseau coupé en fin de quiz : sauvegarder pour sync ultérieure
+      await offlineCache.enqueuePendingResult(payload);
+      set({ status: 'finished', result: null });
+    }
+  },
+
+  // Envoie les résultats mis en attente quand le réseau revient
+  syncPending: async () => {
+    const online = await checkOnline();
+    if (!online) return;
+    const pending = await offlineCache.flushPendingResults();
+    for (const p of pending) {
+      try {
+        await quizApi.submitQuiz({ answers: p.answers });
+      } catch {
+        // Re-enqueue si toujours en échec
+        await offlineCache.enqueuePendingResult(p.answers);
+      }
+    }
+    if (pending.length > 0) {
+      await offlineCache.saveLastSync();
     }
   },
 
@@ -149,6 +196,7 @@ export const useQuizStore = create<QuizState>((set, get) => ({
       xpGained: 0,
       result: null,
       status: 'idle',
+      isOffline: false,
     });
   },
 }));

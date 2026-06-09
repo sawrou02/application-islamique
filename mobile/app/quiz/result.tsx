@@ -11,6 +11,7 @@ import { useQuizStore } from '../../store/quizStore';
 import { MOTIVATION_HADITHS } from '../../constants/islamic';
 import { getCurrentXpBoost } from '../../services/islamicBoosts';
 import { getCurrentLang } from '../../i18n';
+import { useNetworkStatus } from '../../hooks/useNetworkStatus';
 
 function getMotivationHadith(score: number) {
   if (score >= 80) return MOTIVATION_HADITHS[0];
@@ -24,6 +25,8 @@ export default function QuizResult() {
   const hadith = getMotivationHadith(result?.score || 0);
   const lang = getCurrentLang();
   const isAr = lang === 'ar';
+  const isOnline = useNetworkStatus();
+  const wasOffline = !result && answers.length > 0;
 
   useEffect(() => {
     Animated.spring(scaleAnim, {
@@ -55,6 +58,17 @@ export default function QuizResult() {
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
+        {/* Bannière hors-ligne */}
+        {wasOffline && (
+          <View style={styles.offlineBanner}>
+            <Text style={styles.offlineText}>
+              📵 {isAr ? 'وضع بدون اتصال — ستُرسل النتائج تلقائياً عند العودة للإنترنت' :
+                lang === 'en' ? 'Offline mode — results will sync when back online' :
+                'Mode hors-ligne — résultats envoyés dès le retour en ligne'}
+            </Text>
+          </View>
+        )}
+
         {/* Score Circle */}
         <View style={styles.scoreSection}>
           <Animated.View style={[styles.scoreCircle, { borderColor: scoreColor, transform: [{ scale: scaleAnim }] }]}>
@@ -155,6 +169,10 @@ export default function QuizResult() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: COLORS.background },
   scroll: { padding: 20, paddingBottom: 40 },
+  offlineBanner: {
+    backgroundColor: '#B71C1C', borderRadius: 10, padding: 12, marginBottom: 12,
+  },
+  offlineText: { color: '#FFF', fontSize: 12, fontWeight: '700', textAlign: 'center' },
   scoreSection: { alignItems: 'center', paddingVertical: 24 },
   scoreCircle: {
     width: 140, height: 140, borderRadius: 70, borderWidth: 6,

@@ -50,8 +50,16 @@ export default function Countdown() {
       temps_par_question: 30,
     };
 
-    startQuiz(config).catch(() => {
-      setLoadFailed(true);
+    startQuiz(config).catch((err) => {
+      if (err?.message === 'offline_no_cache') {
+        Alert.alert(
+          'Hors-ligne',
+          'Aucune question en cache. Connectez-vous une première fois pour jouer hors-ligne.',
+          [{ text: 'OK', onPress: () => router.replace('/(tabs)/quiz') }],
+        );
+      } else {
+        setLoadFailed(true);
+      }
     });
   }, []);
 
