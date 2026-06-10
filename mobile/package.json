@@ -26,7 +26,6 @@
     "axios": "^1.6.7",
     "socket.io-client": "^4.6.1",
     "zustand": "^4.5.2",
-    "react-native-reanimated": "~3.17.0",
     "react-native-gesture-handler": "~2.21.2",
     "expo-notifications": "~0.29.14",
     "expo-device": "~7.1.4",
