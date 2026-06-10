@@ -1,7 +1,7 @@
 {
   "expo": {
     "name": "Quiz Islamique",
-    "slug": "quiz-islamique",
+    "slug": "app-islamique",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
