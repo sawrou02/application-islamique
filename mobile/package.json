@@ -35,6 +35,9 @@
   },
   "devDependencies": {
     "@babel/core": "^7.24.0",
+    "@babel/plugin-transform-class-properties": "^7.24.0",
+    "@babel/plugin-transform-private-methods": "^7.24.0",
+    "@babel/plugin-transform-private-field-destructuring": "^7.24.0",
     "@types/react": "~18.3.12",
     "typescript": "~5.3.3"
   }
