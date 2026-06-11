@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { io, Socket } from 'socket.io-client';
+import type { Socket } from 'socket.io-client';
 import { Room, Question, RoomPlayer } from '../types';
 import { roomsApi } from '../services/api';
 
@@ -51,7 +51,8 @@ export const useGameStore = create<GameState>((set, get) => ({
     return room;
   },
 
-  connectSocket: (roomId, userId) => {
+  connectSocket: async (roomId, userId) => {
+    const { io } = await import('socket.io-client');
     const socket = io(SOCKET_URL, { transports: ['websocket'] });
 
     socket.on('connect', () => {

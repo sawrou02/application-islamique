@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { io, Socket } from 'socket.io-client';
+import type { Socket } from 'socket.io-client';
 import { Question } from '../types';
 import { duelsApi } from '../services/api';
 
@@ -72,8 +72,9 @@ export const useDuelStore = create<DuelState>((set, get) => ({
     return d;
   },
 
-  connect: (duelId, userId) => {
+  connect: async (duelId, userId) => {
     if (get().socket) return;
+    const { io } = await import('socket.io-client');
     const socket = io(SOCKET_URL, { transports: ['websocket'] });
 
     socket.on('connect', () => {
