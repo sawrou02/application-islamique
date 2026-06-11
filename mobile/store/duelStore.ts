@@ -1,9 +1,11 @@
 import { create } from 'zustand';
-import type { Socket } from 'socket.io-client';
 import { Question } from '../types';
 import { duelsApi } from '../services/api';
 
-const SOCKET_URL = process.env.EXPO_PUBLIC_API_URL?.replace('/api', '') || 'http://localhost:3000';
+const SOCKET_URL = (process.env.EXPO_PUBLIC_API_URL || 'https://application-islamique-production.up.railway.app/api')
+  .replace('/api', '')
+  .replace('https://', 'wss://')
+  .replace('http://', 'ws://');
 
 type DuelStatus = 'idle' | 'waiting' | 'playing' | 'finished';
 
@@ -22,7 +24,7 @@ interface AnswerResult {
 }
 
 interface DuelState {
-  socket: Socket | null;
+  ws: WebSocket | null;
   duelId: string | null;
   inviteToken: string | null;
   challengerPseudo: string | null;
@@ -43,8 +45,14 @@ interface DuelState {
   reset: () => void;
 }
 
+function send(ws: WebSocket | null, event: string, data: object) {
+  if (ws && ws.readyState === WebSocket.OPEN) {
+    ws.send(JSON.stringify({ event, data }));
+  }
+}
+
 export const useDuelStore = create<DuelState>((set, get) => ({
-  socket: null,
+  ws: null,
   duelId: null,
   inviteToken: null,
   challengerPseudo: null,
@@ -72,59 +80,56 @@ export const useDuelStore = create<DuelState>((set, get) => ({
     return d;
   },
 
-  connect: async (duelId, userId) => {
-    if (get().socket) return;
-    const { io } = await import('socket.io-client');
-    const socket = io(SOCKET_URL, { transports: ['websocket'] });
+  connect: (duelId, userId) => {
+    if (get().ws) return;
+    const ws = new WebSocket(`${SOCKET_URL}/socket.io/?transport=websocket`);
 
-    socket.on('connect', () => {
-      socket.emit('join-duel', { duel_id: duelId, user_id: userId });
-    });
+    ws.onopen = () => {
+      send(ws, 'join-duel', { duel_id: duelId, user_id: userId });
+    };
 
-    socket.on('duel-player-joined', ({ challenger_pseudo, challenged_pseudo }: { challenger_pseudo: string; challenged_pseudo: string }) => {
-      set({ challengerPseudo: challenger_pseudo, challengedPseudo: challenged_pseudo });
-    });
+    ws.onmessage = (e) => {
+      try {
+        const { event, data } = JSON.parse(e.data);
+        switch (event) {
+          case 'duel-player-joined':
+            set({ challengerPseudo: data.challenger_pseudo, challengedPseudo: data.challenged_pseudo });
+            break;
+          case 'duel-started':
+            set({ status: 'playing', currentQuestion: data.question, questionIndex: data.index, totalQuestions: data.total, lastResult: null });
+            break;
+          case 'duel-question':
+            set({ currentQuestion: data.question, questionIndex: data.index, totalQuestions: data.total, lastResult: null });
+            break;
+          case 'duel-answer-result':
+            set({ lastResult: data });
+            break;
+          case 'duel-scores':
+            set({ scores: data.scores });
+            break;
+          case 'duel-over':
+            set({ status: 'finished', finalScores: data.final_scores, gagnantId: data.gagnant_id });
+            break;
+        }
+      } catch {}
+    };
 
-    socket.on('duel-started', ({ question, index, total }: { question: Question; index: number; total: number }) => {
-      set({ status: 'playing', currentQuestion: question, questionIndex: index, totalQuestions: total, lastResult: null });
-    });
+    ws.onerror = () => {};
+    ws.onclose = () => {};
 
-    socket.on('duel-question', ({ question, index, total }: { question: Question; index: number; total: number }) => {
-      set({ currentQuestion: question, questionIndex: index, totalQuestions: total, lastResult: null });
-    });
-
-    socket.on('duel-answer-result', (result: AnswerResult) => {
-      set({ lastResult: result });
-    });
-
-    socket.on('duel-scores', ({ scores }: { scores: Record<string, number> }) => {
-      set({ scores });
-    });
-
-    socket.on('duel-over', ({ final_scores, gagnant_id }: { final_scores: FinalEntry[]; gagnant_id: string | null }) => {
-      set({ status: 'finished', finalScores: final_scores, gagnantId: gagnant_id });
-    });
-
-    set({ socket, duelId });
+    set({ ws, duelId });
   },
 
   submitAnswer: (userId, question_id, reponse_id, temps_ms) => {
-    const { socket, duelId } = get();
-    if (!socket || !duelId) return;
-    socket.emit('duel-submit-answer', {
-      duel_id: duelId,
-      user_id: userId,
-      question_id,
-      reponse_id,
-      temps_ms,
-    });
+    const { ws, duelId } = get();
+    send(ws, 'duel-submit-answer', { duel_id: duelId, user_id: userId, question_id, reponse_id, temps_ms });
   },
 
   reset: () => {
-    const { socket } = get();
-    if (socket) socket.disconnect();
+    const { ws } = get();
+    if (ws) ws.close();
     set({
-      socket: null, duelId: null, inviteToken: null,
+      ws: null, duelId: null, inviteToken: null,
       challengerPseudo: null, challengedPseudo: null,
       status: 'idle', currentQuestion: null, questionIndex: 0, totalQuestions: 0,
       scores: {}, lastResult: null, finalScores: [], gagnantId: null,
