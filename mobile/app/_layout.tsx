@@ -1,10 +1,9 @@
 import { useEffect } from 'react';
-import { Stack, router, useRootNavigationState } from 'expo-router';
+import { Stack, router } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { StyleSheet, View } from 'react-native';
-import * as SplashScreen from 'expo-splash-screen';
 import { useAuthStore } from '../store/authStore';
 import { registerForPushNotifications, setupNotificationHandlers } from '../services/notifications';
 import { usersApi } from '../services/api';
@@ -18,14 +17,12 @@ import {
   loadAdhkarPrefs, scheduleAdhkarNotifications,
 } from '../services/notifications';
 
-SplashScreen.preventAutoHideAsync().catch(() => {});
 setupNotificationHandlers();
 
 export default function RootLayout() {
   const { loadUser, isAuthenticated, isLoading, user } = useAuthStore();
   const isOnline = useNetworkStatus();
   const { syncPending } = useQuizStore();
-  const navigationState = useRootNavigationState();
 
   useEffect(() => {
     loadLang()
@@ -47,32 +44,17 @@ export default function RootLayout() {
     }
   }, [isOnline]);
 
-  // Navigation au tap d'une notification
   useEffect(() => {
     const sub = Notifications.addNotificationResponseReceivedListener((response) => {
       const data = response.notification.request.content.data as any;
       if (!data) return;
       switch (data.type) {
-        case 'daily':
-          router.push('/quiz/setup/mode');
-          break;
-        case 'streak':
-          router.push('/quiz/setup/mode');
-          break;
-        case 'duel':
-          router.push('/(tabs)/multi');
-          break;
-        case 'tournoi':
-          router.push('/(tabs)/multi');
-          break;
-        case 'badge':
-          router.push('/(tabs)/profil');
-          break;
-        case 'prayer':
-          break;
-        case 'adhkar':
-          router.push('/adhkar');
-          break;
+        case 'daily': router.push('/quiz/setup/mode'); break;
+        case 'streak': router.push('/quiz/setup/mode'); break;
+        case 'duel': router.push('/(tabs)/multi'); break;
+        case 'tournoi': router.push('/(tabs)/multi'); break;
+        case 'badge': router.push('/(tabs)/profil'); break;
+        case 'adhkar': router.push('/adhkar'); break;
       }
     });
     return () => sub.remove();
@@ -95,14 +77,13 @@ export default function RootLayout() {
   }, []);
 
   useEffect(() => {
-    if (!navigationState?.key || isLoading) return;
+    if (isLoading) return;
     if (isAuthenticated) {
       router.replace('/(tabs)');
     } else {
       router.replace('/onboarding');
     }
-    SplashScreen.hideAsync().catch(() => {});
-  }, [navigationState?.key, isLoading, isAuthenticated]);
+  }, [isLoading, isAuthenticated]);
 
   return (
     <GestureHandlerRootView style={styles.container}>
@@ -134,7 +115,5 @@ export default function RootLayout() {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
+  container: { flex: 1 },
 });
