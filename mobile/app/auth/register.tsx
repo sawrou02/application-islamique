@@ -30,9 +30,12 @@ export default function Register() {
       await register({ pseudo: pseudo.trim(), email: email.trim().toLowerCase(), password, madhab: selectedMadhab, pays: pays.trim() });
       router.replace('/(tabs)');
     } catch (err: unknown) {
+      const e = err as any;
+      const debug = `msg:${e?.message}\ncode:${e?.code}\nstatus:${e?.response?.status}\ndata:${JSON.stringify(e?.response?.data)}\nurl:${e?.config?.baseURL}${e?.config?.url}`;
+      console.log('[register] error:', debug);
       const message =
         (err as { response?: { data?: { error?: string } } })?.response?.data?.error ||
-        "Erreur lors de l'inscription.";
+        `Erreur lors de l'inscription.\n\n${debug}`;
       Alert.alert('Inscription échouée', message);
     }
   };
