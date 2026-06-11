@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { Stack, router } from 'expo-router';
+import { Stack, router, useRootNavigationState } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
@@ -23,6 +23,7 @@ export default function RootLayout() {
   const { loadUser, isAuthenticated, isLoading, user } = useAuthStore();
   const isOnline = useNetworkStatus();
   const { syncPending } = useQuizStore();
+  const navigationState = useRootNavigationState();
 
   useEffect(() => {
     loadLang().then(() => loadUser());
@@ -91,14 +92,13 @@ export default function RootLayout() {
   }, []);
 
   useEffect(() => {
-    if (!isLoading) {
-      if (isAuthenticated) {
-        router.replace('/(tabs)');
-      } else {
-        router.replace('/onboarding');
-      }
+    if (!navigationState?.key || isLoading) return;
+    if (isAuthenticated) {
+      router.replace('/(tabs)');
+    } else {
+      router.replace('/onboarding');
     }
-  }, [isLoading, isAuthenticated]);
+  }, [navigationState?.key, isLoading, isAuthenticated]);
 
   return (
     <GestureHandlerRootView style={styles.container}>
