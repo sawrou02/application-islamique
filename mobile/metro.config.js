@@ -14,6 +14,9 @@ function replacePrivateFields(src) {
 
 function patchFile(file) {
   if (!fs.existsSync(file)) return;
+  // Skip files where naive #field replacement can break semantics
+  // (these are still handled by the post-Babel transformer)
+  if (file.includes(path.join('webapis', 'errors'))) return;
   let src;
   try { src = fs.readFileSync(file, 'utf8'); } catch { return; }
   if (!/(^|\s|[;{(,])#[a-zA-Z_]/.test(src)) return;
