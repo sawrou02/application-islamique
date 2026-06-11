@@ -4,6 +4,7 @@ import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { StyleSheet, View } from 'react-native';
+import * as SplashScreen from 'expo-splash-screen';
 import { useAuthStore } from '../store/authStore';
 import { registerForPushNotifications, setupNotificationHandlers } from '../services/notifications';
 import { usersApi } from '../services/api';
@@ -17,6 +18,7 @@ import {
   loadAdhkarPrefs, scheduleAdhkarNotifications,
 } from '../services/notifications';
 
+SplashScreen.preventAutoHideAsync().catch(() => {});
 setupNotificationHandlers();
 
 export default function RootLayout() {
@@ -26,7 +28,11 @@ export default function RootLayout() {
   const navigationState = useRootNavigationState();
 
   useEffect(() => {
-    loadLang().then(() => loadUser());
+    loadLang()
+      .then(() => loadUser())
+      .catch(() => {
+        useAuthStore.setState({ isLoading: false, isAuthenticated: false });
+      });
   }, []);
 
   useEffect(() => {
@@ -35,7 +41,6 @@ export default function RootLayout() {
     }
   }, [user?.langue]);
 
-  // Synchronise les résultats en attente dès que le réseau revient
   useEffect(() => {
     if (isOnline) {
       syncPending().catch(() => {});
@@ -64,7 +69,6 @@ export default function RootLayout() {
           router.push('/(tabs)/profil');
           break;
         case 'prayer':
-          // Pas de navigation — juste le rappel
           break;
         case 'adhkar':
           router.push('/adhkar');
@@ -74,7 +78,6 @@ export default function RootLayout() {
     return () => sub.remove();
   }, []);
 
-  // Applique les rappels de prière + adhkar selon les préférences sauvegardées
   useEffect(() => {
     if (isAuthenticated && user?.langue) {
       const lng = user.langue || 'fr';
@@ -98,6 +101,7 @@ export default function RootLayout() {
     } else {
       router.replace('/onboarding');
     }
+    SplashScreen.hideAsync().catch(() => {});
   }, [navigationState?.key, isLoading, isAuthenticated]);
 
   return (
@@ -107,21 +111,21 @@ export default function RootLayout() {
         <View style={{ flex: 1 }}>
           <OfflineBanner visible={!isOnline} />
           <Stack screenOptions={{ headerShown: false }}>
-          <Stack.Screen name="index" />
-          <Stack.Screen name="onboarding" />
-          <Stack.Screen name="auth" />
-          <Stack.Screen name="(tabs)" />
-          <Stack.Screen name="quiz" />
-          <Stack.Screen name="multi" />
-          <Stack.Screen name="evenement" />
-          <Stack.Screen name="coran" />
-          <Stack.Screen name="adhkar" />
-          <Stack.Screen name="horaires" />
-          <Stack.Screen name="qibla" />
-          <Stack.Screen name="cgu" />
-          <Stack.Screen name="stats" />
-          <Stack.Screen name="search" />
-          <Stack.Screen name="sahaba" />
+            <Stack.Screen name="index" />
+            <Stack.Screen name="onboarding" />
+            <Stack.Screen name="auth" />
+            <Stack.Screen name="(tabs)" />
+            <Stack.Screen name="quiz" />
+            <Stack.Screen name="multi" />
+            <Stack.Screen name="evenement" />
+            <Stack.Screen name="coran" />
+            <Stack.Screen name="adhkar" />
+            <Stack.Screen name="horaires" />
+            <Stack.Screen name="qibla" />
+            <Stack.Screen name="cgu" />
+            <Stack.Screen name="stats" />
+            <Stack.Screen name="search" />
+            <Stack.Screen name="sahaba" />
           </Stack>
         </View>
       </SafeAreaProvider>
