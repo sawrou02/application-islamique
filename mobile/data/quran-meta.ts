@@ -43,14 +43,14 @@ export interface Reciter {
 }
 
 export const RECITERS: Reciter[] = [
-  { id: 'alafasy',    name: 'Mishary Al-Afasy',          nameAr: 'مشاري العفاسي',       edition: 'ar.alafasy' },
-  { id: 'husary',     name: 'Mahmoud Al-Husary',         nameAr: 'محمود الحصري',        edition: 'ar.husary' },
-  { id: 'sudais',     name: 'Abdul Rahman Al-Sudais',    nameAr: 'عبد الرحمن السديس',   edition: 'ar.abdurrahmaansudais' },
-  { id: 'shuraim',    name: 'Saud Al-Shuraim',           nameAr: 'سعود الشريم',         edition: 'ar.saoodashureem' },
-  { id: 'muaiqly',   name: 'Maher Al-Muaiqly',          nameAr: 'ماهر المعيقلي',       edition: 'ar.mahermuaiqly' },
-  { id: 'minshawi',   name: 'Mohamed Al-Minshawi',       nameAr: 'محمد المنشاوي',       edition: 'ar.minshawi' },
-  { id: 'abdulbasit', name: 'Abdul Basit',               nameAr: 'عبد الباسط',          edition: 'ar.abdulbasit' },
-  { id: 'ayyoub',     name: 'Muhammad Ayyoub',           nameAr: 'محمد أيوب',           edition: 'ar.muhammadayyoub' },
+  { id: 'alafasy',     name: 'Mishary Al-Afasy',       nameAr: 'مشاري العفاسي',     edition: 'ar.alafasy' },
+  { id: 'husary',      name: 'Mahmoud Al-Husary',      nameAr: 'محمود الحصري',      edition: 'ar.husary' },
+  { id: 'sudais',      name: 'Abdul Rahman Al-Sudais', nameAr: 'عبد الرحمن السديس', edition: 'ar.abdurrahmaansudais' },
+  { id: 'shuraim',     name: 'Saud Al-Shuraim',        nameAr: 'سعود الشريم',       edition: 'ar.saoodashuraym' },
+  { id: 'muaiqly',     name: 'Maher Al-Muaiqly',       nameAr: 'ماهر المعيقلي',     edition: 'ar.mahermuaiqly' },
+  { id: 'minshawi',    name: 'Mohamed Al-Minshawi',    nameAr: 'محمد المنشاوي',     edition: 'ar.minshawi' },
+  { id: 'abdulbasit',  name: 'Abdul Basit Murattal',   nameAr: 'عبد الباسط',        edition: 'ar.abdulbasitmurattal' },
+  { id: 'ayyoub',      name: 'Muhammad Ayyoub',        nameAr: 'محمد أيوب',         edition: 'ar.muhammadayyoub' },
 ];
 
 export function recitationUrl(reciterEdition: string, surah: number): string {

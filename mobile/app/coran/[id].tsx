@@ -77,11 +77,12 @@ export default function MushafScreen() {
 
   const playAudio = async (r: Reciter = reciter) => {
     const surah = surahFromPage(currentPage);
+    const url = recitationUrl(r.edition, surah);
     setLoadingAudio(true);
     try {
       await stopAudio();
       const { sound } = await Audio.Sound.createAsync(
-        { uri: recitationUrl(r.edition, surah) },
+        { uri: url },
         { shouldPlay: true }
       );
       soundRef.current = sound;
@@ -89,8 +90,11 @@ export default function MushafScreen() {
         if (status?.didJustFinish) setPlaying(false);
       });
       setPlaying(true);
-    } catch {
-      Alert.alert(isAr ? 'خطأ' : 'Erreur', isAr ? 'تعذر تشغيل الصوت' : 'Lecture audio impossible');
+    } catch (e: any) {
+      Alert.alert(
+        isAr ? 'خطأ' : 'Erreur',
+        `${isAr ? 'تعذر تشغيل الصوت' : 'Lecture audio impossible'}\n\n${e?.message || ''}\n${url}`,
+      );
     } finally {
       setLoadingAudio(false);
     }
