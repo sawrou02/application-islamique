@@ -179,19 +179,21 @@ export default function ActiveQuiz() {
         )}
       </View>
 
-      {/* Question */}
-      <Animated.View style={[styles.questionContainer, {
+      {/* Question — Adhkar-style framed card */}
+      <Animated.View style={[styles.questionCard, {
         opacity: questionAnim,
         transform: [{ scale: questionAnim.interpolate({ inputRange: [0, 1], outputRange: [0.95, 1] }) }],
       }]}>
-        {isAr ? (
-          <Text style={[styles.questionAr, { fontSize: 20 }]}>{question.texte_ar || question.texte_fr}</Text>
-        ) : (
-          <>
-            {question.texte_ar && <Text style={styles.questionAr}>{question.texte_ar}</Text>}
-            <Text style={styles.questionFr}>{question.texte_fr}</Text>
-          </>
-        )}
+        <View style={styles.questionCardInner}>
+          {isAr ? (
+            <Text style={[styles.questionAr, { fontSize: 20 }]}>{question.texte_ar || question.texte_fr}</Text>
+          ) : (
+            <>
+              {question.texte_ar && <Text style={styles.questionAr}>{question.texte_ar}</Text>}
+              <Text style={styles.questionFr}>{question.texte_fr}</Text>
+            </>
+          )}
+        </View>
       </Animated.View>
 
       {/* Answers + Dalil + Next in a scrollable area */}
@@ -289,26 +291,45 @@ const styles = StyleSheet.create({
     borderRadius: 8, paddingVertical: 4, paddingHorizontal: 10,
   },
   domainText: { fontSize: 11, fontWeight: '600', color: COLORS.primary },
-  questionContainer: {
-    paddingHorizontal: 16, paddingBottom: 16,
+  questionCard: {
+    marginHorizontal: 16, marginBottom: 14,
+    borderRadius: 14,
+    backgroundColor: COLORS.surface,
+    borderWidth: 1, borderColor: COLORS.primary + '30',
+    shadowColor: COLORS.primary, shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08, shadowRadius: 6, elevation: 2,
+    overflow: 'hidden',
+  },
+  questionCardInner: {
+    padding: 14,
+    borderLeftWidth: 3, borderLeftColor: COLORS.gold,
   },
   questionAr: {
     fontSize: 18, color: COLORS.arabicText, textAlign: 'right',
-    writingDirection: 'rtl', marginBottom: 8, lineHeight: 28,
+    writingDirection: 'rtl', marginBottom: 6, lineHeight: 28,
   },
-  questionFr: { fontSize: 17, color: COLORS.text, lineHeight: 24, fontWeight: '500' },
-  answersContainer: { paddingHorizontal: 16, gap: 10 },
+  questionFr: { fontSize: 16, color: COLORS.text, lineHeight: 23, fontWeight: '500' },
+  answersContainer: { paddingHorizontal: 16, gap: 8 },
   answerButton: {
-    backgroundColor: COLORS.surface, borderRadius: 12, padding: 14,
-    flexDirection: 'row', alignItems: 'center', gap: 12,
-    borderWidth: 1.5, borderColor: COLORS.border,
+    backgroundColor: COLORS.surface, borderRadius: 12, padding: 12,
+    flexDirection: 'row', alignItems: 'center', gap: 10,
+    borderWidth: 1.5, borderColor: COLORS.primary + '25',
+    shadowColor: '#000', shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05, shadowRadius: 2, elevation: 1,
   },
-  answerCorrect: { borderColor: COLORS.success, backgroundColor: 'rgba(46,125,50,0.08)' },
-  answerIncorrect: { borderColor: COLORS.error, backgroundColor: 'rgba(198,40,40,0.08)' },
+  answerCorrect: {
+    borderColor: COLORS.success, backgroundColor: 'rgba(46,125,50,0.10)',
+    borderWidth: 2,
+  },
+  answerIncorrect: {
+    borderColor: COLORS.error, backgroundColor: 'rgba(198,40,40,0.10)',
+    borderWidth: 2,
+  },
   answerSelected: { borderColor: COLORS.primary },
   answerLabel: {
-    width: 32, height: 32, borderRadius: 8,
-    backgroundColor: COLORS.border, justifyContent: 'center', alignItems: 'center',
+    width: 30, height: 30, borderRadius: 8,
+    backgroundColor: COLORS.primary + '15', justifyContent: 'center', alignItems: 'center',
+    borderWidth: 1, borderColor: COLORS.primary + '30',
   },
   answerLabelCorrect: { backgroundColor: COLORS.success },
   answerLabelIncorrect: { backgroundColor: COLORS.error },
