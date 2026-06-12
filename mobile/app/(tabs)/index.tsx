@@ -277,61 +277,21 @@ export default function HomeScreen() {
           </View>
         </TouchableOpacity>
 
-        {/* ── Accès rapide : Coran, Adhkar, Horaires, Qibla ── */}
-        <View style={styles.quickRow}>
-          <TouchableOpacity
-            style={[styles.quickCard, { backgroundColor: '#1B5E20' }]}
-            onPress={() => router.push('/coran')}
-            activeOpacity={0.85}
-          >
-            <Text style={styles.quickIcon}>۩</Text>
-            <Text style={styles.quickTitle}>{isAr ? 'القرآن' : lang === 'en' ? 'Qur’an' : 'Coran'}</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[styles.quickCard, { backgroundColor: '#4A148C' }]}
-            onPress={() => router.push('/adhkar')}
-            activeOpacity={0.85}
-          >
-            <Text style={styles.quickIcon}>☪</Text>
-            <Text style={styles.quickTitle}>{isAr ? 'الأذكار' : 'Adhkar'}</Text>
-          </TouchableOpacity>
-        </View>
-        <View style={styles.quickRow}>
-          <TouchableOpacity
-            style={[styles.quickCard, { backgroundColor: '#01579B' }]}
-            onPress={() => router.push('/horaires')}
-            activeOpacity={0.85}
-          >
-            <Text style={styles.quickIcon}>🕌</Text>
-            <Text style={styles.quickTitle}>{isAr ? 'مواقيت الصلاة' : lang === 'en' ? 'Prayer times' : 'Horaires'}</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[styles.quickCard, { backgroundColor: '#BF360C' }]}
-            onPress={() => router.push('/qibla')}
-            activeOpacity={0.85}
-          >
-            <Text style={styles.quickIcon}>🕋</Text>
-            <Text style={styles.quickTitle}>{isAr ? 'القبلة' : 'Qibla'}</Text>
-          </TouchableOpacity>
-        </View>
-        <View style={styles.quickRow}>
-          <TouchableOpacity
-            style={[styles.quickCard, { backgroundColor: '#37474F' }]}
-            onPress={() => router.push('/search')}
-            activeOpacity={0.85}
-          >
-            <Text style={styles.quickIcon}>🔍</Text>
-            <Text style={styles.quickTitle}>{isAr ? 'بحث' : lang === 'en' ? 'Search' : 'Recherche'}</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[styles.quickCard, { backgroundColor: '#6A1B9A' }]}
-            onPress={() => router.push('/sahaba')}
-            activeOpacity={0.85}
-          >
-            <Text style={styles.quickIcon}>☆</Text>
-            <Text style={styles.quickTitle}>{isAr ? 'الصحابة' : lang === 'en' ? 'Sahaba' : 'Sahaba'}</Text>
-          </TouchableOpacity>
-        </View>
+        {/* ── Accès rapide : Quiz ── */}
+        <TouchableOpacity
+          style={styles.quizHeroCard}
+          onPress={() => { reset(); router.push(‘/(tabs)/quiz’); }}
+          activeOpacity={0.88}
+        >
+          <View style={styles.quizHeroLeft}>
+            <Text style={styles.quizHeroIcon}>❋</Text>
+            <View>
+              <Text style={styles.quizHeroTitle}>{isAr ? ‘ابدأ الاختبار’ : lang === ‘en’ ? ‘Start Quiz’ : ‘Commencer le Quiz’}</Text>
+              <Text style={styles.quizHeroSub}>{isAr ? ‘اختبر معلوماتك الإسلامية’ : lang === ‘en’ ? ‘Test your Islamic knowledge’ : ‘Testez vos connaissances islamiques’}</Text>
+            </View>
+          </View>
+          <Text style={styles.quizHeroArrow}>›</Text>
+        </TouchableOpacity>
 
         {/* ══════════════════════════════════════════════════════════════ */}
         {/* ── Section 1 : Pour toi aujourd'hui ── */}
@@ -655,6 +615,19 @@ const styles = StyleSheet.create({
     shadowColor: '#000', shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.15, shadowRadius: 6, elevation: 4,
   },
+  quizHeroCard: {
+    marginTop: 14,
+    backgroundColor: COLORS.primary,
+    borderRadius: 20, padding: 20,
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+    shadowColor: COLORS.primary, shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3, shadowRadius: 12, elevation: 6,
+  },
+  quizHeroLeft: { flexDirection: 'row', alignItems: 'center', gap: 16 },
+  quizHeroIcon: { fontSize: 40, color: COLORS.gold },
+  quizHeroTitle: { fontSize: 20, fontWeight: '900', color: '#FFF' },
+  quizHeroSub: { fontSize: 12, color: 'rgba(255,255,255,0.8)', marginTop: 4 },
+  quizHeroArrow: { fontSize: 32, color: COLORS.gold, fontWeight: '300' },
   quickIcon: { fontSize: 34, color: '#FFD700', marginBottom: 6 },
   quickTitle: { fontSize: 16, fontWeight: '800', color: '#FFFFFF' },
   quickSub: { fontSize: 11, color: '#FFFFFFCC', marginTop: 2 },

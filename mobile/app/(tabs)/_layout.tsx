@@ -44,10 +44,10 @@ export default function TabsLayout() {
         }}
       />
       <Tabs.Screen
-        name="quiz"
+        name="multi"
         options={{
-          title: t('quiz'),
-          tabBarIcon: ({ color }) => <TabIcon symbol="❋" color={color} />,
+          title: t('multi'),
+          tabBarIcon: ({ color }) => <TabIcon symbol="✦" color={color} />,
         }}
       />
       <Tabs.Screen
@@ -71,9 +71,9 @@ export default function TabsLayout() {
           tabBarIcon: ({ color }) => <TabIcon symbol="◈" color={color} />,
         }}
       />
-      {/* Caché de la barre — accessible via code */}
+      {/* Quiz accessible via accueil — caché de la tab bar */}
       <Tabs.Screen
-        name="multi"
+        name="quiz"
         options={{ href: null }}
       />
     </Tabs>

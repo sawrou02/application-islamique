@@ -25,6 +25,46 @@ const RESOURCES = [
     color: '#4A148C',
     bg: '#EDE7F6',
   },
+  {
+    icon: '🕌',
+    titleFr: 'Horaires de prière',
+    titleAr: 'مواقيت الصلاة',
+    descFr: 'Heures de prière selon votre position',
+    descAr: 'أوقات الصلاة حسب موقعك',
+    route: '/horaires',
+    color: '#01579B',
+    bg: '#E3F2FD',
+  },
+  {
+    icon: '🕋',
+    titleFr: 'Direction de la Qibla',
+    titleAr: 'اتجاه القبلة',
+    descFr: 'Boussole pour trouver la direction de la Mecque',
+    descAr: 'بوصلة لتحديد اتجاه الكعبة المشرفة',
+    route: '/qibla',
+    color: '#BF360C',
+    bg: '#FBE9E7',
+  },
+  {
+    icon: '🔍',
+    titleFr: 'Recherche',
+    titleAr: 'بحث',
+    descFr: 'Rechercher dans toutes les questions islamiques',
+    descAr: 'البحث في جميع الأسئلة الإسلامية',
+    route: '/search',
+    color: '#37474F',
+    bg: '#ECEFF1',
+  },
+  {
+    icon: '☆',
+    titleFr: 'Sahaba',
+    titleAr: 'الصحابة',
+    descFr: 'Biographies des compagnons du Prophète ﷺ',
+    descAr: 'سير الصحابة الكرام رضي الله عنهم',
+    route: '/sahaba',
+    color: '#6A1B9A',
+    bg: '#F3E5F5',
+  },
 ];
 
 export default function RessourcesScreen() {
@@ -38,7 +78,7 @@ export default function RessourcesScreen() {
           {isAr ? 'المصادر' : lang === 'en' ? 'Resources' : 'Ressources'}
         </Text>
         <Text style={styles.headerSub}>
-          {isAr ? 'القرآن والأذكار' : lang === 'en' ? 'Quran & Supplications' : 'Coran & Invocations'}
+          {isAr ? 'القرآن والأذكار والمزيد' : lang === 'en' ? 'Quran, Supplications & more' : 'Coran, Adhkar & plus'}
         </Text>
       </View>
 
@@ -78,12 +118,8 @@ const styles = StyleSheet.create({
     paddingBottom: 20,
     backgroundColor: COLORS.primary,
   },
-  headerTitle: {
-    fontSize: 26, fontWeight: '800', color: '#FFF',
-  },
-  headerSub: {
-    fontSize: 14, color: 'rgba(255,255,255,0.8)', marginTop: 4,
-  },
+  headerTitle: { fontSize: 26, fontWeight: '800', color: '#FFF' },
+  headerSub: { fontSize: 14, color: 'rgba(255,255,255,0.8)', marginTop: 4 },
   scroll: { padding: 16, gap: 14 },
   card: {
     flexDirection: 'row', alignItems: 'center', gap: 16,
@@ -99,7 +135,7 @@ const styles = StyleSheet.create({
   },
   icon: { fontSize: 28 },
   cardText: { flex: 1 },
-  cardTitle: { fontSize: 18, fontWeight: '800' },
+  cardTitle: { fontSize: 17, fontWeight: '800' },
   cardTitleAr: { fontSize: 14, color: COLORS.arabicText, marginTop: 2 },
   cardDesc: { fontSize: 12, color: COLORS.textSecondary, marginTop: 4, lineHeight: 18 },
   arrow: { fontSize: 28, fontWeight: '300' },
