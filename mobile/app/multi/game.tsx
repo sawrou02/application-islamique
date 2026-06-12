@@ -7,6 +7,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { COLORS } from '../../constants/colors';
 import { useGameStore } from '../../store/gameStore';
 import { useAuthStore } from '../../store/authStore';
+import { getCurrentLang } from '../../i18n';
 import { Reponse } from '../../types';
 
 const ANSWER_LABELS = ['A', 'B', 'C', 'D'];
@@ -18,6 +19,8 @@ export default function MultiGame() {
     submitAnswer, lastAnswerResult,
   } = useGameStore();
   const { user } = useAuthStore();
+  const lang = getCurrentLang();
+  const isAr = lang === 'ar';
 
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [timeLeft, setTimeLeft] = useState(30);
@@ -61,8 +64,9 @@ export default function MultiGame() {
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.podiumContainer}>
-          <Text style={styles.podiumTitle}>Résultats finaux</Text>
-          <Text style={styles.podiumTitleAr}>النتائج النهائية</Text>
+          <Text style={styles.podiumTitle}>
+            {isAr ? 'النتائج النهائية' : lang === 'en' ? 'Final Results' : 'Résultats finaux'}
+          </Text>
           {finalScores.map((s) => (
             <View key={s.user_id} style={[styles.podiumRow, s.user_id === user?.id && styles.podiumRowMe]}>
               <Text style={styles.podiumRank}>#{s.rang}</Text>
@@ -70,8 +74,10 @@ export default function MultiGame() {
               <Text style={styles.podiumScore}>{s.score} XP</Text>
             </View>
           ))}
-          <TouchableOpacity style={styles.homeBtn} onPress={() => router.replace('/(tabs)') } activeOpacity={0.85}>
-            <Text style={styles.homeBtnText}>Retour à l'accueil</Text>
+          <TouchableOpacity style={styles.homeBtn} onPress={() => router.replace('/(tabs)')} activeOpacity={0.85}>
+            <Text style={styles.homeBtnText}>
+              {isAr ? 'العودة للرئيسية' : lang === 'en' ? 'Back to home' : "Retour à l'accueil"}
+            </Text>
           </TouchableOpacity>
         </View>
       </SafeAreaView>
@@ -82,7 +88,9 @@ export default function MultiGame() {
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.loadingContainer}>
-          <Text style={styles.loadingText}>En attente...</Text>
+          <Text style={styles.loadingText}>
+            {isAr ? 'في انتظار اللاعبين...' : lang === 'en' ? 'Waiting...' : 'En attente...'}
+          </Text>
         </View>
       </SafeAreaView>
     );
@@ -115,11 +123,17 @@ export default function MultiGame() {
 
       <ScrollView contentContainerStyle={styles.scroll}>
         {/* Question */}
-        <Text style={styles.questionNum}>Question {questionIndex + 1}/{totalQuestions}</Text>
-        {currentQuestion.texte_ar && (
-          <Text style={styles.questionAr}>{currentQuestion.texte_ar}</Text>
+        <Text style={styles.questionNum}>
+          {isAr ? `سؤال ${questionIndex + 1}/${totalQuestions}` : `Question ${questionIndex + 1}/${totalQuestions}`}
+        </Text>
+        {isAr ? (
+          <Text style={[styles.questionAr, { fontSize: 20 }]}>{currentQuestion.texte_ar || currentQuestion.texte_fr}</Text>
+        ) : (
+          <>
+            {currentQuestion.texte_ar && <Text style={styles.questionAr}>{currentQuestion.texte_ar}</Text>}
+            <Text style={styles.questionFr}>{currentQuestion.texte_fr}</Text>
+          </>
         )}
-        <Text style={styles.questionFr}>{currentQuestion.texte_fr}</Text>
 
         {/* Answers */}
         <View style={styles.answersContainer}>
@@ -141,7 +155,9 @@ export default function MultiGame() {
                 activeOpacity={0.85}
               >
                 <Text style={styles.answerLabel}>{ANSWER_LABELS[i]}</Text>
-                <Text style={styles.answerText}>{r.texte_fr}</Text>
+                <Text style={[styles.answerText, isAr && { textAlign: 'right', writingDirection: 'rtl' }]}>
+                  {isAr && r.texte_ar ? r.texte_ar : r.texte_fr}
+                </Text>
               </TouchableOpacity>
             );
           })}
@@ -150,8 +166,12 @@ export default function MultiGame() {
         {lastAnswerResult && (
           <Animated.View style={[styles.resultBadge, { opacity: dalilAnim }]}>
             {lastAnswerResult.est_correcte
-              ? <Text style={styles.resultCorrect}>✓ Correct ! +{lastAnswerResult.xp_gagnes} XP</Text>
-              : <Text style={styles.resultIncorrect}>✗ Incorrect</Text>
+              ? <Text style={styles.resultCorrect}>
+                  ✓ {isAr ? `صحيح! +${lastAnswerResult.xp_gagnes} نقطة` : lang === 'en' ? `Correct! +${lastAnswerResult.xp_gagnes} XP` : `Correct ! +${lastAnswerResult.xp_gagnes} XP`}
+                </Text>
+              : <Text style={styles.resultIncorrect}>
+                  ✗ {isAr ? 'خطأ' : lang === 'en' ? 'Incorrect' : 'Incorrect'}
+                </Text>
             }
           </Animated.View>
         )}
@@ -206,8 +226,7 @@ const styles = StyleSheet.create({
   resultCorrect: { fontSize: 16, fontWeight: 'bold', color: COLORS.success },
   resultIncorrect: { fontSize: 16, fontWeight: 'bold', color: COLORS.error },
   podiumContainer: { flex: 1, padding: 24, alignItems: 'center', justifyContent: 'center' },
-  podiumTitle: { fontSize: 26, fontWeight: 'bold', color: COLORS.text, marginBottom: 4 },
-  podiumTitleAr: { fontSize: 16, color: COLORS.primary, marginBottom: 24 },
+  podiumTitle: { fontSize: 26, fontWeight: 'bold', color: COLORS.text, marginBottom: 24, textAlign: 'center' },
   podiumRow: {
     flexDirection: 'row', alignItems: 'center', backgroundColor: COLORS.surface,
     borderRadius: 12, padding: 16, marginBottom: 10, gap: 12, width: '100%',

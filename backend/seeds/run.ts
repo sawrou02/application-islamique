@@ -6,6 +6,13 @@ import { seedQuestionsExtra } from './questions_extra';
 import { seedQuestionsExtra2 } from './questions_extra2';
 import { seedQuestionsExtra3 } from './questions_extra3';
 import { seedQuestionsExtra4 } from './questions_extra4';
+import { seedQuestionsAvancees } from './questions_avancees';
+import { enrichDalil } from './enrich_dalil';
+import { enrichDalilV2 } from './enrich_dalil_v2';
+import { seedQuestionsExtra5 } from './questions_extra5';
+import { enrichDalilEn } from './enrich_dalil_en';
+import { enrichHadithNarrator } from './enrich_hadith_narrator';
+import { seedQuestionsSahaba } from './questions_sahaba';
 
 dotenv.config();
 
@@ -21,6 +28,13 @@ async function runSeeds(): Promise<void> {
     await seedQuestionsExtra2(client);
     await seedQuestionsExtra3(client);
     await seedQuestionsExtra4(client);
+    await seedQuestionsAvancees(client);
+    await enrichDalil(client);
+    await enrichDalilV2(client);
+    await seedQuestionsExtra5(client);
+    await enrichDalilEn(client);
+    await enrichHadithNarrator(client);
+    await seedQuestionsSahaba(client);
     console.log('All seeds completed successfully.');
   } finally {
     await client.end();

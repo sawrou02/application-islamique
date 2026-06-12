@@ -4,11 +4,12 @@ import {
 } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Ionicons } from '@expo/vector-icons';
+import { IslamicIcon } from '../../components/IslamicIcon';
 import { COLORS } from '../../constants/colors';
 import { useGameStore } from '../../store/gameStore';
 import { useAuthStore } from '../../store/authStore';
 import { LEVELS } from '../../constants/islamic';
+import { getCurrentLang } from '../../i18n';
 
 export default function RoomScreen() {
   const { roomId } = useLocalSearchParams<{ roomId: string }>();
@@ -16,6 +17,8 @@ export default function RoomScreen() {
   const { user } = useAuthStore();
 
   const isHost = room?.hote_id === user?.id;
+  const lang = getCurrentLang();
+  const isAr = lang === 'ar';
 
   useEffect(() => {
     if (status === 'playing') {
@@ -33,7 +36,10 @@ export default function RoomScreen() {
 
   const handleStart = () => {
     if (players.length < 1) {
-      Alert.alert('Erreur', "Attendez d'autres joueurs pour commencer");
+      Alert.alert(
+        isAr ? 'خطأ' : 'Erreur',
+        isAr ? 'انتظر انضمام لاعبين آخرين' : "Attendez d'autres joueurs pour commencer",
+      );
       return;
     }
     startGame();
@@ -43,26 +49,26 @@ export default function RoomScreen() {
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
-          <Ionicons name="arrow-back" size={24} color={COLORS.text} />
+          <IslamicIcon name="back" size={30} color={COLORS.text} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Salle de jeu</Text>
+        <Text style={styles.headerTitle}>{isAr ? 'غرفة اللعب' : lang === 'en' ? 'Game room' : 'Salle de jeu'}</Text>
         <View style={styles.placeholder} />
       </View>
 
       <ScrollView contentContainerStyle={styles.scroll}>
         {/* Room Code */}
         <View style={styles.codeCard}>
-          <Text style={styles.codeLabel}>Code de la salle</Text>
+          <Text style={styles.codeLabel}>{isAr ? 'رمز الغرفة' : lang === 'en' ? 'Room code' : 'Code de la salle'}</Text>
           <Text style={styles.codeValue}>{room?.code_salle || '------'}</Text>
           <TouchableOpacity style={styles.shareButton} onPress={handleShare} activeOpacity={0.8}>
-            <Ionicons name="share-social" size={18} color={COLORS.primary} />
-            <Text style={styles.shareText}>Partager</Text>
+            <IslamicIcon name="share" size={18} color={COLORS.primary} />
+            <Text style={styles.shareText}>{isAr ? 'مشاركة' : lang === 'en' ? 'Share' : 'Partager'}</Text>
           </TouchableOpacity>
         </View>
 
         {/* Players */}
         <View style={styles.playersSection}>
-          <Text style={styles.sectionTitle}>Joueurs ({players.length})</Text>
+          <Text style={styles.sectionTitle}>{isAr ? `اللاعبون (${players.length})` : lang === 'en' ? `Players (${players.length})` : `Joueurs (${players.length})`}</Text>
           {players.map((player) => {
             const level = LEVELS.find(l => l.id === player.niveau) || LEVELS[0];
             return (
@@ -76,34 +82,34 @@ export default function RoomScreen() {
                 </View>
                 {player.user_id === room?.hote_id && (
                   <View style={styles.hostBadge}>
-                    <Text style={styles.hostBadgeText}>Hôte</Text>
+                    <Text style={styles.hostBadgeText}>{isAr ? 'مضيف' : 'Hôte'}</Text>
                   </View>
                 )}
               </View>
             );
           })}
           {players.length === 0 && (
-            <Text style={styles.waitingText}>En attente de joueurs...</Text>
+            <Text style={styles.waitingText}>{isAr ? 'في انتظار اللاعبين...' : lang === 'en' ? 'Waiting for players...' : 'En attente de joueurs...'}</Text>
           )}
         </View>
 
         {/* Settings */}
         <View style={styles.settingsSection}>
-          <Text style={styles.sectionTitle}>Paramètres</Text>
+          <Text style={styles.sectionTitle}>{isAr ? 'الإعدادات' : lang === 'en' ? 'Settings' : 'Paramètres'}</Text>
           <View style={styles.settingsCard}>
             <View style={styles.settingRow}>
-              <Ionicons name="book-outline" size={18} color={COLORS.primary} />
-              <Text style={styles.settingLabel}>Domaine</Text>
-              <Text style={styles.settingValue}>{room?.config?.domaine || 'Tous'}</Text>
+              <IslamicIcon name="book" size={18} color={COLORS.primary} />
+              <Text style={styles.settingLabel}>{isAr ? 'المجال' : lang === 'en' ? 'Domain' : 'Domaine'}</Text>
+              <Text style={styles.settingValue}>{room?.config?.domaine || (isAr ? 'الكل' : 'Tous')}</Text>
             </View>
             <View style={styles.settingRow}>
-              <Ionicons name="layers-outline" size={18} color={COLORS.primary} />
-              <Text style={styles.settingLabel}>Niveau</Text>
-              <Text style={styles.settingValue}>{room?.config?.niveau || 'Mixte'}</Text>
+              <IslamicIcon name="layers" size={18} color={COLORS.primary} />
+              <Text style={styles.settingLabel}>{isAr ? 'المستوى' : lang === 'en' ? 'Level' : 'Niveau'}</Text>
+              <Text style={styles.settingValue}>{room?.config?.niveau || (isAr ? 'متنوع' : 'Mixte')}</Text>
             </View>
             <View style={styles.settingRow}>
-              <Ionicons name="help-circle-outline" size={18} color={COLORS.primary} />
-              <Text style={styles.settingLabel}>Questions</Text>
+              <IslamicIcon name="help" size={18} color={COLORS.primary} />
+              <Text style={styles.settingLabel}>{isAr ? 'الأسئلة' : lang === 'en' ? 'Questions' : 'Questions'}</Text>
               <Text style={styles.settingValue}>{room?.config?.nb_questions || 10}</Text>
             </View>
           </View>
@@ -117,8 +123,8 @@ export default function RoomScreen() {
             onPress={handleStart}
             activeOpacity={0.85}
           >
-            <Ionicons name="play" size={20} color="#FFFFFF" />
-            <Text style={styles.startButtonText}>Commencer la partie</Text>
+            <IslamicIcon name="play" size={20} color="#FFFFFF" />
+            <Text style={styles.startButtonText}>{isAr ? 'بدء اللعبة' : lang === 'en' ? 'Start game' : 'Commencer la partie'}</Text>
           </TouchableOpacity>
         </View>
       )}
@@ -126,8 +132,8 @@ export default function RoomScreen() {
       {!isHost && (
         <View style={styles.footer}>
           <View style={styles.waitingBanner}>
-            <Ionicons name="time-outline" size={20} color={COLORS.textSecondary} />
-            <Text style={styles.waitingBannerText}>En attente du démarrage par l'hôte...</Text>
+            <IslamicIcon name="time" size={20} color={COLORS.textSecondary} />
+            <Text style={styles.waitingBannerText}>{isAr ? 'في انتظار بدء المضيف...' : lang === 'en' ? 'Waiting for host to start...' : "En attente du démarrage par l'hôte..."}</Text>
           </View>
         </View>
       )}

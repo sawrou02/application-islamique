@@ -5,7 +5,7 @@ import {
 } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Ionicons } from '@expo/vector-icons';
+import { IslamicIcon } from '../../components/IslamicIcon';
 import { COLORS } from '../../constants/colors';
 import api from '../../services/api';
 
@@ -57,7 +57,7 @@ export default function SignalerScreen() {
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
-          <Ionicons name="arrow-back" size={22} color={COLORS.text} />
+          <IslamicIcon name="back" size={28} color={COLORS.text} />
         </TouchableOpacity>
         <Text style={styles.title}>Signaler une question</Text>
       </View>
@@ -84,7 +84,7 @@ export default function SignalerScreen() {
               {m.label}
             </Text>
             {selectedMotif === m.id && (
-              <Ionicons name="checkmark-circle" size={20} color={COLORS.primary} />
+              <IslamicIcon name="check-circle" size={20} color={COLORS.primary} />
             )}
           </TouchableOpacity>
         ))}
@@ -104,7 +104,7 @@ export default function SignalerScreen() {
         <Text style={styles.charCount}>{detail.length}/500</Text>
 
         <View style={styles.noteCard}>
-          <Ionicons name="information-circle" size={18} color={COLORS.primary} style={styles.noteIcon} />
+          <IslamicIcon name="info" size={18} color={COLORS.primary} style={styles.noteIcon} />
           <Text style={styles.noteText}>
             Tout signalement est examiné par le comité de validation islamique.
             Après 3 signalements, la question est automatiquement suspendue en attente de révision.
@@ -121,7 +121,7 @@ export default function SignalerScreen() {
             <ActivityIndicator color="#FFFFFF" />
           ) : (
             <>
-              <Ionicons name="flag" size={18} color="#FFFFFF" />
+              <IslamicIcon name="flag" size={18} color="#FFFFFF" />
               <Text style={styles.submitBtnText}>Envoyer le signalement</Text>
             </>
           )}

@@ -14,6 +14,7 @@ import signalementsRoutes from './routes/signalements';
 import tournoisRoutes from './routes/tournois';
 import halaqatRoutes from './routes/halaqat';
 import adminRoutes from './routes/admin';
+import progressionRoutes from './routes/progression';
 
 const app = express();
 
@@ -39,6 +40,7 @@ app.use('/api/signalements', signalementsRoutes);
 app.use('/api/tournois', tournoisRoutes);
 app.use('/api/halaqat', halaqatRoutes);
 app.use('/api/admin', adminRoutes);
+app.use('/api/progression', progressionRoutes);
 
 // Panel admin web (fichiers statiques)
 app.use('/admin', express.static(path.join(__dirname, '../../admin')));

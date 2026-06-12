@@ -1,12 +1,14 @@
 import { useState, useEffect, useRef } from 'react';
 import {
-  View, Text, TouchableOpacity, StyleSheet, Animated, Dimensions, Pressable,
+  View, Text, TouchableOpacity, StyleSheet, Animated, Dimensions, Pressable, ScrollView,
 } from 'react-native';
 import { router } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Ionicons } from '@expo/vector-icons';
+import { IslamicIcon } from '../../components/IslamicIcon';
+import { DalilDetaille } from '../../components/DalilDetaille';
 import { COLORS } from '../../constants/colors';
 import { useQuizStore } from '../../store/quizStore';
+import { getCurrentLang } from '../../i18n';
 import { Reponse } from '../../types';
 
 const { width } = Dimensions.get('window');
@@ -21,12 +23,17 @@ export default function ActiveQuiz() {
   } = useQuizStore();
 
   const [selectedReponseId, setSelectedReponseId] = useState<string | null>(null);
+  const [timedOut, setTimedOut] = useState(false);
   const [showDalil, setShowDalil] = useState(false);
   const [timeLeft, setTimeLeft] = useState(config?.temps_par_question || 30);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const questionStartRef = useRef<number>(Date.now());
   const dalilAnim = useRef(new Animated.Value(0)).current;
   const flashAnim = useRef(new Animated.Value(0)).current;
+  const questionAnim = useRef(new Animated.Value(0)).current;
+
+  const lang = getCurrentLang();
+  const isAr = lang === 'ar';
 
   const question = questions[currentIndex];
   const reponses = question?.reponses || [];
@@ -41,10 +48,13 @@ export default function ActiveQuiz() {
 
   useEffect(() => {
     setSelectedReponseId(null);
+    setTimedOut(false);
     setShowDalil(false);
     setTimeLeft(config?.temps_par_question || 30);
     questionStartRef.current = Date.now();
     dalilAnim.setValue(0);
+    questionAnim.setValue(0);
+    Animated.spring(questionAnim, { toValue: 1, friction: 6, tension: 90, useNativeDriver: true }).start();
 
     timerRef.current = setInterval(() => {
       setTimeLeft(prev => {
@@ -66,10 +76,22 @@ export default function ActiveQuiz() {
 
   const handleTimeOut = () => {
     if (hasAnswered) return;
-    const firstReponse = reponses[0];
-    if (firstReponse) {
-      handleAnswer(firstReponse.id);
-    }
+    // Choisit une mauvaise réponse pour marquer la question comme perdue côté backend
+    const wrong = reponses.find((r: Reponse) => !r.est_correcte);
+    if (!wrong) return;
+    setTimedOut(true);
+    setSelectedReponseId(wrong.id);
+    answerQuestion(wrong.id);
+
+    Animated.sequence([
+      Animated.timing(flashAnim, { toValue: 1, duration: 200, useNativeDriver: true }),
+      Animated.timing(flashAnim, { toValue: 0, duration: 200, useNativeDriver: true }),
+    ]).start();
+
+    setTimeout(() => {
+      setShowDalil(true);
+      Animated.timing(dalilAnim, { toValue: 1, duration: 400, useNativeDriver: true }).start();
+    }, 300);
   };
 
   const handleAnswer = (reponse_id: string) => {
@@ -99,7 +121,7 @@ export default function ActiveQuiz() {
   const getAnswerState = (reponse: Reponse): AnswerState => {
     if (!hasAnswered) return 'default';
     if (reponse.id === correctReponse?.id) return 'correct';
-    if (reponse.id === selectedReponseId) return 'incorrect';
+    if (reponse.id === selectedReponseId && !timedOut) return 'incorrect';
     return 'default';
   };
 
@@ -119,7 +141,7 @@ export default function ActiveQuiz() {
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.loadingContainer}>
-          <Text style={styles.loadingText}>Chargement...</Text>
+          <Text style={styles.loadingText}>{isAr ? 'جارٍ التحميل...' : lang === 'en' ? 'Loading...' : 'Chargement...'}</Text>
         </View>
       </SafeAreaView>
     );
@@ -130,7 +152,7 @@ export default function ActiveQuiz() {
       {/* Header with progress and timer */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-          <Ionicons name="close" size={24} color={COLORS.textSecondary} />
+          <IslamicIcon name="close" size={22} color={COLORS.textSecondary} />
         </TouchableOpacity>
         <View style={styles.progressContainer}>
           <View style={styles.progressBar}>
@@ -146,83 +168,97 @@ export default function ActiveQuiz() {
       {/* Domaine badge */}
       <View style={styles.domainRow}>
         <View style={styles.domainBadge}>
-          <Text style={styles.domainText}>{question.domaine.toUpperCase()} • Niveau {question.niveau}</Text>
+          <Text style={styles.domainText}>{question.domaine.toUpperCase()} • {isAr ? `المستوى ${question.niveau}` : lang === 'en' ? `Level ${question.niveau}` : `Niveau ${question.niveau}`}</Text>
         </View>
-      </View>
-
-      {/* Question */}
-      <View style={styles.questionContainer}>
-        {question.texte_ar && (
-          <Text style={styles.questionAr}>{question.texte_ar}</Text>
+        {timedOut && (
+          <View style={styles.timeoutBadge}>
+            <Text style={styles.timeoutText}>
+              ⏰ {isAr ? 'انتهى الوقت' : lang === 'en' ? 'Time out' : 'Temps écoulé'}
+            </Text>
+          </View>
         )}
-        <Text style={styles.questionFr}>{question.texte_fr}</Text>
       </View>
 
-      {/* Answers */}
-      <View style={styles.answersContainer}>
-        {reponses.map((reponse: Reponse, index: number) => {
-          const state = getAnswerState(reponse);
-          return (
-            <TouchableOpacity
-              key={reponse.id}
-              style={[styles.answerButton, getAnswerStyle(state)]}
-              onPress={() => handleAnswer(reponse.id)}
-              disabled={hasAnswered}
-              activeOpacity={0.85}
+      {/* Question — Adhkar-style framed card */}
+      <Animated.View style={[styles.questionCard, {
+        opacity: questionAnim,
+        transform: [{ scale: questionAnim.interpolate({ inputRange: [0, 1], outputRange: [0.95, 1] }) }],
+      }]}>
+        <View style={styles.questionCardInner}>
+          {isAr ? (
+            <Text style={[styles.questionAr, { fontSize: 20 }]}>{question.texte_ar || question.texte_fr}</Text>
+          ) : (
+            <>
+              {question.texte_ar && <Text style={styles.questionAr}>{question.texte_ar}</Text>}
+              <Text style={styles.questionFr}>{question.texte_fr}</Text>
+            </>
+          )}
+        </View>
+      </Animated.View>
+
+      {/* Answers + Dalil + Next in a scrollable area */}
+      <ScrollView
+        style={{ flex: 1 }}
+        contentContainerStyle={{ paddingBottom: 16 }}
+        showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
+      >
+        {/* Answers */}
+        <View style={styles.answersContainer}>
+          {reponses.map((reponse: Reponse, index: number) => {
+            const state = getAnswerState(reponse);
+            return (
+              <TouchableOpacity
+                key={reponse.id}
+                style={[styles.answerButton, getAnswerStyle(state)]}
+                onPress={() => handleAnswer(reponse.id)}
+                disabled={hasAnswered}
+                activeOpacity={0.85}
+              >
+                <View style={[styles.answerLabel, state === 'correct' && styles.answerLabelCorrect, state === 'incorrect' && styles.answerLabelIncorrect]}>
+                  <Text style={styles.answerLabelText}>{ANSWER_LABELS[index]}</Text>
+                </View>
+                <View style={styles.answerTextContainer}>
+                  <Text style={[styles.answerText, state !== 'default' && styles.answerTextAnswered, isAr && { textAlign: 'right', writingDirection: 'rtl' }]}>
+                    {isAr && reponse.texte_ar ? reponse.texte_ar : reponse.texte_fr}
+                  </Text>
+                </View>
+                {state === 'correct' && <IslamicIcon name="check" size={22} color={COLORS.success} />}
+                {state === 'incorrect' && <IslamicIcon name="close" size={22} color={COLORS.error} />}
+              </TouchableOpacity>
+            );
+          })}
+        </View>
+
+        {/* Dalil détaillé */}
+        {showDalil && (
+          <Animated.View style={{ opacity: dalilAnim }}>
+            <DalilDetaille question={question} initialOpen={true} />
+            <Pressable
+              style={styles.signalerBtn}
+              onPress={() => router.push({
+                pathname: '/quiz/signaler',
+                params: { question_id: question.id, question_fr: question.texte_fr },
+              })}
             >
-              <View style={[styles.answerLabel, state === 'correct' && styles.answerLabelCorrect, state === 'incorrect' && styles.answerLabelIncorrect]}>
-                <Text style={styles.answerLabelText}>{ANSWER_LABELS[index]}</Text>
-              </View>
-              <View style={styles.answerTextContainer}>
-                <Text style={[styles.answerText, state !== 'default' && styles.answerTextAnswered]}>
-                  {reponse.texte_fr}
-                </Text>
-              </View>
-              {state === 'correct' && <Ionicons name="checkmark-circle" size={22} color={COLORS.success} />}
-              {state === 'incorrect' && <Ionicons name="close-circle" size={22} color={COLORS.error} />}
-            </TouchableOpacity>
-          );
-        })}
-      </View>
+              <IslamicIcon name="flag" size={13} color={COLORS.textLight} />
+              <Text style={styles.signalerText}>{isAr ? 'الإبلاغ عن خطأ' : lang === 'en' ? 'Report an error' : 'Signaler une erreur'}</Text>
+            </Pressable>
+          </Animated.View>
+        )}
 
-      {/* Dalil */}
-      {showDalil && (question.dalil_texte_ar || question.explication) && (
-        <Animated.View style={[styles.dalilCard, { opacity: dalilAnim }]}>
-          {question.dalil_texte_ar && (
-            <Text style={styles.dalilAr}>{question.dalil_texte_ar}</Text>
-          )}
-          {question.dalil_texte_fr && (
-            <Text style={styles.dalilFr}>"{question.dalil_texte_fr}"</Text>
-          )}
-          {question.dalil_ref && (
-            <Text style={styles.dalilRef}>— {question.dalil_ref}</Text>
-          )}
-          {question.explication && !question.dalil_texte_fr && (
-            <Text style={styles.dalilFr}>{question.explication}</Text>
-          )}
-          {/* Signaler cette question */}
-          <Pressable
-            style={styles.signalerBtn}
-            onPress={() => router.push({
-              pathname: '/quiz/signaler',
-              params: { question_id: question.id, question_fr: question.texte_fr },
-            })}
-          >
-            <Ionicons name="flag-outline" size={13} color={COLORS.textLight} />
-            <Text style={styles.signalerText}>Signaler une erreur</Text>
-          </Pressable>
-        </Animated.View>
-      )}
-
-      {/* Next button */}
-      {hasAnswered && (
-        <TouchableOpacity style={styles.nextButton} onPress={handleNext} activeOpacity={0.85}>
-          <Text style={styles.nextButtonText}>
-            {currentIndex + 1 < questions.length ? 'Question suivante' : 'Voir les résultats'}
-          </Text>
-          <Ionicons name="arrow-forward" size={20} color="#FFFFFF" />
-        </TouchableOpacity>
-      )}
+        {/* Next button */}
+        {hasAnswered && (
+          <TouchableOpacity style={styles.nextButton} onPress={handleNext} activeOpacity={0.85}>
+            <Text style={styles.nextButtonText}>
+              {currentIndex + 1 < questions.length
+                ? (isAr ? 'السؤال التالي' : lang === 'en' ? 'Next question' : 'Question suivante')
+                : (isAr ? 'عرض النتائج' : lang === 'en' ? 'See results' : 'Voir les résultats')}
+            </Text>
+            <IslamicIcon name="next" size={22} color="#FFFFFF" />
+          </TouchableOpacity>
+        )}
+      </ScrollView>
     </SafeAreaView>
   );
 }
@@ -244,32 +280,56 @@ const styles = StyleSheet.create({
     justifyContent: 'center', alignItems: 'center',
   },
   timerText: { fontSize: 14, fontWeight: 'bold' },
-  domainRow: { paddingHorizontal: 16, marginBottom: 8 },
+  domainRow: { paddingHorizontal: 16, marginBottom: 8, flexDirection: 'row', alignItems: 'center', gap: 8 },
+  timeoutBadge: {
+    backgroundColor: 'rgba(198,40,40,0.12)', borderRadius: 8,
+    paddingVertical: 4, paddingHorizontal: 10,
+  },
+  timeoutText: { fontSize: 11, fontWeight: '700', color: COLORS.error },
   domainBadge: {
     alignSelf: 'flex-start', backgroundColor: 'rgba(27,94,32,0.1)',
     borderRadius: 8, paddingVertical: 4, paddingHorizontal: 10,
   },
   domainText: { fontSize: 11, fontWeight: '600', color: COLORS.primary },
-  questionContainer: {
-    paddingHorizontal: 16, paddingBottom: 16,
+  questionCard: {
+    marginHorizontal: 16, marginBottom: 14,
+    borderRadius: 14,
+    backgroundColor: COLORS.surface,
+    borderWidth: 1, borderColor: COLORS.primary + '30',
+    shadowColor: COLORS.primary, shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08, shadowRadius: 6, elevation: 2,
+    overflow: 'hidden',
+  },
+  questionCardInner: {
+    padding: 14,
+    borderLeftWidth: 3, borderLeftColor: COLORS.gold,
   },
   questionAr: {
     fontSize: 18, color: COLORS.arabicText, textAlign: 'right',
-    writingDirection: 'rtl', marginBottom: 8, lineHeight: 28,
+    writingDirection: 'rtl', marginBottom: 6, lineHeight: 28,
   },
-  questionFr: { fontSize: 17, color: COLORS.text, lineHeight: 24, fontWeight: '500' },
-  answersContainer: { paddingHorizontal: 16, gap: 10 },
+  questionFr: { fontSize: 16, color: COLORS.text, lineHeight: 23, fontWeight: '500' },
+  answersContainer: { paddingHorizontal: 16, gap: 8 },
   answerButton: {
-    backgroundColor: COLORS.surface, borderRadius: 12, padding: 14,
-    flexDirection: 'row', alignItems: 'center', gap: 12,
-    borderWidth: 1.5, borderColor: COLORS.border,
+    backgroundColor: COLORS.surface, borderRadius: 12, padding: 12,
+    flexDirection: 'row', alignItems: 'center', gap: 10,
+    borderWidth: 1.5, borderColor: COLORS.primary + '25',
+    shadowColor: '#000', shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05, shadowRadius: 2, elevation: 1,
   },
-  answerCorrect: { borderColor: COLORS.success, backgroundColor: 'rgba(46,125,50,0.08)' },
-  answerIncorrect: { borderColor: COLORS.error, backgroundColor: 'rgba(198,40,40,0.08)' },
+  answerCorrect: {
+    borderColor: COLORS.success, backgroundColor: 'rgba(46,125,50,0.10)',
+    borderWidth: 2,
+  },
+  answerIncorrect: {
+    borderColor: COLORS.error, backgroundColor: 'rgba(198,40,40,0.10)',
+    borderWidth: 2,
+  },
   answerSelected: { borderColor: COLORS.primary },
   answerLabel: {
-    width: 32, height: 32, borderRadius: 8,
-    backgroundColor: COLORS.border, justifyContent: 'center', alignItems: 'center',
+    width: 30, height: 30, borderRadius: 8,
+    backgroundColor: COLORS.primary + '15', justifyContent: 'center', alignItems: 'center',
+    borderWidth: 1, borderColor: COLORS.primary + '30',
   },
   answerLabelCorrect: { backgroundColor: COLORS.success },
   answerLabelIncorrect: { backgroundColor: COLORS.error },
@@ -291,7 +351,7 @@ const styles = StyleSheet.create({
   dalilRef: { fontSize: 12, color: COLORS.textLight, fontWeight: '500' },
   signalerBtn: {
     flexDirection: 'row', alignItems: 'center', gap: 4,
-    marginTop: 10, alignSelf: 'flex-start',
+    marginTop: 10, marginHorizontal: 16, alignSelf: 'flex-start',
   },
   signalerText: { fontSize: 11, color: COLORS.textLight },
   nextButton: {

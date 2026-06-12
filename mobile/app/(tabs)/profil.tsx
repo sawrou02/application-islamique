@@ -4,22 +4,68 @@ import {
 } from 'react-native';
 import { router } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Ionicons } from '@expo/vector-icons';
+import { IslamicIcon } from '../../components/IslamicIcon';
+import { ShareButton } from '../../components/ShareButton';
 import { useAuthStore } from '../../store/authStore';
-import { badgesApi } from '../../services/api';
+import { badgesApi, usersApi } from '../../services/api';
+import { t, setLang, getCurrentLang, type Lang } from '../../i18n';
 import { Badge } from '../../types';
 import { COLORS } from '../../constants/colors';
 import { LEVELS, DOMAINS } from '../../constants/islamic';
+import { Switch } from 'react-native';
+import {
+  loadPrayerPrefs, savePrayerPrefs, schedulePrayerNotifications,
+  PrayerPrefs, DEFAULT_PRAYER_PREFS,
+  loadAdhkarPrefs, saveAdhkarPrefs, scheduleAdhkarNotifications,
+  AdhkarPrefs, DEFAULT_ADHKAR_PREFS,
+} from '../../services/notifications';
 
 export default function ProfilScreen() {
-  const { user, logout } = useAuthStore();
+  const { user, logout, updateUser } = useAuthStore();
   const [badges, setBadges] = useState<Badge[]>([]);
+  const [currentLang, setCurrentLang] = useState<Lang>((user?.langue as Lang) || getCurrentLang());
+  const [prayerPrefs, setPrayerPrefs] = useState<PrayerPrefs>(DEFAULT_PRAYER_PREFS);
+  const [adhkarPrefs, setAdhkarPrefs] = useState<AdhkarPrefs>(DEFAULT_ADHKAR_PREFS);
+  const lang = getCurrentLang();
+  const isAr = lang === 'ar';
+
+  const handleChangeLang = async (lang: Lang) => {
+    setCurrentLang(lang);
+    setLang(lang);
+    try {
+      const res = await usersApi.updateProfile({ langue: lang });
+      if (res?.data?.data) updateUser(res.data.data);
+    } catch {}
+    Alert.alert(t('language_changed', lang), t('restart_required', lang), [{ text: t('ok', lang) }]);
+  };
+
+  const LANGS: { code: Lang; flag: string; name: string }[] = [
+    { code: 'fr', flag: '🇫🇷', name: 'Français' },
+    { code: 'ar', flag: '🇸🇦', name: 'العربية' },
+    { code: 'en', flag: '🇬🇧', name: 'English' },
+  ];
 
   useEffect(() => {
     badgesApi.getMyBadges()
       .then(r => setBadges(r.data.data))
       .catch(() => {});
+    loadPrayerPrefs().then(setPrayerPrefs);
+    loadAdhkarPrefs().then(setAdhkarPrefs);
   }, []);
+
+  const handleAdhkarToggle = async (key: keyof AdhkarPrefs, value: boolean) => {
+    const updated = { ...adhkarPrefs, [key]: { ...adhkarPrefs[key], enabled: value } };
+    setAdhkarPrefs(updated);
+    await saveAdhkarPrefs(updated);
+    await scheduleAdhkarNotifications(updated, lang).catch(() => {});
+  };
+
+  const handlePrayerToggle = async (key: keyof PrayerPrefs, value: boolean) => {
+    const updated = { ...prayerPrefs, [key]: { ...prayerPrefs[key], enabled: value } };
+    setPrayerPrefs(updated);
+    await savePrayerPrefs(updated);
+    await schedulePrayerNotifications(updated, lang).catch(() => {});
+  };
 
   const level = LEVELS.find(l => l.id === (user?.niveau || 1)) || LEVELS[0];
   const xpThresholds = [0, 500, 2000, 5000, 10000, 20000, 999999];
@@ -30,12 +76,12 @@ export default function ProfilScreen() {
 
   const handleLogout = () => {
     Alert.alert(
-      'Déconnexion',
+      t('deconnexion'),
       'Êtes-vous sûr de vouloir vous déconnecter ?',
       [
-        { text: 'Annuler', style: 'cancel' },
+        { text: t('annuler'), style: 'cancel' },
         {
-          text: 'Déconnecter',
+          text: t('deconnexion'),
           style: 'destructive',
           onPress: async () => {
             await logout();
@@ -89,7 +135,7 @@ export default function ProfilScreen() {
         {/* Level Progress */}
         <View style={styles.progressCard}>
           <View style={styles.progressHeader}>
-            <Text style={styles.progressTitle}>Progression</Text>
+            <Text style={styles.progressTitle}>{t('ma_progression')}</Text>
             <Text style={styles.progressXp}>{currentXp} / {nextXp === 999999 ? '∞' : nextXp} XP</Text>
           </View>
           <View style={styles.progressBar}>
@@ -103,10 +149,17 @@ export default function ProfilScreen() {
         {/* Badges */}
         {badges.length > 0 && (
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Badges obtenus ({badges.length})</Text>
+            <Text style={styles.sectionTitle}>{t('mes_badges')} ({badges.length})</Text>
             <View style={styles.badgesGrid}>
               {badges.map((badge) => (
                 <View key={badge.id} style={styles.badgeItem}>
+                  <View style={styles.badgeShareWrap}>
+                    <ShareButton
+                      compact
+                      message={`J'ai débloqué le badge '${badge.nom}' sur Quiz Islamique ! 🏆 ${badge.description || ''}`}
+                      url="https://quizislamique.app"
+                    />
+                  </View>
                   <Text style={styles.badgeIcon}>{badge.icone || '🏅'}</Text>
                   <Text style={styles.badgeName} numberOfLines={2}>{badge.nom}</Text>
                 </View>
@@ -120,29 +173,138 @@ export default function ProfilScreen() {
           <Text style={styles.sectionTitle}>Informations</Text>
           <View style={styles.infoCard}>
             <View style={styles.infoRow}>
-              <Ionicons name="book" size={18} color={COLORS.primary} />
+              <IslamicIcon name="book" size={18} color={COLORS.primary} />
               <Text style={styles.infoLabel}>Madhab</Text>
               <Text style={styles.infoValue}>{user?.madhab || 'Général'}</Text>
             </View>
             <View style={styles.divider} />
             <View style={styles.infoRow}>
-              <Ionicons name="language" size={18} color={COLORS.primary} />
-              <Text style={styles.infoLabel}>Langue</Text>
+              <IslamicIcon name="language" size={18} color={COLORS.primary} />
+              <Text style={styles.infoLabel}>{t('langue')}</Text>
               <Text style={styles.infoValue}>{user?.langue || 'fr'}</Text>
             </View>
             <View style={styles.divider} />
             <View style={styles.infoRow}>
-              <Ionicons name="mail" size={18} color={COLORS.primary} />
+              <IslamicIcon name="mail" size={18} color={COLORS.primary} />
               <Text style={styles.infoLabel}>Email</Text>
               <Text style={styles.infoValue} numberOfLines={1}>{user?.email}</Text>
             </View>
           </View>
         </View>
 
+        {/* Langue / اللغة / Language */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Langue / اللغة / Language</Text>
+          <View style={styles.langGrid}>
+            {LANGS.map((l) => {
+              const selected = currentLang === l.code;
+              return (
+                <TouchableOpacity
+                  key={l.code}
+                  style={[styles.langCard, selected && styles.langCardSelected]}
+                  onPress={() => handleChangeLang(l.code)}
+                  activeOpacity={0.85}
+                >
+                  <Text style={styles.langFlag}>{l.flag}</Text>
+                  <Text style={[styles.langName, selected && styles.langNameSelected]}>{l.name}</Text>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+        </View>
+
+        {/* Rappels de prière */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>
+            {isAr ? '🕌 تذكيرات الصلاة' : lang === 'en' ? '🕌 Prayer Reminders' : '🕌 Rappels de prière'}
+          </Text>
+          <View style={styles.infoCard}>
+            {(Object.entries(prayerPrefs) as [keyof PrayerPrefs, PrayerPrefs[keyof PrayerPrefs]][]).map(([key, pref], i, arr) => {
+              const names: Record<keyof PrayerPrefs, string> = {
+                fajr:    isAr ? 'الفجر'  : lang === 'en' ? 'Fajr'    : 'Fajr',
+                dhuhr:   isAr ? 'الظهر'  : lang === 'en' ? 'Dhuhr'   : 'Dhuhr',
+                asr:     isAr ? 'العصر'  : lang === 'en' ? 'Asr'     : 'Asr',
+                maghrib: isAr ? 'المغرب' : lang === 'en' ? 'Maghrib' : 'Maghrib',
+                isha:    isAr ? 'العشاء' : lang === 'en' ? 'Isha'    : 'Isha',
+              };
+              const pad = (n: number) => String(n).padStart(2, '0');
+              return (
+                <View key={key}>
+                  <View style={styles.prayerRow}>
+                    <Text style={styles.prayerName}>{names[key]}</Text>
+                    <Text style={styles.prayerTime}>{pad(pref.hour)}:{pad(pref.minute)}</Text>
+                    <Switch
+                      value={pref.enabled}
+                      onValueChange={(v) => handlePrayerToggle(key, v)}
+                      trackColor={{ false: COLORS.border, true: COLORS.primary }}
+                      thumbColor={pref.enabled ? COLORS.gold : '#FFF'}
+                    />
+                  </View>
+                  {i < arr.length - 1 && <View style={styles.divider} />}
+                </View>
+              );
+            })}
+          </View>
+          <Text style={styles.prayerHint}>
+            {isAr ? 'الأوقات تقريبية — عدّلها حسب منطقتك' : lang === 'en' ? 'Times are approximate — adjust to your location' : 'Horaires indicatifs — ajustez selon votre lieu'}
+          </Text>
+        </View>
+
+        {/* Rappels Adhkar matin/soir */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>
+            {isAr ? '☪ تذكيرات الأذكار' : lang === 'en' ? '☪ Adhkar reminders' : '☪ Rappels Adhkar'}
+          </Text>
+          <View style={styles.infoCard}>
+            {(['matin', 'soir'] as const).map((key, i) => {
+              const pref = adhkarPrefs[key];
+              const name = key === 'matin'
+                ? (isAr ? 'أذكار الصباح' : lang === 'en' ? 'Morning' : 'Matin')
+                : (isAr ? 'أذكار المساء' : lang === 'en' ? 'Evening' : 'Soir');
+              const pad = (n: number) => String(n).padStart(2, '0');
+              return (
+                <View key={key}>
+                  <View style={styles.prayerRow}>
+                    <Text style={styles.prayerName}>{name}</Text>
+                    <Text style={styles.prayerTime}>{pad(pref.hour)}:{pad(pref.minute)}</Text>
+                    <Switch
+                      value={pref.enabled}
+                      onValueChange={(v) => handleAdhkarToggle(key, v)}
+                      trackColor={{ false: COLORS.border, true: COLORS.primary }}
+                      thumbColor={pref.enabled ? COLORS.gold : '#FFF'}
+                    />
+                  </View>
+                  {i === 0 && <View style={styles.divider} />}
+                </View>
+              );
+            })}
+          </View>
+        </View>
+
+        {/* Statistiques détaillées */}
+        <TouchableOpacity
+          style={styles.cguBtn}
+          onPress={() => router.push('/stats')}
+          activeOpacity={0.7}
+        >
+          <Text style={styles.cguText}>📊 Statistiques détaillées</Text>
+        </TouchableOpacity>
+
+        {/* Lien CGU */}
+        <TouchableOpacity
+          style={styles.cguBtn}
+          onPress={() => router.push('/cgu')}
+          activeOpacity={0.7}
+        >
+          <Text style={styles.cguText}>
+            {isAr ? '📄 الشروط والخصوصية' : lang === 'en' ? '📄 Terms & Privacy' : '📄 CGU & Confidentialité'}
+          </Text>
+        </TouchableOpacity>
+
         {/* Logout */}
         <TouchableOpacity style={styles.logoutButton} onPress={handleLogout} activeOpacity={0.8}>
-          <Ionicons name="log-out" size={20} color={COLORS.error} />
-          <Text style={styles.logoutText}>Se déconnecter</Text>
+          <IslamicIcon name="logout" size={20} color={COLORS.error} />
+          <Text style={styles.logoutText}>{t('deconnexion')}</Text>
         </TouchableOpacity>
       </ScrollView>
     </SafeAreaView>
@@ -150,6 +312,11 @@ export default function ProfilScreen() {
 }
 
 const styles = StyleSheet.create({
+  cguBtn: {
+    marginHorizontal: 16, marginTop: 12, paddingVertical: 12,
+    alignItems: 'center', borderRadius: 10, backgroundColor: 'rgba(0,0,0,0.04)',
+  },
+  cguText: { fontSize: 13, color: COLORS.textSecondary, fontWeight: '600' },
   container: { flex: 1, backgroundColor: COLORS.background },
   scroll: { paddingBottom: 40 },
   profileHeader: {
@@ -201,7 +368,9 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.surface, borderRadius: 12, padding: 12,
     alignItems: 'center', width: 80,
     borderWidth: 1, borderColor: COLORS.border,
+    position: 'relative',
   },
+  badgeShareWrap: { position: 'absolute', top: 4, right: 4, zIndex: 2 },
   badgeIcon: { fontSize: 28, marginBottom: 4 },
   badgeName: { fontSize: 10, color: COLORS.textSecondary, textAlign: 'center' },
   infoCard: { backgroundColor: COLORS.surface, borderRadius: 14, overflow: 'hidden', borderWidth: 1, borderColor: COLORS.border },
@@ -209,6 +378,15 @@ const styles = StyleSheet.create({
   infoLabel: { flex: 1, fontSize: 14, color: COLORS.textSecondary },
   infoValue: { fontSize: 14, fontWeight: '600', color: COLORS.text },
   divider: { height: 1, backgroundColor: COLORS.border, marginHorizontal: 14 },
+  prayerRow: {
+    flexDirection: 'row', alignItems: 'center', paddingVertical: 10, gap: 12,
+  },
+  prayerName: { flex: 1, fontSize: 15, color: COLORS.text, fontWeight: '600' },
+  prayerTime: { fontSize: 13, color: COLORS.textSecondary, fontWeight: '500', minWidth: 40 },
+  prayerHint: {
+    fontSize: 11, color: COLORS.textSecondary, fontStyle: 'italic',
+    marginTop: 8, textAlign: 'center',
+  },
   logoutButton: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
     marginHorizontal: 16, marginTop: 24, padding: 16,
@@ -216,4 +394,13 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   logoutText: { fontSize: 16, fontWeight: '600', color: COLORS.error },
+  langGrid: { flexDirection: 'row', gap: 10 },
+  langCard: {
+    flex: 1, backgroundColor: COLORS.surface, borderRadius: 14, padding: 14,
+    alignItems: 'center', borderWidth: 2, borderColor: COLORS.border, gap: 6,
+  },
+  langCardSelected: { borderColor: COLORS.gold, backgroundColor: '#FFFBF0' },
+  langFlag: { fontSize: 28 },
+  langName: { fontSize: 13, fontWeight: '600', color: COLORS.textSecondary },
+  langNameSelected: { color: COLORS.text, fontWeight: '800' },
 });

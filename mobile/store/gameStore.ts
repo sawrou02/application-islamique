@@ -1,13 +1,15 @@
 import { create } from 'zustand';
-import { io, Socket } from 'socket.io-client';
 import { Room, Question, RoomPlayer } from '../types';
 import { roomsApi } from '../services/api';
 
-const SOCKET_URL = process.env.EXPO_PUBLIC_API_URL?.replace('/api', '') || 'http://localhost:3000';
+const SOCKET_URL = (process.env.EXPO_PUBLIC_API_URL || 'https://application-islamique-production.up.railway.app/api')
+  .replace('/api', '')
+  .replace('https://', 'wss://')
+  .replace('http://', 'ws://');
 
 interface GameState {
   room: Room | null;
-  socket: Socket | null;
+  ws: WebSocket | null;
   currentQuestion: Question | null;
   questionIndex: number;
   totalQuestions: number;
@@ -25,9 +27,15 @@ interface GameState {
   disconnect: () => void;
 }
 
+function send(ws: WebSocket | null, event: string, data: object) {
+  if (ws && ws.readyState === WebSocket.OPEN) {
+    ws.send(JSON.stringify({ event, data }));
+  }
+}
+
 export const useGameStore = create<GameState>((set, get) => ({
   room: null,
-  socket: null,
+  ws: null,
   currentQuestion: null,
   questionIndex: 0,
   totalQuestions: 0,
@@ -52,57 +60,54 @@ export const useGameStore = create<GameState>((set, get) => ({
   },
 
   connectSocket: (roomId, userId) => {
-    const socket = io(SOCKET_URL, { transports: ['websocket'] });
+    const ws = new WebSocket(`${SOCKET_URL}/socket.io/?transport=websocket`);
 
-    socket.on('connect', () => {
-      socket.emit('join-room', { room_id: roomId, user_id: userId });
-    });
+    ws.onopen = () => {
+      send(ws, 'join-room', { room_id: roomId, user_id: userId });
+    };
 
-    socket.on('player-joined', ({ players }: { players: RoomPlayer[] }) => {
-      set({ players });
-    });
+    ws.onmessage = (e) => {
+      try {
+        const { event, data } = JSON.parse(e.data);
+        switch (event) {
+          case 'player-joined':
+            set({ players: data.players });
+            break;
+          case 'game-started':
+            set({ status: 'playing', totalQuestions: data.total_questions });
+            break;
+          case 'question-received':
+            set({ currentQuestion: data.question, questionIndex: data.index, lastAnswerResult: null });
+            break;
+          case 'answer-result':
+            set({ lastAnswerResult: data, scores: data.scores });
+            break;
+          case 'game-over':
+            set({ status: 'finished', finalScores: data.final_scores });
+            break;
+        }
+      } catch {}
+    };
 
-    socket.on('game-started', ({ total_questions }: { total_questions: number }) => {
-      set({ status: 'playing', totalQuestions: total_questions });
-    });
+    ws.onerror = () => {};
+    ws.onclose = () => {};
 
-    socket.on('question-received', ({ question, index }: { question: Question; index: number }) => {
-      set({ currentQuestion: question, questionIndex: index, lastAnswerResult: null });
-    });
-
-    socket.on('answer-result', (result: { est_correcte: boolean; bonne_reponse_id: string; xp_gagnes: number; scores: Record<string, number> }) => {
-      set({ lastAnswerResult: result, scores: result.scores });
-    });
-
-    socket.on('game-over', ({ final_scores }: { final_scores: Array<{ user_id: string; pseudo: string; score: number; rang: number }> }) => {
-      set({ status: 'finished', finalScores: final_scores });
-    });
-
-    set({ socket });
+    set({ ws });
   },
 
   startGame: () => {
-    const { socket, room } = get();
-    if (socket && room) {
-      socket.emit('start-game', { room_id: room.id });
-    }
+    const { ws, room } = get();
+    send(ws, 'start-game', { room_id: room?.id });
   },
 
   submitAnswer: (question_id, reponse_id, temps_ms) => {
-    const { socket, room } = get();
-    if (socket && room) {
-      socket.emit('submit-answer', {
-        room_id: room.id,
-        question_id,
-        reponse_id,
-        temps_ms,
-      });
-    }
+    const { ws, room } = get();
+    send(ws, 'submit-answer', { room_id: room?.id, question_id, reponse_id, temps_ms });
   },
 
   disconnect: () => {
-    const { socket } = get();
-    if (socket) socket.disconnect();
-    set({ socket: null, room: null, status: 'idle', currentQuestion: null, finalScores: [], players: [] });
+    const { ws } = get();
+    if (ws) ws.close();
+    set({ ws: null, room: null, status: 'idle', currentQuestion: null, finalScores: [], players: [] });
   },
 }));

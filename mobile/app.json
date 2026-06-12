@@ -1,7 +1,7 @@
 {
   "expo": {
     "name": "Quiz Islamique",
-    "slug": "quiz-islamique",
+    "slug": "app-islamique",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -12,6 +12,7 @@
       "resizeMode": "contain",
       "backgroundColor": "#1B5E20"
     },
+    "sdkVersion": "54.0.0",
     "ios": {
       "supportsTablet": false,
       "bundleIdentifier": "com.quizislamique.app"
@@ -38,9 +39,9 @@
     },
     "extra": {
       "eas": {
-        "projectId": "REMPLACER_PAR_TON_EAS_PROJECT_ID"
+        "projectId": "454424b5-242e-45ed-82a1-8a0e9c7265f3"
       }
     },
-    "owner": "REMPLACER_PAR_TON_EXPO_USERNAME"
+    "owner": "sawrou02"
   }
 }

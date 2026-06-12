@@ -2,7 +2,8 @@ import axios from 'axios';
 import * as SecureStore from 'expo-secure-store';
 import { User, Question, QuizConfig, QuizResult, LeaderboardEntry, Badge, Room } from '../types';
 
-const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:3000/api';
+const _RAW_URL = process.env.EXPO_PUBLIC_API_URL || 'https://application-islamique-production.up.railway.app/api';
+const API_BASE_URL = _RAW_URL.endsWith('/api') ? _RAW_URL : _RAW_URL.replace(/\/$/, '') + '/api';
 
 const api = axios.create({
   baseURL: API_BASE_URL,
@@ -40,7 +41,7 @@ export const authApi = {
 
 // Questions
 export const questionsApi = {
-  getQuestions: (params: Partial<QuizConfig> & { limit?: number; offset?: number }) =>
+  getQuestions: (params: Partial<QuizConfig> & { limit?: number; offset?: number; exclude_answered?: boolean }) =>
     api.get<{ success: boolean; data: Question[] }>('/questions', { params }),
 
   getDailyQuestions: () =>
@@ -48,6 +49,19 @@ export const questionsApi = {
 
   getQuestion: (id: string) =>
     api.get<{ success: boolean; data: Question }>(`/questions/${id}`),
+};
+
+// Progression
+export interface LevelStat { answered: number; total: number; completed: boolean }
+export interface DomainProgress { unlocked_max: number; levels: Record<number, LevelStat> }
+export interface ProgressionData {
+  domains: Record<string, DomainProgress>;
+  can_tournament: boolean;
+  can_mixte: boolean;
+}
+
+export const progressionApi = {
+  getMine: () => api.get<{ success: boolean; data: ProgressionData }>('/progression/me'),
 };
 
 // Quiz
@@ -122,6 +136,15 @@ export const tournoisApi = {
 
   getClassement: (id: string) =>
     api.get<{ success: boolean; data: Array<{ rang: number; user_id: string; pseudo: string; pays: string; points: number; xp_total: number; ligue: { id: string; nom: string; nom_ar: string } }> }>(`/tournois/${id}/classement`),
+
+  getPublicActif: () =>
+    api.get<{ success: boolean; data: { id: string; nom: string; nom_ar: string; theme: string; description: string; date_debut: string; date_fin: string; nb_participants: number } | null }>('/tournois/public/actif'),
+
+  rejoindrePublic: () =>
+    api.post<{ success: boolean; message: string; tournoi_id: string }>('/tournois/public/rejoindre'),
+
+  classementPublic: () =>
+    api.get<{ success: boolean; data: Array<{ rang: number; user_id: string; pseudo: string; pays: string; points: number; xp_total: number; ligue: { id: string; nom: string; nom_ar: string } }> }>('/tournois/public/classement'),
 };
 
 // Halaqat

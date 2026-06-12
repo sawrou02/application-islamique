@@ -6,9 +6,10 @@ import {
 import { router } from 'expo-router';
 import * as Linking from 'expo-linking';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Ionicons } from '@expo/vector-icons';
+import { IslamicIcon } from '../../components/IslamicIcon';
 import { COLORS } from '../../constants/colors';
 import { halaqatApi } from '../../services/api';
+import { getCurrentLang } from '../../i18n';
 
 const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:3000/api';
 
@@ -26,6 +27,8 @@ export default function HalaqatScreen() {
   const [newNom, setNewNom] = useState('');
   const [joinCode, setJoinCode] = useState('');
   const [busy, setBusy] = useState(false);
+  const lang = getCurrentLang();
+  const isAr = lang === 'ar';
 
   const load = async () => {
     try {
@@ -42,17 +45,17 @@ export default function HalaqatScreen() {
 
   const handleCreate = async () => {
     if (newNom.trim().length < 2) {
-      Alert.alert('Attention', 'Donnez un nom à votre halaqa.');
+      Alert.alert(isAr ? 'تنبيه' : 'Attention', isAr ? 'أدخل اسماً للحلقة.' : 'Donnez un nom à votre halaqa.');
       return;
     }
     setBusy(true);
     try {
       const res = await halaqatApi.create({ nom: newNom.trim() });
       setNewNom('');
-      Alert.alert('Halaqa créée', `Code d'accès : ${res.data.data.code_acces}`);
+      Alert.alert(isAr ? 'تم إنشاء الحلقة' : 'Halaqa créée', isAr ? `رمز الدخول: ${res.data.data.code_acces}` : `Code d'accès : ${res.data.data.code_acces}`);
       await load();
     } catch {
-      Alert.alert('Erreur', 'Création impossible.');
+      Alert.alert(isAr ? 'خطأ' : 'Erreur', isAr ? 'تعذر الإنشاء.' : 'Création impossible.');
     } finally {
       setBusy(false);
     }
@@ -60,17 +63,17 @@ export default function HalaqatScreen() {
 
   const handleJoin = async () => {
     if (joinCode.trim().length < 4) {
-      Alert.alert('Attention', "Entrez le code d'accès.");
+      Alert.alert(isAr ? 'تنبيه' : 'Attention', isAr ? 'أدخل رمز الدخول.' : "Entrez le code d'accès.");
       return;
     }
     setBusy(true);
     try {
       await halaqatApi.join(joinCode.trim());
       setJoinCode('');
-      Alert.alert('Bienvenue', 'Vous avez rejoint la halaqa.');
+      Alert.alert(isAr ? 'أهلاً بك' : 'Bienvenue', isAr ? 'انضممت إلى الحلقة.' : 'Vous avez rejoint la halaqa.');
       await load();
     } catch {
-      Alert.alert('Erreur', 'Halaqa introuvable.');
+      Alert.alert(isAr ? 'خطأ' : 'Erreur', isAr ? 'الحلقة غير موجودة.' : 'Halaqa introuvable.');
     } finally {
       setBusy(false);
     }
@@ -86,37 +89,40 @@ export default function HalaqatScreen() {
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
-          <Ionicons name="arrow-back" size={22} color="#FFFFFF" />
+          <IslamicIcon name="back" size={28} color="#FFFFFF" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Mode Halaqat</Text>
+        <Text style={styles.headerTitle}>{isAr ? 'نمط الحلقات' : lang === 'en' ? 'Halaqat Mode' : 'Mode Halaqat'}</Text>
       </View>
 
       <ScrollView contentContainerStyle={styles.scroll}>
         <View style={styles.introCard}>
           <Text style={styles.introIcon}>🕌</Text>
           <Text style={styles.introText}>
-            Cercle d'étude islamique. Les enseignants créent une halaqa, les élèves
-            la rejoignent avec un code pour apprendre ensemble.
+            {isAr
+              ? 'حلقة دراسة إسلامية. يُنشئ المعلمون الحلقة ويلتحق بها الطلاب برمز الدخول للتعلم معاً.'
+              : lang === 'en'
+              ? 'Islamic study circle. Teachers create a halaqa, students join with a code to learn together.'
+              : "Cercle d'étude islamique. Les enseignants créent une halaqa, les élèves la rejoignent avec un code pour apprendre ensemble."}
           </Text>
         </View>
 
         {/* Créer */}
-        <Text style={styles.sectionTitle}>Créer une halaqa (enseignant)</Text>
+        <Text style={styles.sectionTitle}>{isAr ? 'إنشاء حلقة (معلم)' : lang === 'en' ? 'Create a halaqa (teacher)' : 'Créer une halaqa (enseignant)'}</Text>
         <TextInput
           style={styles.input}
-          placeholder="Nom de la halaqa"
+          placeholder={isAr ? 'اسم الحلقة' : 'Nom de la halaqa'}
           placeholderTextColor={COLORS.textLight}
           value={newNom}
           onChangeText={setNewNom}
           maxLength={150}
         />
         <TouchableOpacity style={[styles.btn, busy && styles.disabled]} onPress={handleCreate} disabled={busy}>
-          <Ionicons name="add-circle" size={18} color="#FFFFFF" />
-          <Text style={styles.btnText}>Créer</Text>
+          <IslamicIcon name="add" size={16} color="#FFFFFF" />
+          <Text style={styles.btnText}>{isAr ? 'إنشاء' : lang === 'en' ? 'Create' : 'Créer'}</Text>
         </TouchableOpacity>
 
         {/* Rejoindre */}
-        <Text style={styles.sectionTitle}>Rejoindre (élève)</Text>
+        <Text style={styles.sectionTitle}>{isAr ? 'الانضمام (طالب)' : lang === 'en' ? 'Join (student)' : 'Rejoindre (élève)'}</Text>
         <TextInput
           style={[styles.input, styles.codeInput]}
           placeholder="CODE"
@@ -127,16 +133,16 @@ export default function HalaqatScreen() {
           autoCapitalize="characters"
         />
         <TouchableOpacity style={[styles.btn, styles.btnSecondary, busy && styles.disabled]} onPress={handleJoin} disabled={busy}>
-          <Ionicons name="enter" size={18} color="#FFFFFF" />
-          <Text style={styles.btnText}>Rejoindre</Text>
+          <IslamicIcon name="enter" size={18} color="#FFFFFF" />
+          <Text style={styles.btnText}>{isAr ? 'انضمام' : lang === 'en' ? 'Join' : 'Rejoindre'}</Text>
         </TouchableOpacity>
 
         {/* Mes halaqat */}
-        <Text style={styles.sectionTitle}>Mes halaqat</Text>
+        <Text style={styles.sectionTitle}>{isAr ? 'حلقاتي' : lang === 'en' ? 'My halaqat' : 'Mes halaqat'}</Text>
         {loading ? (
           <ActivityIndicator color={COLORS.primary} />
         ) : halaqat.length === 0 ? (
-          <Text style={styles.empty}>Vous n'avez encore aucune halaqa.</Text>
+          <Text style={styles.empty}>{isAr ? 'لا توجد لديك أي حلقة بعد.' : lang === 'en' ? 'You have no halaqa yet.' : "Vous n'avez encore aucune halaqa."}</Text>
         ) : (
           halaqat.map((h) => (
             <View key={h.id} style={styles.halaqaCard}>
@@ -150,7 +156,7 @@ export default function HalaqatScreen() {
                 <View style={styles.enseignantActions}>
                   <TouchableOpacity style={styles.codeBadge} onPress={() => shareCode(h.code_acces, h.nom)}>
                     <Text style={styles.codeBadgeText}>{h.code_acces}</Text>
-                    <Ionicons name="share-social" size={14} color={COLORS.primary} />
+                    <IslamicIcon name="share" size={14} color={COLORS.primary} />
                   </TouchableOpacity>
                   <TouchableOpacity
                     style={styles.rapportBtn}

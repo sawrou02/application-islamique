@@ -9,11 +9,15 @@ export const COLORS = {
   text: '#1A1A1A',
   textSecondary: '#666666',
   textLight: '#999999',
-  arabicText: '#1B5E20',
+  arabicText: '#1A237E',
   border: '#E0E0E0',
   error: '#C62828',
   success: '#2E7D32',
   warning: '#F57C00',
+  // Gradient simulation
+  gradientStart: '#1B5E20',
+  gradientEnd: '#2E7D32',
+  cardBg: '#F8FDF8',
   // Liga colors
   bronze: '#CD7F32',
   silver: '#C0C0C0',
