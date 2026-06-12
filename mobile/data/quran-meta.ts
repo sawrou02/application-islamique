@@ -39,20 +39,28 @@ export interface Reciter {
   id: string;
   name: string;
   nameAr: string;
-  edition: string; // islamic.network audio-surah edition id
+  /** quran.com recitation_id used by api.quran.com /api/v4/chapter_recitations/{id}/{chapter_id} */
+  qcId: number;
 }
 
 export const RECITERS: Reciter[] = [
-  { id: 'alafasy',     name: 'Mishary Al-Afasy',       nameAr: 'مشاري العفاسي',     edition: 'ar.alafasy' },
-  { id: 'husary',      name: 'Mahmoud Al-Husary',      nameAr: 'محمود الحصري',      edition: 'ar.husary' },
-  { id: 'sudais',      name: 'Abdul Rahman Al-Sudais', nameAr: 'عبد الرحمن السديس', edition: 'ar.abdurrahmaansudais' },
-  { id: 'shuraim',     name: 'Saud Al-Shuraim',        nameAr: 'سعود الشريم',       edition: 'ar.saoodashuraym' },
-  { id: 'muaiqly',     name: 'Maher Al-Muaiqly',       nameAr: 'ماهر المعيقلي',     edition: 'ar.mahermuaiqly' },
-  { id: 'minshawi',    name: 'Mohamed Al-Minshawi',    nameAr: 'محمد المنشاوي',     edition: 'ar.minshawi' },
-  { id: 'abdulbasit',  name: 'Abdul Basit Murattal',   nameAr: 'عبد الباسط',        edition: 'ar.abdulbasitmurattal' },
-  { id: 'ayyoub',      name: 'Muhammad Ayyoub',        nameAr: 'محمد أيوب',         edition: 'ar.muhammadayyoub' },
+  { id: 'alafasy',     name: 'Mishary Al-Afasy',          nameAr: 'مشاري العفاسي',       qcId: 7 },
+  { id: 'husary',      name: 'Mahmoud Al-Husary',         nameAr: 'محمود الحصري',        qcId: 6 },
+  { id: 'sudais',      name: 'Abdul Rahman Al-Sudais',    nameAr: 'عبد الرحمن السديس',   qcId: 3 },
+  { id: 'shuraim',     name: 'Saud Al-Shuraim',           nameAr: 'سعود الشريم',         qcId: 10 },
+  { id: 'shatri',      name: 'Abu Bakr Al-Shatri',        nameAr: 'أبو بكر الشاطري',     qcId: 4 },
+  { id: 'minshawi',    name: 'Mohamed Al-Minshawi',       nameAr: 'محمد المنشاوي',       qcId: 9 },
+  { id: 'abdulbasit',  name: 'Abdul Basit (Murattal)',    nameAr: 'عبد الباسط (مرتل)',   qcId: 2 },
+  { id: 'rifai',       name: 'Hani Ar-Rifai',             nameAr: 'هاني الرفاعي',        qcId: 5 },
 ];
 
-export function recitationUrl(reciterEdition: string, surah: number): string {
-  return `https://cdn.islamic.network/quran/audio-surah/128/${reciterEdition}/${surah}.mp3`;
+/**
+ * Fetch the actual MP3 URL from api.quran.com for the chosen reciter + surah.
+ * Returns the absolute audio_url (CDN).
+ */
+export async function fetchRecitationUrl(qcId: number, surah: number): Promise<string> {
+  const res = await fetch(`https://api.quran.com/api/v4/chapter_recitations/${qcId}/${surah}`);
+  const json = await res.json();
+  return json?.audio_file?.audio_url as string;
 }
+

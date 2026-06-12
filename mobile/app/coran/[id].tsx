@@ -13,7 +13,7 @@ import { getCurrentLang } from '../../i18n';
 import { fetchSurahList, SurahMeta } from '../../services/quran';
 import {
   SURAH_PAGE, TOTAL_PAGES, surahFromPage, pageImageUrl,
-  RECITERS, recitationUrl, Reciter,
+  RECITERS, fetchRecitationUrl, Reciter,
 } from '../../data/quran-meta';
 
 const { width, height } = Dimensions.get('window');
@@ -77,10 +77,12 @@ export default function MushafScreen() {
 
   const playAudio = async (r: Reciter = reciter) => {
     const surah = surahFromPage(currentPage);
-    const url = recitationUrl(r.edition, surah);
     setLoadingAudio(true);
+    let url = '';
     try {
       await stopAudio();
+      url = await fetchRecitationUrl(r.qcId, surah);
+      if (!url) throw new Error('Audio URL introuvable');
       const { sound } = await Audio.Sound.createAsync(
         { uri: url },
         { shouldPlay: true }
