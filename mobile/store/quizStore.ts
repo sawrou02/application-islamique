@@ -18,6 +18,7 @@ interface QuizState {
   questionStartTime: number;
 
   startQuiz: (config: QuizConfig) => Promise<void>;
+  restartBatch: () => Promise<void>;
   answerQuestion: (reponse_id: string) => void;
   nextQuestion: () => void;
   finishQuiz: () => Promise<void>;
@@ -76,11 +77,14 @@ export const useQuizStore = create<QuizState>((set, get) => ({
           });
         }
       } else {
+        // Batch mode: serve 5 unanswered questions at a time, capped at 30 total per domain/level
+        const isBatch = !!(config.domaine && typeof config.niveau === 'number');
         response = await questionsApi.getQuestions({
           domaine: config.domaine,
           niveau: typeof config.niveau === 'number' ? config.niveau : undefined,
           madhab: config.madhab,
-          limit: config.nb_questions,
+          limit: isBatch ? 5 : config.nb_questions,
+          exclude_answered: isBatch ? true : undefined,
         });
       }
 
@@ -183,6 +187,13 @@ export const useQuizStore = create<QuizState>((set, get) => ({
     if (pending.length > 0) {
       await offlineCache.saveLastSync();
     }
+  },
+
+  restartBatch: async () => {
+    const { config } = get();
+    if (!config) return;
+    set({ questions: [], currentIndex: 0, answers: [], score: 0, xpGained: 0, result: null });
+    await get().startQuiz(config);
   },
 
   resetQuiz: () => {

@@ -5,10 +5,13 @@ import { userHasAccess, userCanTournament } from './progression';
 
 const router = Router();
 
+const BATCH_SIZE = 5;
+const POOL_CAP = 30;
+
 // GET /api/questions
 router.get('/', optionalAuthMiddleware, async (req: AuthRequest, res: Response): Promise<void> => {
   try {
-    const { domaine, niveau, search, limit = '10', offset = '0' } = req.query;
+    const { domaine, niveau, search, limit = '10', offset = '0', exclude_answered } = req.query;
 
     // Skip progression gating when search is present (browsing/learning mode)
     if (!search) {
@@ -33,6 +36,9 @@ router.get('/', optionalAuthMiddleware, async (req: AuthRequest, res: Response):
       }
     }
 
+    // Batch mode: exclude already-answered questions, cap pool to POOL_CAP
+    const isBatchMode = exclude_answered === 'true' && req.user && domaine && niveau;
+
     const conditions: string[] = ["q.statut = 'valide'"];
     const params: unknown[] = [];
     let idx = 1;
@@ -44,9 +50,24 @@ router.get('/', optionalAuthMiddleware, async (req: AuthRequest, res: Response):
       params.push(`%${search}%`, `%${search}%`);
     }
 
-    params.push(Number(limit), Number(offset));
+    // Cap pool at POOL_CAP and exclude already-answered questions
+    if (isBatchMode) {
+      conditions.push(`q.id IN (
+        SELECT id FROM questions
+        WHERE statut = 'valide' AND domaine = $${idx++} AND niveau = $${idx++}
+        ORDER BY id LIMIT ${POOL_CAP}
+      )`);
+      params.push(domaine, Number(niveau));
+      conditions.push(`q.id NOT IN (
+        SELECT question_id FROM historique_reponses
+        WHERE user_id = $${idx++} AND est_correcte = true
+      )`);
+      params.push(req.user!.id);
+    }
 
-    const orderBy = search ? 'ORDER BY q.domaine, q.niveau' : 'ORDER BY RANDOM()';
+    params.push(Number(isBatchMode ? BATCH_SIZE : limit), Number(offset));
+
+    const orderBy = search ? 'ORDER BY q.domaine, q.niveau' : (isBatchMode ? 'ORDER BY q.id' : 'ORDER BY RANDOM()');
 
     const query = `
       SELECT q.*, json_agg(json_build_object(

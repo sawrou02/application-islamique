@@ -41,7 +41,7 @@ export const authApi = {
 
 // Questions
 export const questionsApi = {
-  getQuestions: (params: Partial<QuizConfig> & { limit?: number; offset?: number }) =>
+  getQuestions: (params: Partial<QuizConfig> & { limit?: number; offset?: number; exclude_answered?: boolean }) =>
     api.get<{ success: boolean; data: Question[] }>('/questions', { params }),
 
   getDailyQuestions: () =>

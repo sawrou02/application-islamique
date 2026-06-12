@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
   View, Text, ScrollView, TouchableOpacity, StyleSheet, Animated,
 } from 'react-native';
@@ -12,6 +12,7 @@ import { MOTIVATION_HADITHS } from '../../constants/islamic';
 import { getCurrentXpBoost } from '../../services/islamicBoosts';
 import { getCurrentLang } from '../../i18n';
 import { useNetworkStatus } from '../../hooks/useNetworkStatus';
+import { progressionApi } from '../../services/api';
 
 function getMotivationHadith(score: number) {
   if (score >= 80) return MOTIVATION_HADITHS[0];
@@ -20,13 +21,17 @@ function getMotivationHadith(score: number) {
 }
 
 export default function QuizResult() {
-  const { result, questions, answers, resetQuiz, config } = useQuizStore();
+  const { result, questions, answers, resetQuiz, restartBatch, config } = useQuizStore();
   const scaleAnim = useRef(new Animated.Value(0)).current;
+  const congratsAnim = useRef(new Animated.Value(0)).current;
   const hadith = getMotivationHadith(result?.score || 0);
   const lang = getCurrentLang();
   const isAr = lang === 'ar';
   const isOnline = useNetworkStatus();
   const wasOffline = !result && answers.length > 0;
+  const [domainCompleted, setDomainCompleted] = useState(false);
+  const [domainGrade, setDomainGrade] = useState(0);
+  const [nextLevelNum, setNextLevelNum] = useState<number | null>(null);
 
   useEffect(() => {
     Animated.spring(scaleAnim, {
@@ -35,6 +40,27 @@ export default function QuizResult() {
       tension: 80,
       useNativeDriver: true,
     }).start();
+  }, []);
+
+  // Check if the user has completed all 30 questions in this domain/level batch
+  useEffect(() => {
+    const domaine = config?.domaine;
+    const niveau = typeof config?.niveau === 'number' ? config.niveau : null;
+    if (!domaine || niveau === null) return;
+    progressionApi.getMine().then(res => {
+      const data = res.data.data;
+      const lvl = data.domains[domaine]?.levels[niveau];
+      if (!lvl) return;
+      const poolCap = Math.min(lvl.total, 30);
+      if (poolCap > 0 && lvl.answered >= poolCap) {
+        const grade = Math.round((lvl.answered / poolCap) * 100);
+        setDomainGrade(grade);
+        const unlockedMax = data.domains[domaine]?.unlocked_max || niveau;
+        setNextLevelNum(unlockedMax > niveau ? unlockedMax : (niveau < 5 ? niveau + 1 : null));
+        setDomainCompleted(true);
+        Animated.spring(congratsAnim, { toValue: 1, friction: 5, tension: 80, useNativeDriver: true }).start();
+      }
+    }).catch(() => {});
   }, []);
 
   const score = result?.score || 0;
@@ -46,8 +72,14 @@ export default function QuizResult() {
   const scoreColor = score >= 80 ? COLORS.success : score >= 50 ? COLORS.warning : COLORS.error;
 
   const handlePlayAgain = () => {
-    resetQuiz();
-    router.replace('/(tabs)/quiz');
+    if (!domainCompleted && config?.domaine && typeof config?.niveau === 'number') {
+      // Continue the batch — same domain/level, next 5 unanswered questions
+      restartBatch();
+      router.replace({ pathname: '/quiz/[mode]', params: { mode: config.mode || 'solo' } });
+    } else {
+      resetQuiz();
+      router.replace('/(tabs)/quiz');
+    }
   };
 
   const handleGoHome = () => {
@@ -105,6 +137,31 @@ export default function QuizResult() {
           )}
         </View>
 
+        {/* Congratulations banner when 30-question batch is complete */}
+        {domainCompleted && (
+          <Animated.View style={[styles.congratsCard, { transform: [{ scale: congratsAnim }] }]}>
+            <Text style={styles.congratsEmoji}>🎉</Text>
+            <Text style={styles.congratsTitle}>
+              {isAr ? 'مبروك! أكملت هذا المستوى' : lang === 'en' ? 'Congratulations! Level complete!' : 'Félicitations ! Niveau terminé !'}
+            </Text>
+            <Text style={styles.congratsGrade}>
+              {isAr ? `نتيجتك في هذا المجال: ${domainGrade}%` :
+               lang === 'en' ? `Your grade in this domain: ${domainGrade}%` :
+               `Ta note sur ce domaine : ${domainGrade}%`}
+            </Text>
+            {nextLevelNum && (
+              <View style={styles.nextLevelBadge}>
+                <IslamicIcon name="star" size={14} color={COLORS.gold} />
+                <Text style={styles.nextLevelText}>
+                  {isAr ? `🔓 المستوى ${nextLevelNum} مفتوح الآن!` :
+                   lang === 'en' ? `🔓 Level ${nextLevelNum} is now unlocked!` :
+                   `🔓 Niveau ${nextLevelNum} débloqué !`}
+                </Text>
+              </View>
+            )}
+          </Animated.View>
+        )}
+
         {/* Hadith de motivation */}
         <View style={styles.hadithCard}>
           <Text style={styles.hadithAr}>{hadith.textAr}</Text>
@@ -143,10 +200,19 @@ export default function QuizResult() {
 
         {/* Buttons */}
         <View style={styles.buttonsContainer}>
-          <TouchableOpacity style={styles.playAgainButton} onPress={handlePlayAgain} activeOpacity={0.85}>
-            <IslamicIcon name="refresh" size={18} color="#FFFFFF" />
-            <Text style={styles.playAgainText}>{isAr ? 'إعادة اللعب' : lang === 'en' ? 'Play again' : 'Rejouer'}</Text>
-          </TouchableOpacity>
+          {!domainCompleted && config?.domaine && typeof config?.niveau === 'number' ? (
+            <TouchableOpacity style={styles.playAgainButton} onPress={handlePlayAgain} activeOpacity={0.85}>
+              <IslamicIcon name="right" size={18} color="#FFFFFF" />
+              <Text style={styles.playAgainText}>
+                {isAr ? 'الدفعة التالية' : lang === 'en' ? 'Next batch' : 'Lot suivant'}
+              </Text>
+            </TouchableOpacity>
+          ) : (
+            <TouchableOpacity style={styles.playAgainButton} onPress={handlePlayAgain} activeOpacity={0.85}>
+              <IslamicIcon name="refresh" size={18} color="#FFFFFF" />
+              <Text style={styles.playAgainText}>{isAr ? 'إعادة اللعب' : lang === 'en' ? 'Play again' : 'Rejouer'}</Text>
+            </TouchableOpacity>
+          )}
           <TouchableOpacity style={styles.homeButton} onPress={handleGoHome} activeOpacity={0.85}>
             <IslamicIcon name="home" size={18} color={COLORS.primary} />
             <Text style={styles.homeText}>{isAr ? 'الرئيسية' : lang === 'en' ? 'Home' : 'Accueil'}</Text>
@@ -239,4 +305,31 @@ const styles = StyleSheet.create({
     borderWidth: 1.5, borderColor: COLORS.primary,
   },
   homeText: { fontSize: 16, fontWeight: '600', color: COLORS.primary },
+  congratsCard: {
+    backgroundColor: COLORS.primary,
+    borderRadius: 20,
+    padding: 20,
+    marginBottom: 20,
+    alignItems: 'center',
+    shadowColor: COLORS.primary,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 12,
+    elevation: 6,
+  },
+  congratsEmoji: { fontSize: 40, marginBottom: 8 },
+  congratsTitle: {
+    fontSize: 18, fontWeight: '800', color: '#FFFFFF',
+    textAlign: 'center', marginBottom: 10,
+  },
+  congratsGrade: {
+    fontSize: 28, fontWeight: 'bold', color: COLORS.gold,
+    marginBottom: 12,
+  },
+  nextLevelBadge: {
+    flexDirection: 'row', alignItems: 'center', gap: 6,
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    borderRadius: 20, paddingVertical: 8, paddingHorizontal: 16,
+  },
+  nextLevelText: { fontSize: 14, fontWeight: '700', color: '#FFFFFF' },
 });
