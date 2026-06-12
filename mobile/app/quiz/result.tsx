@@ -73,10 +73,11 @@ export default function QuizResult() {
 
   const handlePlayAgain = () => {
     if (!domainCompleted && config?.domaine && typeof config?.niveau === 'number') {
-      // Continue the batch — same domain/level, next 5 unanswered questions
+      // Continue le lot — même domaine/niveau, 5 prochaines questions non répondues
       restartBatch();
       router.replace({ pathname: '/quiz/[mode]', params: { mode: config.mode || 'solo' } });
     } else {
+      // Lot terminé ou mode non thématique → retour au setup quiz
       resetQuiz();
       router.replace('/(tabs)/quiz');
     }
@@ -200,6 +201,10 @@ export default function QuizResult() {
 
         {/* Buttons */}
         <View style={styles.buttonsContainer}>
+          <TouchableOpacity style={styles.homeButton} onPress={handleGoHome} activeOpacity={0.85}>
+            <IslamicIcon name="home" size={18} color={COLORS.primary} />
+            <Text style={styles.homeText}>{isAr ? 'الرئيسية' : lang === 'en' ? 'Home' : 'Accueil'}</Text>
+          </TouchableOpacity>
           {!domainCompleted && config?.domaine && typeof config?.niveau === 'number' ? (
             <TouchableOpacity style={styles.playAgainButton} onPress={handlePlayAgain} activeOpacity={0.85}>
               <IslamicIcon name="right" size={18} color="#FFFFFF" />
@@ -213,10 +218,6 @@ export default function QuizResult() {
               <Text style={styles.playAgainText}>{isAr ? 'إعادة اللعب' : lang === 'en' ? 'Play again' : 'Rejouer'}</Text>
             </TouchableOpacity>
           )}
-          <TouchableOpacity style={styles.homeButton} onPress={handleGoHome} activeOpacity={0.85}>
-            <IslamicIcon name="home" size={18} color={COLORS.primary} />
-            <Text style={styles.homeText}>{isAr ? 'الرئيسية' : lang === 'en' ? 'Home' : 'Accueil'}</Text>
-          </TouchableOpacity>
         </View>
 
         {/* Share Button */}
