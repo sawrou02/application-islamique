@@ -51,10 +51,10 @@ export default function TabsLayout() {
         }}
       />
       <Tabs.Screen
-        name="multi"
+        name="ressources"
         options={{
-          title: t('multi'),
-          tabBarIcon: ({ color }) => <TabIcon symbol="✦" color={color} />,
+          title: 'Ressources',
+          tabBarIcon: ({ color }) => <TabIcon symbol="📚" color={color} />,
         }}
       />
       <Tabs.Screen
@@ -70,6 +70,11 @@ export default function TabsLayout() {
           title: t('profil'),
           tabBarIcon: ({ color }) => <TabIcon symbol="◈" color={color} />,
         }}
+      />
+      {/* Caché de la barre — accessible via code */}
+      <Tabs.Screen
+        name="multi"
+        options={{ href: null }}
       />
     </Tabs>
   );

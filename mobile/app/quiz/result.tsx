@@ -73,10 +73,11 @@ export default function QuizResult() {
 
   const handlePlayAgain = () => {
     if (!domainCompleted && config?.domaine && typeof config?.niveau === 'number') {
-      // Continue the batch — same domain/level, next 5 unanswered questions
+      // Continue le lot — même domaine/niveau, 5 prochaines questions non répondues
       restartBatch();
       router.replace({ pathname: '/quiz/[mode]', params: { mode: config.mode || 'solo' } });
     } else {
+      // Lot terminé ou mode non thématique → retour au setup quiz
       resetQuiz();
       router.replace('/(tabs)/quiz');
     }
