@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import {
-  View, Text, StyleSheet, FlatList, TouchableOpacity,
-  ActivityIndicator, Modal, ScrollView, AppState, AppStateStatus,
+  View, Text, StyleSheet, FlatList, TouchableOpacity, Image,
+  Dimensions, ActivityIndicator, Modal, ScrollView, AppState, AppStateStatus,
 } from 'react-native';
 import { router, useLocalSearchParams, useFocusEffect } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -13,17 +13,21 @@ import { COLORS } from '../../constants/colors';
 import { getCurrentLang } from '../../i18n';
 import { fetchSurahList, fetchSurah, SurahMeta, Ayah } from '../../services/quran';
 import {
+  SURAH_PAGE, TOTAL_PAGES, surahFromPage, pageImageUrl,
   RECITERS, ayahGlobalNumber, ayahAudioUrl, Reciter,
   SURAH_AYAH_COUNT,
 } from '../../data/quran-meta';
 
+const { width, height } = Dimensions.get('window');
+const PAGE_W = width;
 const RECITER_KEY = 'coran_reciter_id';
 
-export default function QuranTextScreen() {
+export default function MushafScreen() {
   const params = useLocalSearchParams<{ id: string }>();
   const initialSurah = Math.max(1, Math.min(114, parseInt(params.id || '1', 10) || 1));
+  const initialPage = SURAH_PAGE[initialSurah] || 1;
 
-  const [currentSurah, setCurrentSurah] = useState(initialSurah);
+  const [currentPage, setCurrentPage] = useState(initialPage);
   const [surahs, setSurahs] = useState<SurahMeta[]>([]);
   const [showSurahPicker, setShowSurahPicker] = useState(false);
   const [showReciterPicker, setShowReciterPicker] = useState(false);
@@ -35,9 +39,8 @@ export default function QuranTextScreen() {
   const [ayahs, setAyahs] = useState<Ayah[]>([]);
   const [ayahsFr, setAyahsFr] = useState<Ayah[]>([]);
   const [loadingAyahs, setLoadingAyahs] = useState(false);
-  const [showTrad, setShowTrad] = useState(false);
 
-  const verseListRef = useRef<FlatList>(null);
+  const listRef = useRef<FlatList>(null);
   const soundRef = useRef<Audio.Sound | null>(null);
   const playingRef = useRef(false);
   const pausedRef = useRef(false);
@@ -47,40 +50,24 @@ export default function QuranTextScreen() {
 
   const lang = getCurrentLang();
   const isAr = lang === 'ar';
+  const currentSurah = surahFromPage(currentPage);
 
   useEffect(() => { reciterRef.current = reciter; }, [reciter]);
   useEffect(() => { currentSurahRef.current = currentSurah; }, [currentSurah]);
 
-  // Load ayahs when surah changes
   useEffect(() => {
     setLoadingAyahs(true);
-    setCurrentAyahIdx(0);
-    currentAyahRef.current = 0;
     fetchSurah(currentSurah)
       .then(s => { setAyahs(s.ayahs_ar); setAyahsFr(s.ayahs_fr); })
       .catch(() => { setAyahs([]); setAyahsFr([]); })
       .finally(() => setLoadingAyahs(false));
   }, [currentSurah]);
 
-  // Auto-scroll to current ayah when it changes
-  useEffect(() => {
-    if (ayahs.length > currentAyahIdx) {
-      try {
-        verseListRef.current?.scrollToIndex({ index: currentAyahIdx, animated: true, viewPosition: 0.35 });
-      } catch {}
-    }
-  }, [currentAyahIdx]);
-
-  // Stop audio on blur
-  useFocusEffect(
-    useCallback(() => {
-      return () => { stopAudio(); };
-    }, [])
-  );
+  useFocusEffect(useCallback(() => { return () => { stopAudio(); }; }, []));
 
   useEffect(() => {
-    const sub = AppState.addEventListener('change', (state: AppStateStatus) => {
-      if (state === 'background' || state === 'inactive') stopAudio();
+    const sub = AppState.addEventListener('change', (s: AppStateStatus) => {
+      if (s === 'background' || s === 'inactive') stopAudio();
     });
     return () => sub.remove();
   }, []);
@@ -96,6 +83,22 @@ export default function QuranTextScreen() {
     Audio.setAudioModeAsync({ playsInSilentModeIOS: true, staysActiveInBackground: false }).catch(() => {});
     return () => { stopAudio(); };
   }, []);
+
+  const onScroll = (e: any) => {
+    const idx = Math.round(e.nativeEvent.contentOffset.x / PAGE_W);
+    const newPage = idx + 1;
+    if (newPage !== currentPage) setCurrentPage(newPage);
+  };
+
+  const jumpToSurah = (n: number) => {
+    const p = SURAH_PAGE[n];
+    if (!p) return;
+    setShowSurahPicker(false);
+    listRef.current?.scrollToIndex({ index: p - 1, animated: false });
+    setCurrentPage(p);
+    setCurrentAyahIdx(0);
+    currentAyahRef.current = 0;
+  };
 
   const stopAudio = async () => {
     playingRef.current = false;
@@ -118,7 +121,11 @@ export default function QuranTextScreen() {
       currentSurahRef.current = nextSurah;
       currentAyahRef.current = 0;
       setCurrentAyahIdx(0);
-      setCurrentSurah(nextSurah);
+      const nextPage = SURAH_PAGE[nextSurah];
+      if (nextPage) {
+        listRef.current?.scrollToIndex({ index: nextPage - 1, animated: true });
+        setCurrentPage(nextPage);
+      }
       playAyah(nextSurah, 0);
       return;
     }
@@ -128,7 +135,6 @@ export default function QuranTextScreen() {
 
     const globalNum = ayahGlobalNumber(surah, ayahIdx + 1);
     const url = ayahAudioUrl(reciterRef.current.cdnId, globalNum);
-
     try {
       await soundRef.current?.unloadAsync();
       soundRef.current = null;
@@ -144,19 +150,6 @@ export default function QuranTextScreen() {
     }
   };
 
-  const tapVerse = async (idx: number) => {
-    currentAyahRef.current = idx;
-    setCurrentAyahIdx(idx);
-    await stopAudio();
-    playingRef.current = true;
-    pausedRef.current = false;
-    setPlaying(true);
-    setPaused(false);
-    setLoadingAudio(true);
-    await playAyah(currentSurahRef.current, idx);
-    setLoadingAudio(false);
-  };
-
   const startPlay = async () => {
     await stopAudio();
     playingRef.current = true;
@@ -169,46 +162,45 @@ export default function QuranTextScreen() {
   const pauseResume = async () => {
     if (!playingRef.current) return;
     if (pausedRef.current) {
-      pausedRef.current = false;
-      setPaused(false);
+      pausedRef.current = false; setPaused(false);
       try { await soundRef.current?.playAsync(); } catch {
         playAyah(currentSurahRef.current, currentAyahRef.current);
       }
     } else {
-      pausedRef.current = true;
-      setPaused(true);
+      pausedRef.current = true; setPaused(true);
       try { await soundRef.current?.pauseAsync(); } catch {}
     }
   };
 
   const prevAyah = async () => {
     const idx = Math.max(0, currentAyahRef.current - 1);
-    currentAyahRef.current = idx;
-    setCurrentAyahIdx(idx);
     if (playing) {
       await soundRef.current?.unloadAsync().catch(() => {});
       soundRef.current = null;
       pausedRef.current = false;
       playAyah(currentSurahRef.current, idx);
+    } else {
+      currentAyahRef.current = idx;
+      setCurrentAyahIdx(idx);
     }
   };
 
   const nextAyah = async () => {
     const total = SURAH_AYAH_COUNT[currentSurahRef.current] || 1;
     const idx = Math.min(total - 1, currentAyahRef.current + 1);
-    currentAyahRef.current = idx;
-    setCurrentAyahIdx(idx);
     if (playing) {
       await soundRef.current?.unloadAsync().catch(() => {});
       soundRef.current = null;
       pausedRef.current = false;
       playAyah(currentSurahRef.current, idx);
+    } else {
+      currentAyahRef.current = idx;
+      setCurrentAyahIdx(idx);
     }
   };
 
   const chooseReciter = async (r: Reciter) => {
-    setReciter(r);
-    reciterRef.current = r;
+    setReciter(r); reciterRef.current = r;
     setShowReciterPicker(false);
     await AsyncStorage.setItem(RECITER_KEY, r.id);
     if (playingRef.current) {
@@ -218,14 +210,11 @@ export default function QuranTextScreen() {
     }
   };
 
-  const jumpToSurah = (n: number) => {
-    setShowSurahPicker(false);
-    stopAudio();
-    setCurrentSurah(n);
-  };
-
   const surahMeta = surahs.find(s => s.number === currentSurah);
-  const totalAyahs = SURAH_AYAH_COUNT[currentSurah] || 0;
+  const currentAyahAr = ayahs[currentAyahIdx]?.text || '';
+  const currentAyahFr = ayahsFr[currentAyahIdx]?.text || '';
+  const totalAyahsInSurah = SURAH_AYAH_COUNT[currentSurah] || 0;
+  const PAGE_H = height - 60 - 70;
 
   return (
     <SafeAreaView style={styles.container}>
@@ -238,73 +227,58 @@ export default function QuranTextScreen() {
           <Text style={styles.surahTitle} numberOfLines={1}>
             {surahMeta ? (isAr ? surahMeta.name : surahMeta.englishName) : `Sourate ${currentSurah}`}
           </Text>
-          <Text style={styles.surahSub}>
-            {surahMeta?.numberOfAyahs || totalAyahs} {isAr ? 'آية' : 'versets'} • {isAr ? surahMeta?.revelationType === 'Meccan' ? 'مكية' : 'مدنية' : surahMeta?.revelationType}
+          <Text style={styles.pageInfo}>
+            {isAr ? `صفحة ${currentPage} / ${TOTAL_PAGES}` : `Page ${currentPage} / ${TOTAL_PAGES}`}
           </Text>
         </TouchableOpacity>
-        <TouchableOpacity onPress={() => setShowTrad(t => !t)} style={styles.iconBtn}>
-          <MaterialCommunityIcons name={showTrad ? 'translate-off' : 'translate'} size={22} color="#FFF" />
+        <TouchableOpacity onPress={() => setShowReciterPicker(true)} style={styles.iconBtn}>
+          <MaterialCommunityIcons name="microphone-outline" size={22} color="#FFF" />
         </TouchableOpacity>
       </View>
 
-      {/* Verse list */}
-      {loadingAyahs ? (
-        <View style={styles.loadingBox}>
-          <ActivityIndicator size="large" color={COLORS.primary} />
-        </View>
-      ) : (
-        <FlatList
-          ref={verseListRef}
-          data={ayahs}
-          keyExtractor={(_, i) => String(i)}
-          onScrollToIndexFailed={() => {}}
-          ListHeaderComponent={
-            <View style={styles.bismillah}>
-              <Text style={styles.bismillahText}>بِسْمِ ٱللَّهِ ٱلرَّحْمَٰنِ ٱلرَّحِيمِ</Text>
-            </View>
-          }
-          renderItem={({ item, index }) => {
-            const isActive = index === currentAyahIdx;
-            const isPlaying = isActive && playing && !paused;
-            return (
-              <TouchableOpacity
-                style={[styles.verseRow, isActive && styles.verseRowActive]}
-                onPress={() => tapVerse(index)}
-                activeOpacity={0.7}
-              >
-                {/* Verse number badge */}
-                <View style={[styles.verseNumBadge, isActive && { backgroundColor: COLORS.primary }]}>
-                  {isPlaying ? (
-                    <MaterialCommunityIcons name="volume-high" size={14} color="#FFF" />
-                  ) : (
-                    <Text style={[styles.verseNum, isActive && { color: '#FFF' }]}>{index + 1}</Text>
-                  )}
+      {/* Mushaf pages */}
+      <FlatList
+        ref={listRef}
+        data={Array.from({ length: TOTAL_PAGES }, (_, i) => i + 1)}
+        keyExtractor={(p) => String(p)}
+        horizontal pagingEnabled
+        showsHorizontalScrollIndicator={false}
+        initialScrollIndex={initialPage - 1}
+        getItemLayout={(_, index) => ({ length: PAGE_W, offset: PAGE_W * index, index })}
+        onMomentumScrollEnd={onScroll}
+        inverted
+        renderItem={({ item: page }) => (
+          <View style={[styles.pageWrap, { height: PAGE_H }]}>
+            <Image source={{ uri: pageImageUrl(page) }} style={[styles.pageImage, { height: PAGE_H }]} resizeMode="contain" />
+            {/* Verse overlay on the page image */}
+            {(playing || currentAyahIdx > 0) && page === currentPage && (
+              <View style={styles.verseOverlay}>
+                <View style={styles.verseOverlayInner}>
+                  <View style={styles.ayahBadgeRow}>
+                    <View style={styles.ayahBadge}>
+                      <Text style={styles.ayahBadgeText}>
+                        ﴾ {currentAyahIdx + 1} / {totalAyahsInSurah} ﴿
+                      </Text>
+                    </View>
+                    {loadingAudio && <ActivityIndicator size="small" color="#FFD700" style={{ marginLeft: 8 }} />}
+                  </View>
+                  {currentAyahAr ? (
+                    <Text style={styles.overlayAr} numberOfLines={3}>{currentAyahAr}</Text>
+                  ) : null}
+                  {!isAr && currentAyahFr ? (
+                    <Text style={styles.overlayFr} numberOfLines={2}>{currentAyahFr}</Text>
+                  ) : null}
                 </View>
+              </View>
+            )}
+          </View>
+        )}
+      />
 
-                <View style={{ flex: 1 }}>
-                  {/* Arabic text */}
-                  <Text style={[styles.verseAr, isActive && styles.verseArActive]}>
-                    {item.text}
-                  </Text>
-
-                  {/* French translation */}
-                  {showTrad && ayahsFr[index] && (
-                    <Text style={[styles.verseFr, isActive && { color: COLORS.primaryLight }]}>
-                      {ayahsFr[index].text}
-                    </Text>
-                  )}
-                </View>
-              </TouchableOpacity>
-            );
-          }}
-          contentContainerStyle={{ paddingBottom: 120 }}
-        />
-      )}
-
-      {/* Audio controls bar */}
+      {/* Audio controls */}
       <View style={styles.bottomBar}>
         <TouchableOpacity style={styles.reciterChip} onPress={() => setShowReciterPicker(true)}>
-          <MaterialCommunityIcons name="microphone" size={16} color={COLORS.primary} />
+          <MaterialCommunityIcons name="microphone" size={14} color={COLORS.primary} />
           <Text style={styles.reciterText} numberOfLines={1}>
             {isAr ? reciter.nameAr : reciter.name}
           </Text>
@@ -316,17 +290,15 @@ export default function QuranTextScreen() {
           </TouchableOpacity>
 
           {loadingAudio ? (
-            <View style={styles.playBtn}>
-              <ActivityIndicator color="#FFF" size="small" />
-            </View>
+            <View style={styles.playBtn}><ActivityIndicator color="#FFF" size="small" /></View>
           ) : !playing ? (
             <TouchableOpacity style={styles.playBtn} onPress={startPlay}>
-              <MaterialCommunityIcons name="play" size={28} color="#FFF" />
+              <MaterialCommunityIcons name="play" size={30} color="#FFF" />
             </TouchableOpacity>
           ) : (
             <>
               <TouchableOpacity style={styles.playBtn} onPress={pauseResume}>
-                <MaterialCommunityIcons name={paused ? 'play' : 'pause'} size={28} color="#FFF" />
+                <MaterialCommunityIcons name={paused ? 'play' : 'pause'} size={30} color="#FFF" />
               </TouchableOpacity>
               <TouchableOpacity style={styles.stopBtn} onPress={stopAudio}>
                 <MaterialCommunityIcons name="stop" size={20} color={COLORS.error} />
@@ -338,9 +310,6 @@ export default function QuranTextScreen() {
             <MaterialCommunityIcons name="skip-next" size={24} color={COLORS.primary} />
           </TouchableOpacity>
         </View>
-
-        {/* Verse counter */}
-        <Text style={styles.counter}>{currentAyahIdx + 1}/{totalAyahs}</Text>
       </View>
 
       {/* Sourate picker */}
@@ -356,13 +325,11 @@ export default function QuranTextScreen() {
             {Array.from({ length: 114 }, (_, i) => i + 1).map(n => {
               const m = surahs.find(s => s.number === n);
               return (
-                <TouchableOpacity key={n} style={[styles.surahRow, n === currentSurah && styles.surahRowActive]} onPress={() => jumpToSurah(n)}>
-                  <View style={[styles.surahNum, n === currentSurah && { backgroundColor: COLORS.primary }]}>
-                    <Text style={[styles.surahNumText, n === currentSurah && { color: '#FFF' }]}>{n}</Text>
-                  </View>
+                <TouchableOpacity key={n} style={styles.surahRow} onPress={() => jumpToSurah(n)}>
+                  <View style={styles.surahNum}><Text style={styles.surahNumText}>{n}</Text></View>
                   <View style={{ flex: 1 }}>
                     <Text style={styles.surahName}>{m?.englishName || `Surah ${n}`}</Text>
-                    {m && <Text style={styles.surahSub2}>{m.englishNameTranslation} • {m.numberOfAyahs} v.</Text>}
+                    {m && <Text style={styles.surahSub}>{m.englishNameTranslation} • {m.numberOfAyahs} v.</Text>}
                   </View>
                   <Text style={styles.surahNameAr}>{m?.name || ''}</Text>
                 </TouchableOpacity>
@@ -405,68 +372,49 @@ export default function QuranTextScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#FAF8F0' },
+  container: { flex: 1, backgroundColor: '#FAF5E8' },
 
   header: {
-    flexDirection: 'row', alignItems: 'center',
-    backgroundColor: COLORS.primary,
-    paddingHorizontal: 12, paddingVertical: 12, gap: 8,
+    flexDirection: 'row', alignItems: 'center', backgroundColor: COLORS.primary,
+    paddingHorizontal: 12, paddingVertical: 10, gap: 8, height: 60,
   },
   iconBtn: { padding: 6 },
   surahTitleBtn: { flex: 1, alignItems: 'center' },
   surahTitle: { fontSize: 18, fontWeight: '700', color: '#FFF' },
-  surahSub: { fontSize: 11, color: 'rgba(255,255,255,0.8)', marginTop: 2 },
+  pageInfo: { fontSize: 11, color: 'rgba(255,255,255,0.85)', marginTop: 1 },
 
-  loadingBox: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+  pageWrap: { width: PAGE_W, backgroundColor: '#FAF5E8', justifyContent: 'center', alignItems: 'center' },
+  pageImage: { width: PAGE_W },
 
-  bismillah: {
-    alignItems: 'center', paddingVertical: 20,
-    borderBottomWidth: 1, borderBottomColor: COLORS.border,
-    marginBottom: 4,
+  verseOverlay: {
+    position: 'absolute', bottom: 0, left: 0, right: 0,
+    paddingHorizontal: 10, paddingBottom: 10,
   },
-  bismillahText: {
-    fontSize: 22, color: COLORS.arabicText, fontWeight: '600',
-    writingDirection: 'rtl',
+  verseOverlayInner: {
+    backgroundColor: 'rgba(0,0,0,0.72)',
+    borderRadius: 14, padding: 12,
+    borderWidth: 1, borderColor: 'rgba(255,215,0,0.3)',
   },
-
-  verseRow: {
-    flexDirection: 'row-reverse', alignItems: 'flex-start', gap: 10,
-    paddingHorizontal: 16, paddingVertical: 14,
-    borderBottomWidth: 1, borderBottomColor: '#EEE',
-    backgroundColor: '#FAF8F0',
+  ayahBadgeRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 6 },
+  ayahBadge: {
+    backgroundColor: '#1B5E20', borderRadius: 20,
+    paddingHorizontal: 12, paddingVertical: 3,
   },
-  verseRowActive: {
-    backgroundColor: '#E8F5E9',
-    borderLeftWidth: 3, borderLeftColor: COLORS.primary,
+  ayahBadgeText: { fontSize: 13, fontWeight: '800', color: '#FFD700' },
+  overlayAr: {
+    fontSize: 18, color: '#FFFFFF', textAlign: 'right',
+    writingDirection: 'rtl', lineHeight: 30, fontWeight: '500',
   },
-  verseNumBadge: {
-    width: 32, height: 32, borderRadius: 16,
-    backgroundColor: COLORS.primary + '18',
-    justifyContent: 'center', alignItems: 'center',
-    marginTop: 6, flexShrink: 0,
-  },
-  verseNum: { fontSize: 11, fontWeight: '800', color: COLORS.primary },
-
-  verseAr: {
-    fontSize: 22, color: '#1A237E',
-    textAlign: 'right', writingDirection: 'rtl',
-    lineHeight: 40, fontWeight: '400',
-  },
-  verseArActive: { color: COLORS.primary, fontWeight: '600' },
-
-  verseFr: {
-    fontSize: 13, color: '#555', lineHeight: 20,
-    marginTop: 8, textAlign: 'left',
-    fontStyle: 'italic',
+  overlayFr: {
+    fontSize: 12, color: 'rgba(255,255,255,0.75)', lineHeight: 18,
+    marginTop: 5, fontStyle: 'italic',
   },
 
   bottomBar: {
     flexDirection: 'row', alignItems: 'center',
-    paddingHorizontal: 12, paddingVertical: 10, gap: 8,
-    backgroundColor: '#FFF',
+    paddingHorizontal: 12, paddingVertical: 8, gap: 10,
+    backgroundColor: '#FFF', height: 70,
     borderTopWidth: 1, borderTopColor: COLORS.border,
-    shadowColor: '#000', shadowOffset: { width: 0, height: -2 },
-    shadowOpacity: 0.05, shadowRadius: 6, elevation: 8,
   },
   reciterChip: {
     flex: 1, flexDirection: 'row', alignItems: 'center', gap: 5,
@@ -475,25 +423,24 @@ const styles = StyleSheet.create({
     borderWidth: 1, borderColor: COLORS.primary + '25',
   },
   reciterText: { flex: 1, fontSize: 11, fontWeight: '600', color: COLORS.primary },
-  controls: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  controls: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   ctrlBtn: {
-    width: 36, height: 36, borderRadius: 18,
+    width: 38, height: 38, borderRadius: 19,
     backgroundColor: COLORS.primary + '12',
     justifyContent: 'center', alignItems: 'center',
   },
   playBtn: {
-    width: 48, height: 48, borderRadius: 24,
+    width: 50, height: 50, borderRadius: 25,
     backgroundColor: COLORS.primary,
     justifyContent: 'center', alignItems: 'center',
   },
   stopBtn: {
-    width: 34, height: 34, borderRadius: 17,
+    width: 36, height: 36, borderRadius: 18,
     backgroundColor: COLORS.error + '15',
     justifyContent: 'center', alignItems: 'center',
   },
-  counter: { fontSize: 12, fontWeight: '700', color: COLORS.primary, minWidth: 40, textAlign: 'center' },
 
-  modal: { flex: 1, backgroundColor: '#FAF8F0' },
+  modal: { flex: 1, backgroundColor: '#FAF5E8' },
   modalHeader: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
     padding: 16, borderBottomWidth: 1, borderBottomColor: COLORS.border,
@@ -504,7 +451,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16, paddingVertical: 12,
     borderBottomWidth: 1, borderBottomColor: COLORS.border,
   },
-  surahRowActive: { backgroundColor: COLORS.primary + '08' },
   surahNum: {
     width: 38, height: 38, borderRadius: 19,
     backgroundColor: COLORS.primary + '15',
@@ -512,14 +458,12 @@ const styles = StyleSheet.create({
   },
   surahNumText: { fontWeight: '700', color: COLORS.primary, fontSize: 14 },
   surahName: { fontSize: 15, fontWeight: '600', color: COLORS.text },
-  surahSub2: { fontSize: 11, color: COLORS.textSecondary, marginTop: 1 },
+  surahSub: { fontSize: 11, color: COLORS.textSecondary, marginTop: 1 },
   surahNameAr: { fontSize: 20, color: COLORS.arabicText, fontWeight: '600' },
 
   modalBackdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'flex-end' },
   reciterSheet: {
-    backgroundColor: '#FFF',
-    borderTopLeftRadius: 20, borderTopRightRadius: 20,
-    maxHeight: '70%',
+    backgroundColor: '#FFF', borderTopLeftRadius: 20, borderTopRightRadius: 20, maxHeight: '70%',
   },
   reciterRow: {
     flexDirection: 'row', alignItems: 'center', gap: 12,
