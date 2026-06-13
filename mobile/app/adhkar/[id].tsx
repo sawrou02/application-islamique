@@ -1,119 +1,312 @@
-import { useMemo, useState } from 'react';
+import { useRef, useState, useCallback } from 'react';
 import {
-  View, Text, StyleSheet, ScrollView, TouchableOpacity, Pressable,
+  View, Text, StyleSheet, FlatList, TouchableOpacity,
+  Pressable, Dimensions, ViewToken,
 } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { IslamicIcon } from '../../components/IslamicIcon';
 import { COLORS } from '../../constants/colors';
 import { getCurrentLang } from '../../i18n';
-import { ADHKAR_CATEGORIES } from '../../data/adhkar';
+import { ADHKAR_CATEGORIES, Dhikr } from '../../data/adhkar';
+
+const { width } = Dimensions.get('window');
+
+const CATEGORY_COLORS: Record<string, { accent: string; bg: string }> = {
+  matin:        { accent: '#E65100', bg: '#FFF3E0' },
+  soir:         { accent: '#4527A0', bg: '#EDE7F6' },
+  apres_priere: { accent: '#1B5E20', bg: '#E8F5E9' },
+  sommeil:      { accent: '#1A237E', bg: '#E8EAF6' },
+  reveil:       { accent: '#F57F17', bg: '#FFFDE7' },
+  avant_repas:  { accent: '#BF360C', bg: '#FBE9E7' },
+  apres_repas:  { accent: '#004D40', bg: '#E0F2F1' },
+  maison:       { accent: '#4E342E', bg: '#EFEBE9' },
+  mosquee:      { accent: '#006064', bg: '#E0F7FA' },
+  wc:           { accent: '#37474F', bg: '#ECEFF1' },
+  voyage:       { accent: '#0D47A1', bg: '#E3F2FD' },
+  detresse:     { accent: '#6A1B9A', bg: '#F3E5F5' },
+  maladie:      { accent: '#C62828', bg: '#FFEBEE' },
+  pluie:        { accent: '#01579B', bg: '#E1F5FE' },
+  istikfar:     { accent: '#2E7D32', bg: '#E8F5E9' },
+  salat_nabi:   { accent: '#827717', bg: '#F9FBE7' },
+};
+
+function getAccent(id: string) {
+  return CATEGORY_COLORS[id] || { accent: COLORS.primary, bg: '#E8F5E9' };
+}
+
+interface CardProps {
+  dhikr: Dhikr;
+  index: number;
+  total: number;
+  accent: string;
+  cardBg: string;
+  isAr: boolean;
+  lang: string;
+}
+
+function DhikrCard({ dhikr, index, total, accent, cardBg, isAr, lang }: CardProps) {
+  const needsCounter = dhikr.count > 1;
+  const [count, setCount] = useState(0);
+  const done = count >= dhikr.count;
+
+  const tap = () => {
+    setCount(prev => (prev >= dhikr.count ? 0 : prev + 1));
+  };
+
+  return (
+    <View style={[styles.slide, { width }]}>
+      <View style={[styles.card, { borderTopColor: accent }]}>
+        {/* Position indicator */}
+        <View style={[styles.badge, { backgroundColor: accent }]}>
+          <Text style={styles.badgeText}>{index + 1} / {total}</Text>
+        </View>
+
+        {/* Arabic text */}
+        <Text style={styles.arabicText}>{dhikr.ar}</Text>
+
+        {/* Transliteration */}
+        {dhikr.translit && !isAr && (
+          <Text style={[styles.translit, { color: accent }]}>{dhikr.translit}</Text>
+        )}
+
+        {/* Translation */}
+        <Text style={styles.translation}>
+          {lang === 'en' && dhikr.en ? dhikr.en : dhikr.fr}
+        </Text>
+
+        {/* Source */}
+        <View style={[styles.sourceRow, { backgroundColor: cardBg }]}>
+          <Text style={styles.sourceIcon}>📖</Text>
+          <Text style={styles.sourceText}>{dhikr.source}</Text>
+        </View>
+
+        {/* Counter — only if count > 1 */}
+        {needsCounter && (
+          <Pressable
+            onPress={tap}
+            style={({ pressed }) => [
+              styles.counter,
+              { borderColor: done ? '#2E7D32' : accent + '60', backgroundColor: done ? '#2E7D32' : accent + '12' },
+              pressed && { opacity: 0.75 },
+            ]}
+          >
+            {done ? (
+              <>
+                <Text style={styles.counterDoneCheck}>✓</Text>
+                <Text style={styles.counterDoneLabel}>
+                  {isAr ? 'تم — اضغط للإعادة' : 'Terminé — toucher pour reset'}
+                </Text>
+              </>
+            ) : (
+              <>
+                <Text style={[styles.counterNum, { color: accent }]}>{count}</Text>
+                <Text style={[styles.counterSlash, { color: accent + '80' }]}>/ {dhikr.count}</Text>
+                <Text style={[styles.counterHint, { color: accent + 'AA' }]}>
+                  {isAr ? 'اضغط للعدّ' : 'Toucher pour compter'}
+                </Text>
+              </>
+            )}
+          </Pressable>
+        )}
+
+        {/* Simple done button if count === 1 */}
+        {!needsCounter && (
+          <CheckButton accent={accent} isAr={isAr} />
+        )}
+      </View>
+    </View>
+  );
+}
+
+function CheckButton({ accent, isAr }: { accent: string; isAr: boolean }) {
+  const [done, setDone] = useState(false);
+  return (
+    <Pressable
+      onPress={() => setDone(d => !d)}
+      style={({ pressed }) => [
+        styles.checkBtn,
+        { borderColor: done ? '#2E7D32' : accent + '60', backgroundColor: done ? '#2E7D32' : accent + '12' },
+        pressed && { opacity: 0.75 },
+      ]}
+    >
+      <Text style={[styles.checkBtnText, { color: done ? '#FFF' : accent }]}>
+        {done ? '✓ ' : ''}{done
+          ? (isAr ? 'تم — اضغط للإعادة' : 'Récité ✓')
+          : (isAr ? 'اضغط بعد القراءة' : 'Marquer comme récité')}
+      </Text>
+    </Pressable>
+  );
+}
 
 export default function AdhkarCategory() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const lang = getCurrentLang();
   const isAr = lang === 'ar';
-  const category = useMemo(() => ADHKAR_CATEGORIES.find(c => c.id === id), [id]);
-  const [counts, setCounts] = useState<Record<number, number>>({});
+  const category = ADHKAR_CATEGORIES.find(c => c.id === id);
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const flatRef = useRef<FlatList>(null);
 
-  if (!category) {
-    return (
-      <SafeAreaView style={styles.container}>
-        <Text style={styles.errorText}>{isAr ? 'فئة غير موجودة' : 'Catégorie introuvable'}</Text>
-      </SafeAreaView>
-    );
-  }
+  const onViewableItemsChanged = useCallback(({ viewableItems }: { viewableItems: ViewToken[] }) => {
+    if (viewableItems[0]) setCurrentIndex(viewableItems[0].index ?? 0);
+  }, []);
 
-  const name = isAr ? category.name_ar : lang === 'en' ? category.name_en : category.name_fr;
+  const viewabilityConfig = useRef({ itemVisiblePercentThreshold: 50 }).current;
 
-  const tap = (idx: number, max: number) => {
-    setCounts(prev => {
-      const cur = prev[idx] || 0;
-      if (cur >= max) return { ...prev, [idx]: 0 };
-      return { ...prev, [idx]: cur + 1 };
-    });
+  if (!category) return null;
+
+  const { accent, bg: cardBg } = getAccent(category.id);
+  const name = isAr ? category.name_ar : category.name_fr;
+  const total = category.dhikrs.length;
+
+  const goTo = (idx: number) => {
+    flatRef.current?.scrollToIndex({ index: idx, animated: true });
   };
 
   return (
     <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
+      {/* Header */}
+      <View style={[styles.header, { backgroundColor: accent }]}>
         <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
-          <IslamicIcon name="back" size={26} color="#FFF" />
+          <Text style={styles.backArrow}>‹</Text>
         </TouchableOpacity>
-        <Text style={styles.icon}>{category.icon}</Text>
-        <Text style={styles.headerTitle}>{name}</Text>
+        <Text style={styles.headerIcon}>{category.icon}</Text>
+        <View style={{ flex: 1 }}>
+          <Text style={styles.headerTitle}>{name}</Text>
+          <Text style={styles.headerDesc} numberOfLines={1}>
+            {isAr ? category.description_ar : category.description_fr}
+          </Text>
+        </View>
       </View>
 
-      <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 40 }}>
-        {category.dhikrs.map((dh, i) => {
-          const count = counts[i] || 0;
-          const done = count >= dh.count;
-          return (
-            <View key={i} style={[styles.card, done && styles.cardDone]}>
-              <Text style={styles.dhikrAr}>{dh.ar}</Text>
-              {dh.translit && !isAr && (
-                <Text style={styles.dhikrTranslit}>{dh.translit}</Text>
-              )}
-              {!isAr && (
-                <Text style={styles.dhikrTrad}>
-                  {lang === 'en' && dh.en ? dh.en : dh.fr}
-                </Text>
-              )}
-              <Text style={styles.source}>📖 {dh.source}</Text>
+      {/* Horizontal swiper */}
+      <FlatList
+        ref={flatRef}
+        data={category.dhikrs}
+        keyExtractor={(_, i) => String(i)}
+        horizontal
+        pagingEnabled
+        showsHorizontalScrollIndicator={false}
+        onViewableItemsChanged={onViewableItemsChanged}
+        viewabilityConfig={viewabilityConfig}
+        renderItem={({ item, index }) => (
+          <DhikrCard
+            dhikr={item}
+            index={index}
+            total={total}
+            accent={accent}
+            cardBg={cardBg}
+            isAr={isAr}
+            lang={lang}
+          />
+        )}
+        contentContainerStyle={{ paddingVertical: 20 }}
+      />
 
-              <Pressable
-                onPress={() => tap(i, dh.count)}
-                style={({ pressed }) => [
-                  styles.counter,
-                  done && styles.counterDone,
-                  pressed && { opacity: 0.7 },
-                ]}
-              >
-                <Text style={[styles.counterText, done && { color: '#FFF' }]}>
-                  {done ? '✓ ' : ''}{count} / {dh.count}
-                </Text>
-                <Text style={[styles.counterHint, done && { color: '#FFFFFFAA' }]}>
-                  {done
-                    ? (isAr ? 'تم — اضغط للبدء من جديد' : lang === 'en' ? 'Done — tap to reset' : 'Terminé — tape pour recommencer')
-                    : (isAr ? 'اضغط للعدّ' : lang === 'en' ? 'Tap to count' : 'Tape pour compter')}
-                </Text>
-              </Pressable>
-            </View>
-          );
-        })}
-      </ScrollView>
+      {/* Bottom nav: dots + arrows */}
+      <View style={styles.bottomBar}>
+        <TouchableOpacity
+          onPress={() => goTo(Math.max(0, currentIndex - 1))}
+          disabled={currentIndex === 0}
+          style={[styles.navBtn, { opacity: currentIndex === 0 ? 0.3 : 1 }]}
+        >
+          <Text style={[styles.navArrow, { color: accent }]}>‹</Text>
+        </TouchableOpacity>
+
+        <View style={styles.dots}>
+          {category.dhikrs.map((_, i) => (
+            <TouchableOpacity key={i} onPress={() => goTo(i)}>
+              <View style={[
+                styles.dot,
+                {
+                  backgroundColor: i === currentIndex ? accent : accent + '30',
+                  width: i === currentIndex ? 20 : 8,
+                },
+              ]} />
+            </TouchableOpacity>
+          ))}
+        </View>
+
+        <TouchableOpacity
+          onPress={() => goTo(Math.min(total - 1, currentIndex + 1))}
+          disabled={currentIndex === total - 1}
+          style={[styles.navBtn, { opacity: currentIndex === total - 1 ? 0.3 : 1 }]}
+        >
+          <Text style={[styles.navArrow, { color: accent }]}>›</Text>
+        </TouchableOpacity>
+      </View>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: COLORS.background },
+
   header: {
     flexDirection: 'row', alignItems: 'center', gap: 10,
-    backgroundColor: COLORS.primary, paddingHorizontal: 16, paddingVertical: 14,
+    paddingHorizontal: 16, paddingVertical: 14,
   },
-  backBtn: { padding: 4 },
-  icon: { fontSize: 22 },
-  headerTitle: { fontSize: 17, fontWeight: '700', color: '#FFF', flex: 1 },
-  errorText: { padding: 40, textAlign: 'center', color: COLORS.textSecondary },
+  backBtn: { width: 34, height: 34, justifyContent: 'center' },
+  backArrow: { fontSize: 28, color: '#FFF', fontWeight: '300', lineHeight: 32 },
+  headerIcon: { fontSize: 24 },
+  headerTitle: { fontSize: 16, fontWeight: '800', color: '#FFF' },
+  headerDesc: { fontSize: 11, color: 'rgba(255,255,255,0.8)', marginTop: 1 },
+
+  slide: { paddingHorizontal: 16 },
+
   card: {
-    backgroundColor: COLORS.surface, padding: 16, borderRadius: 14,
-    marginBottom: 14, borderWidth: 1, borderColor: COLORS.border,
+    flex: 1, backgroundColor: COLORS.surface, borderRadius: 20,
+    padding: 20, borderTopWidth: 4,
+    shadowColor: '#000', shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.08, shadowRadius: 12, elevation: 4,
   },
-  cardDone: { borderColor: COLORS.success, backgroundColor: COLORS.success + '0F' },
-  dhikrAr: {
-    fontSize: 21, color: COLORS.arabicText, textAlign: 'right',
-    writingDirection: 'rtl', lineHeight: 38, fontWeight: '600',
+
+  badge: {
+    alignSelf: 'flex-end', paddingHorizontal: 12, paddingVertical: 4,
+    borderRadius: 20, marginBottom: 16,
   },
-  dhikrTranslit: { fontSize: 13, color: COLORS.primary, marginTop: 8, fontStyle: 'italic' },
-  dhikrTrad: { fontSize: 13, color: COLORS.text, marginTop: 8, lineHeight: 20 },
-  source: { fontSize: 11, color: COLORS.textLight, marginTop: 8 },
+  badgeText: { fontSize: 11, fontWeight: '700', color: '#FFF' },
+
+  arabicText: {
+    fontSize: 24, color: COLORS.arabicText, textAlign: 'right',
+    writingDirection: 'rtl', lineHeight: 44, fontWeight: '600',
+    marginBottom: 14,
+  },
+
+  translit: { fontSize: 14, fontStyle: 'italic', marginBottom: 10 },
+
+  translation: {
+    fontSize: 14, color: COLORS.text, lineHeight: 22, marginBottom: 16,
+  },
+
+  sourceRow: {
+    flexDirection: 'row', alignItems: 'center', gap: 6,
+    padding: 10, borderRadius: 10, marginBottom: 16,
+  },
+  sourceIcon: { fontSize: 14 },
+  sourceText: { fontSize: 12, color: COLORS.textSecondary, flex: 1 },
+
   counter: {
-    marginTop: 14, backgroundColor: COLORS.primary + '15',
-    borderRadius: 12, paddingVertical: 14, alignItems: 'center',
-    borderWidth: 1.5, borderColor: COLORS.primary + '40',
+    borderRadius: 16, paddingVertical: 18, alignItems: 'center',
+    borderWidth: 2, gap: 4,
   },
-  counterDone: { backgroundColor: COLORS.success, borderColor: COLORS.success },
-  counterText: { fontSize: 22, fontWeight: '800', color: COLORS.primary },
-  counterHint: { fontSize: 11, color: COLORS.textSecondary, marginTop: 2 },
+  counterNum: { fontSize: 36, fontWeight: '900', lineHeight: 40 },
+  counterSlash: { fontSize: 16, fontWeight: '600' },
+  counterHint: { fontSize: 12, marginTop: 2 },
+  counterDoneCheck: { fontSize: 36, color: '#FFF', fontWeight: '900' },
+  counterDoneLabel: { fontSize: 13, color: '#FFF', fontWeight: '600' },
+
+  checkBtn: {
+    borderRadius: 14, paddingVertical: 14, alignItems: 'center', borderWidth: 2,
+  },
+  checkBtnText: { fontSize: 15, fontWeight: '700' },
+
+  bottomBar: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+    paddingHorizontal: 16, paddingVertical: 16,
+    backgroundColor: COLORS.surface, borderTopWidth: 1, borderTopColor: COLORS.border,
+  },
+  navBtn: { width: 44, height: 44, justifyContent: 'center', alignItems: 'center' },
+  navArrow: { fontSize: 36, fontWeight: '300', lineHeight: 40 },
+  dots: { flexDirection: 'row', alignItems: 'center', gap: 6, flex: 1, justifyContent: 'center' },
+  dot: { height: 8, borderRadius: 4 },
 });
