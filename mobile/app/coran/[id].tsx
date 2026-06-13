@@ -384,8 +384,7 @@ const styles = StyleSheet.create({
   pageImage: { width: PAGE_W },
 
   verseOverlay: {
-    position: 'absolute', bottom: 0, left: 0, right: 0,
-    paddingHorizontal: 10, paddingBottom: 10,
+    position: 'absolute', top: '35%', left: 10, right: 10,
   },
   verseOverlayInner: {
     backgroundColor: 'rgba(0,0,0,0.72)',
