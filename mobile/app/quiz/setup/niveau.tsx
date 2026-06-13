@@ -24,7 +24,13 @@ export default function StepNiveau() {
 
   const handleNext = () => {
     if (setup_niveau === null) return;
-    router.push('/quiz/setup/questions');
+    // Mode thématique : lots de 5 questions fixes, on saute l'étape "nb questions"
+    if (typeof setup_niveau === 'number') {
+      useQuizSetupStore.getState().setNb(5);
+      router.push('/quiz/setup/recap');
+    } else {
+      router.push('/quiz/setup/questions');
+    }
   };
 
   const tryPickLevel = (id: number) => {
@@ -51,7 +57,7 @@ export default function StepNiveau() {
 
   return (
     <QuizSetupShell
-      step={3} total={5}
+      step={3} total={typeof setup_niveau === 'number' ? 4 : 5}
       title={t('choisir_niveau')}
       titleAr="مستوى الصعوبة"
       subtitle="Adaptons les questions à votre maîtrise."

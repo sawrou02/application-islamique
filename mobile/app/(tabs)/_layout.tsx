@@ -58,6 +58,13 @@ export default function TabsLayout() {
         }}
       />
       <Tabs.Screen
+        name="ressources"
+        options={{
+          title: 'Ressources',
+          tabBarIcon: ({ color }) => <TabIcon symbol="📚" color={color} />,
+        }}
+      />
+      <Tabs.Screen
         name="classement"
         options={{
           title: t('classement'),
@@ -70,6 +77,11 @@ export default function TabsLayout() {
           title: t('profil'),
           tabBarIcon: ({ color }) => <TabIcon symbol="◈" color={color} />,
         }}
+      />
+      {/* Quiz accessible via accueil — caché de la tab bar */}
+      <Tabs.Screen
+        name="quiz"
+        options={{ href: null }}
       />
     </Tabs>
   );
