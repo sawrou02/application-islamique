@@ -1,7 +1,7 @@
 import { useRef, useState, useCallback } from 'react';
 import {
   View, Text, StyleSheet, FlatList, TouchableOpacity,
-  Pressable, Dimensions, ViewToken,
+  Pressable, Dimensions, ViewToken, Vibration,
 } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -74,7 +74,9 @@ function DhikrCard({ dhikr, index, total, accent, cardBg, isAr, lang }: CardProp
   const done = count >= dhikr.count;
 
   const tap = () => {
-    setCount(prev => (prev >= dhikr.count ? 0 : prev + 1));
+    const next = count >= dhikr.count ? 0 : count + 1;
+    Vibration.vibrate(next >= dhikr.count ? [0, 80, 60, 80] : 30);
+    setCount(next);
   };
 
   return (
@@ -148,7 +150,7 @@ function CheckButton({ accent, isAr }: { accent: string; isAr: boolean }) {
   const [done, setDone] = useState(false);
   return (
     <Pressable
-      onPress={() => setDone(d => !d)}
+      onPress={() => { Vibration.vibrate(done ? 30 : [0, 60, 40, 60]); setDone(d => !d); }}
       style={({ pressed }) => [
         styles.checkBtn,
         { borderColor: done ? '#2E7D32' : accent + '60', backgroundColor: done ? '#2E7D32' : accent + '12' },

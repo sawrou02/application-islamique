@@ -1,6 +1,6 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
-  View, Text, StyleSheet, TouchableOpacity, ActivityIndicator,
+  View, Text, StyleSheet, TouchableOpacity, ActivityIndicator, Vibration, Animated,
 } from 'react-native';
 import { router } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -32,6 +32,9 @@ export default function Qibla() {
   const [heading, setHeading] = useState<number | null>(null);
   const [qibla, setQibla] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [aligned, setAligned] = useState(false);
+  const wasAligned = useRef(false);
+  const bgAnim = useRef(new Animated.Value(0)).current;
   const lang = getCurrentLang();
   const isAr = lang === 'ar';
 
@@ -52,6 +55,7 @@ export default function Qibla() {
           if (angle < 0) angle += 360;
           setHeading(angle);
         });
+
       } catch {
         setError(isAr ? 'تعذّر تحميل البوصلة' : 'Impossible de charger la boussole');
       }
@@ -60,10 +64,31 @@ export default function Qibla() {
   }, []);
 
   const rotation = heading !== null && qibla !== null ? qibla - heading : 0;
-  const aligned = heading !== null && qibla !== null && Math.abs(((qibla - heading + 540) % 360) - 180) < 5;
+  const isAligned = heading !== null && qibla !== null && Math.abs(((qibla - heading + 540) % 360) - 180) < 5;
+
+  useEffect(() => {
+    if (isAligned && !wasAligned.current) {
+      wasAligned.current = true;
+      setAligned(true);
+      Vibration.vibrate([0, 200, 100, 200]);
+      Animated.sequence([
+        Animated.timing(bgAnim, { toValue: 1, duration: 400, useNativeDriver: false }),
+      ]).start();
+    } else if (!isAligned && wasAligned.current) {
+      wasAligned.current = false;
+      setAligned(false);
+      Animated.timing(bgAnim, { toValue: 0, duration: 600, useNativeDriver: false }).start();
+    }
+  }, [isAligned]);
+
+  const bgColor = bgAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: [COLORS.background, '#1B5E20'],
+  });
 
   return (
-    <SafeAreaView style={styles.container}>
+    <Animated.View style={[styles.container, { backgroundColor: bgColor }]}>
+    <SafeAreaView style={{ flex: 1 }}>
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
           <IslamicIcon name="back" size={26} color="#FFF" />
@@ -88,18 +113,18 @@ export default function Qibla() {
                 <Text style={[styles.dialW]}>W</Text>
               </View>
               <View style={[styles.qiblaArrow, { transform: [{ rotate: `${rotation}deg` }] }]}>
-                <Text style={[styles.qiblaIcon, aligned && { color: '#FFD700' }]}>🕋</Text>
-                <View style={[styles.qiblaLine, aligned && { backgroundColor: '#FFD700' }]} />
+                <Text style={styles.qiblaIcon}>🕋</Text>
+                <View style={[styles.qiblaLine, aligned && { backgroundColor: ‘#FFD700’ }]} />
               </View>
             </View>
 
-            <Text style={[styles.bearing, aligned && { color: COLORS.success }]}>
+            <Text style={[styles.bearing, aligned && { color: ‘#FFD700’ }]}>
               {Math.round(qibla)}°
             </Text>
-            <Text style={styles.bearingLabel}>
+            <Text style={[styles.bearingLabel, aligned && { color: ‘#FFF’, fontWeight: ‘800’ }]}>
               {aligned
-                ? (isAr ? '✓ أنت متجه نحو القبلة' : lang === 'en' ? '✓ Aligned with the Qibla' : '✓ Aligné avec la Qibla')
-                : (isAr ? 'وجّه الهاتف نحو الكعبة' : lang === 'en' ? 'Point your phone toward the Ka’ba' : 'Oriente ton téléphone vers la Ka’ba')}
+                ? (isAr ? ‘✓ أنت متجه نحو القبلة’ : lang === ‘en’ ? ‘✓ Aligned with the Qibla’ : ‘✓ Aligné avec la Qibla’)
+                : (isAr ? ‘وجّه الهاتف نحو الكعبة’ : lang === ‘en’ ? ‘Point your phone toward the Ka\’ba’ : ‘Oriente ton téléphone vers la Ka\’ba’)}
             </Text>
             <Text style={styles.hint}>
               {isAr ? 'دقّق المعايرة بتحريك الهاتف في شكل ٨' : 'Calibre en bougeant ton téléphone en forme de 8.'}
@@ -108,11 +133,12 @@ export default function Qibla() {
         )}
       </View>
     </SafeAreaView>
+    </Animated.View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: COLORS.background },
+  container: { flex: 1 },
   header: { flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: COLORS.primary, padding: 14 },
   backBtn: { padding: 4 },
   headerTitle: { fontSize: 18, fontWeight: '700', color: '#FFF' },
