@@ -70,9 +70,11 @@ function DhikrCard({ dhikr, index, total, accent, cardBg, isAr, lang }: CardProp
         )}
 
         {/* Translation */}
-        <Text style={styles.translation}>
-          {lang === 'en' && dhikr.en ? dhikr.en : dhikr.fr}
-        </Text>
+        {(dhikr.fr || dhikr.en) && (
+          <Text style={styles.translation}>
+            {lang === 'en' && dhikr.en ? dhikr.en : dhikr.fr}
+          </Text>
+        )}
 
         {/* Source */}
         <View style={[styles.sourceRow, { backgroundColor: cardBg }]}>

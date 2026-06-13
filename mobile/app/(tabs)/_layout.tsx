@@ -44,6 +44,13 @@ export default function TabsLayout() {
         }}
       />
       <Tabs.Screen
+        name="quiz"
+        options={{
+          title: t('quiz'),
+          tabBarIcon: ({ color }) => <TabIcon symbol="❋" color={color} />,
+        }}
+      />
+      <Tabs.Screen
         name="multi"
         options={{
           title: t('multi'),
