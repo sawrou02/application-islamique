@@ -7,7 +7,7 @@ import { router } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Location from 'expo-location';
-import { IslamicIcon } from '../components/IslamicIcon';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { COLORS } from '../constants/colors';
 import { getCurrentLang } from '../i18n';
 import {
@@ -15,13 +15,14 @@ import {
   PrayerResponse, nextPrayer, formatRemaining,
 } from '../services/prayerTimes';
 
-const PRAYER_NAMES: Record<string, { fr: string; ar: string; en: string; icon: string }> = {
-  Fajr:    { fr: 'Fajr',    ar: 'الفجر',   en: 'Fajr',    icon: '🌅' },
-  Sunrise: { fr: 'Shuruq',  ar: 'الشروق',  en: 'Sunrise', icon: '☀️' },
-  Dhuhr:   { fr: 'Dhuhr',   ar: 'الظهر',   en: 'Dhuhr',   icon: '🕛' },
-  Asr:     { fr: 'Asr',     ar: 'العصر',   en: 'Asr',     icon: '🕒' },
-  Maghrib: { fr: 'Maghrib', ar: 'المغرب',  en: 'Maghrib', icon: '🌇' },
-  Isha:    { fr: 'Isha',    ar: 'العشاء',  en: 'Isha',    icon: '🌙' },
+type PrayerMeta = { fr: string; ar: string; en: string; icon: keyof typeof MaterialCommunityIcons.glyphMap; iconColor: string };
+const PRAYER_NAMES: Record<string, PrayerMeta> = {
+  Fajr:    { fr: 'Fajr',    ar: 'الفجر',   en: 'Fajr',    icon: 'weather-sunset-up',    iconColor: '#F4A261' },
+  Sunrise: { fr: 'Shuruq',  ar: 'الشروق',  en: 'Sunrise', icon: 'white-balance-sunny',  iconColor: '#FFB300' },
+  Dhuhr:   { fr: 'Dhuhr',   ar: 'الظهر',   en: 'Dhuhr',   icon: 'sun-wireless',          iconColor: '#FF8F00' },
+  Asr:     { fr: 'Asr',     ar: 'العصر',   en: 'Asr',     icon: 'weather-partly-cloudy', iconColor: '#42A5F5' },
+  Maghrib: { fr: 'Maghrib', ar: 'المغرب',  en: 'Maghrib', icon: 'weather-sunset',        iconColor: '#AB47BC' },
+  Isha:    { fr: 'Isha',    ar: 'العشاء',  en: 'Isha',    icon: 'weather-night',         iconColor: '#5C6BC0' },
 };
 
 export default function Horaires() {
@@ -83,7 +84,7 @@ export default function Horaires() {
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
-          <IslamicIcon name="back" size={26} color="#FFF" />
+          <MaterialCommunityIcons name="arrow-left" size={24} color="#FFF" />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>
           {isAr ? 'مواقيت الصلاة' : lang === 'en' ? 'Prayer times' : 'Horaires de prière'}
@@ -129,9 +130,10 @@ export default function Horaires() {
                 <Text style={styles.nextLabel}>
                   {isAr ? 'الصلاة القادمة' : lang === 'en' ? 'Next prayer' : 'Prochaine prière'}
                 </Text>
-                <Text style={styles.nextName}>
-                  {PRAYER_NAMES[next.name].icon} {isAr ? PRAYER_NAMES[next.name].ar : PRAYER_NAMES[next.name].fr}
-                </Text>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 4 }}>
+                  <MaterialCommunityIcons name={PRAYER_NAMES[next.name].icon} size={26} color="#FFD700" />
+                  <Text style={styles.nextName}>{isAr ? PRAYER_NAMES[next.name].ar : PRAYER_NAMES[next.name].fr}</Text>
+                </View>
                 <Text style={styles.nextTime}>{next.time}</Text>
                 <Text style={styles.nextRemaining}>
                   {isAr ? 'بعد' : lang === 'en' ? 'in' : 'dans'} {formatRemaining(next.remainingMs - (now - now))}
@@ -146,7 +148,9 @@ export default function Horaires() {
                 const isNext = next?.name === k;
                 return (
                   <View key={k} style={[styles.row, isNext && styles.rowNext]}>
-                    <Text style={styles.rowIcon}>{meta.icon}</Text>
+                    <View style={[styles.rowIconCircle, { backgroundColor: meta.iconColor + '20' }]}>
+                      <MaterialCommunityIcons name={meta.icon} size={22} color={meta.iconColor} />
+                    </View>
                     <View style={{ flex: 1 }}>
                       <Text style={styles.rowName}>{isAr ? meta.ar : meta.fr}</Text>
                       {isAr ? null : <Text style={styles.rowNameSub}>{meta.ar}</Text>}
@@ -197,7 +201,7 @@ const styles = StyleSheet.create({
     marginBottom: 8, borderWidth: 1, borderColor: COLORS.border,
   },
   rowNext: { borderColor: COLORS.primary, borderWidth: 2 },
-  rowIcon: { fontSize: 22 },
+  rowIconCircle: { width: 42, height: 42, borderRadius: 21, justifyContent: 'center', alignItems: 'center' },
   rowName: { fontSize: 15, fontWeight: '700', color: COLORS.text },
   rowNameSub: { fontSize: 11, color: COLORS.arabicText, marginTop: 1 },
   rowTime: { fontSize: 18, fontWeight: '800', color: COLORS.primary, fontVariant: ['tabular-nums'] },
