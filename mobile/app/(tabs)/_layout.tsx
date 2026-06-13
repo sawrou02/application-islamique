@@ -78,11 +78,6 @@ export default function TabsLayout() {
           tabBarIcon: ({ color }) => <TabIcon symbol="◈" color={color} />,
         }}
       />
-      {/* Quiz accessible via accueil — caché de la tab bar */}
-      <Tabs.Screen
-        name="quiz"
-        options={{ href: null }}
-      />
     </Tabs>
   );
 }
