@@ -212,14 +212,46 @@ export default function MushafScreen() {
 
   const surahMeta = surahs.find(s => s.number === currentSurah);
   const currentAyahAr = ayahs[currentAyahIdx]?.text || '';
-  const currentAyahFr = ayahsFr[currentAyahIdx]?.text || '';
   const totalAyahsInSurah = SURAH_AYAH_COUNT[currentSurah] || 0;
-  const PAGE_H = height - 60 - 70;
 
   return (
     <SafeAreaView style={styles.container}>
-      {/* Header */}
-      <View style={styles.header}>
+      {/* Full-screen Mushaf pages */}
+      <FlatList
+        ref={listRef}
+        data={Array.from({ length: TOTAL_PAGES }, (_, i) => i + 1)}
+        keyExtractor={(p) => String(p)}
+        horizontal pagingEnabled
+        showsHorizontalScrollIndicator={false}
+        initialScrollIndex={initialPage - 1}
+        getItemLayout={(_, index) => ({ length: PAGE_W, offset: PAGE_W * index, index })}
+        onMomentumScrollEnd={onScroll}
+        inverted
+        style={{ flex: 1 }}
+        renderItem={({ item: page }) => (
+          <View style={{ width: PAGE_W, flex: 1, backgroundColor: '#FAF5E8' }}>
+            <Image source={{ uri: pageImageUrl(page) }} style={{ width: PAGE_W, flex: 1 }} resizeMode="contain" />
+          </View>
+        )}
+      />
+
+      {/* Verse overlay: floating badge when playing */}
+      {playing && currentAyahAr ? (
+        <View style={styles.verseOverlay} pointerEvents="none">
+          <View style={styles.verseOverlayInner}>
+            <View style={styles.ayahBadgeRow}>
+              <View style={styles.ayahBadge}>
+                <Text style={styles.ayahBadgeText}>﴾ {currentAyahIdx + 1} / {totalAyahsInSurah} ﴿</Text>
+              </View>
+              {loadingAudio && <ActivityIndicator size="small" color="#FFD700" style={{ marginLeft: 8 }} />}
+            </View>
+            <Text style={styles.overlayAr} numberOfLines={4}>{currentAyahAr}</Text>
+          </View>
+        </View>
+      ) : null}
+
+      {/* Header overlay (top) */}
+      <View style={styles.header} pointerEvents="box-none">
         <TouchableOpacity onPress={() => { stopAudio(); router.back(); }} style={styles.iconBtn}>
           <IslamicIcon name="back" size={24} color="#FFF" />
         </TouchableOpacity>
@@ -236,46 +268,10 @@ export default function MushafScreen() {
         </TouchableOpacity>
       </View>
 
-      {/* Mushaf pages */}
-      <FlatList
-        ref={listRef}
-        data={Array.from({ length: TOTAL_PAGES }, (_, i) => i + 1)}
-        keyExtractor={(p) => String(p)}
-        horizontal pagingEnabled
-        showsHorizontalScrollIndicator={false}
-        initialScrollIndex={initialPage - 1}
-        getItemLayout={(_, index) => ({ length: PAGE_W, offset: PAGE_W * index, index })}
-        onMomentumScrollEnd={onScroll}
-        inverted
-        renderItem={({ item: page }) => (
-          <View style={{ width: PAGE_W, height: PAGE_H, backgroundColor: '#FAF5E8' }}>
-            <Image source={{ uri: pageImageUrl(page) }} style={{ width: PAGE_W, height: PAGE_H }} resizeMode="contain" />
-            {/* Verse overlay - absolutely positioned on the image */}
-            {(playing || currentAyahIdx > 0) && page === currentPage && (
-              <View style={[styles.verseOverlay, { top: PAGE_H * 0.38 }]}>
-                <View style={styles.verseOverlayInner}>
-                  <View style={styles.ayahBadgeRow}>
-                    <View style={styles.ayahBadge}>
-                      <Text style={styles.ayahBadgeText}>
-                        ﴾ {currentAyahIdx + 1} / {totalAyahsInSurah} ﴿
-                      </Text>
-                    </View>
-                    {loadingAudio && <ActivityIndicator size="small" color="#FFD700" style={{ marginLeft: 8 }} />}
-                  </View>
-                  {currentAyahAr ? (
-                    <Text style={styles.overlayAr} numberOfLines={3}>{currentAyahAr}</Text>
-                  ) : null}
-                </View>
-              </View>
-            )}
-          </View>
-        )}
-      />
-
-      {/* Audio controls */}
+      {/* Audio controls overlay (bottom) */}
       <View style={styles.bottomBar}>
         <TouchableOpacity style={styles.reciterChip} onPress={() => setShowReciterPicker(true)}>
-          <MaterialCommunityIcons name="microphone" size={14} color={COLORS.primary} />
+          <MaterialCommunityIcons name="microphone" size={14} color="#FFF" />
           <Text style={styles.reciterText} numberOfLines={1}>
             {isAr ? reciter.nameAr : reciter.name}
           </Text>
@@ -283,28 +279,28 @@ export default function MushafScreen() {
 
         <View style={styles.controls}>
           <TouchableOpacity style={styles.ctrlBtn} onPress={prevAyah}>
-            <MaterialCommunityIcons name="skip-previous" size={24} color={COLORS.primary} />
+            <MaterialCommunityIcons name="skip-previous" size={28} color="#FFF" />
           </TouchableOpacity>
 
           {loadingAudio ? (
-            <View style={styles.playBtn}><ActivityIndicator color="#FFF" size="small" /></View>
+            <View style={styles.playBtn}><ActivityIndicator color={COLORS.primary} size="small" /></View>
           ) : !playing ? (
             <TouchableOpacity style={styles.playBtn} onPress={startPlay}>
-              <MaterialCommunityIcons name="play" size={30} color="#FFF" />
+              <MaterialCommunityIcons name="play" size={32} color={COLORS.primary} />
             </TouchableOpacity>
           ) : (
             <>
               <TouchableOpacity style={styles.playBtn} onPress={pauseResume}>
-                <MaterialCommunityIcons name={paused ? 'play' : 'pause'} size={30} color="#FFF" />
+                <MaterialCommunityIcons name={paused ? 'play' : 'pause'} size={32} color={COLORS.primary} />
               </TouchableOpacity>
               <TouchableOpacity style={styles.stopBtn} onPress={stopAudio}>
-                <MaterialCommunityIcons name="stop" size={20} color={COLORS.error} />
+                <MaterialCommunityIcons name="stop" size={22} color="#FF5252" />
               </TouchableOpacity>
             </>
           )}
 
           <TouchableOpacity style={styles.ctrlBtn} onPress={nextAyah}>
-            <MaterialCommunityIcons name="skip-next" size={24} color={COLORS.primary} />
+            <MaterialCommunityIcons name="skip-next" size={28} color="#FFF" />
           </TouchableOpacity>
         </View>
       </View>
@@ -369,37 +365,36 @@ export default function MushafScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#FAF5E8' },
+  container: { flex: 1, backgroundColor: '#000' },
 
   header: {
-    flexDirection: 'row', alignItems: 'center', backgroundColor: COLORS.primary,
-    paddingHorizontal: 12, paddingVertical: 10, gap: 8, height: 60,
+    position: 'absolute', top: 0, left: 0, right: 0, zIndex: 10,
+    flexDirection: 'row', alignItems: 'center',
+    backgroundColor: 'rgba(27,94,32,0.88)',
+    paddingHorizontal: 12, paddingVertical: 10, gap: 8, height: 56,
   },
   iconBtn: { padding: 6 },
   surahTitleBtn: { flex: 1, alignItems: 'center' },
-  surahTitle: { fontSize: 18, fontWeight: '700', color: '#FFF' },
+  surahTitle: { fontSize: 17, fontWeight: '700', color: '#FFF' },
   pageInfo: { fontSize: 11, color: 'rgba(255,255,255,0.85)', marginTop: 1 },
 
-  pageWrap: { width: PAGE_W, backgroundColor: '#FAF5E8' },
-  pageImage: { width: PAGE_W },
-
   verseOverlay: {
-    position: 'absolute', left: 10, right: 10,
+    position: 'absolute', bottom: 90, left: 12, right: 12, zIndex: 10,
   },
   verseOverlayInner: {
-    backgroundColor: 'rgba(0,0,0,0.72)',
-    borderRadius: 14, padding: 12,
-    borderWidth: 1, borderColor: 'rgba(255,215,0,0.3)',
+    backgroundColor: 'rgba(0,0,0,0.78)',
+    borderRadius: 16, padding: 14,
+    borderWidth: 1.5, borderColor: 'rgba(255,215,0,0.4)',
   },
-  ayahBadgeRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 6 },
+  ayahBadgeRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 8 },
   ayahBadge: {
-    backgroundColor: '#1B5E20', borderRadius: 20,
-    paddingHorizontal: 12, paddingVertical: 3,
+    backgroundColor: COLORS.primary, borderRadius: 20,
+    paddingHorizontal: 14, paddingVertical: 4,
   },
-  ayahBadgeText: { fontSize: 13, fontWeight: '800', color: '#FFD700' },
+  ayahBadgeText: { fontSize: 14, fontWeight: '800', color: '#FFD700' },
   overlayAr: {
-    fontSize: 18, color: '#FFFFFF', textAlign: 'right',
-    writingDirection: 'rtl', lineHeight: 30, fontWeight: '500',
+    fontSize: 20, color: '#FFFFFF', textAlign: 'right',
+    writingDirection: 'rtl', lineHeight: 34, fontWeight: '500',
   },
   overlayFr: {
     fontSize: 12, color: 'rgba(255,255,255,0.75)', lineHeight: 18,
@@ -407,32 +402,32 @@ const styles = StyleSheet.create({
   },
 
   bottomBar: {
+    position: 'absolute', bottom: 0, left: 0, right: 0, zIndex: 10,
     flexDirection: 'row', alignItems: 'center',
-    paddingHorizontal: 12, paddingVertical: 8, gap: 10,
-    backgroundColor: '#FFF', height: 70,
-    borderTopWidth: 1, borderTopColor: COLORS.border,
+    paddingHorizontal: 16, paddingVertical: 10, gap: 10,
+    backgroundColor: 'rgba(27,94,32,0.88)',
+    height: 72,
   },
   reciterChip: {
     flex: 1, flexDirection: 'row', alignItems: 'center', gap: 5,
-    backgroundColor: COLORS.primary + '10',
+    backgroundColor: 'rgba(255,255,255,0.15)',
     borderRadius: 8, paddingHorizontal: 8, paddingVertical: 6,
-    borderWidth: 1, borderColor: COLORS.primary + '25',
   },
-  reciterText: { flex: 1, fontSize: 11, fontWeight: '600', color: COLORS.primary },
-  controls: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  reciterText: { flex: 1, fontSize: 11, fontWeight: '600', color: '#FFF' },
+  controls: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   ctrlBtn: {
-    width: 38, height: 38, borderRadius: 19,
-    backgroundColor: COLORS.primary + '12',
+    width: 42, height: 42, borderRadius: 21,
+    backgroundColor: 'rgba(255,255,255,0.18)',
     justifyContent: 'center', alignItems: 'center',
   },
   playBtn: {
-    width: 50, height: 50, borderRadius: 25,
-    backgroundColor: COLORS.primary,
+    width: 54, height: 54, borderRadius: 27,
+    backgroundColor: '#FFD700',
     justifyContent: 'center', alignItems: 'center',
   },
   stopBtn: {
-    width: 36, height: 36, borderRadius: 18,
-    backgroundColor: COLORS.error + '15',
+    width: 38, height: 38, borderRadius: 19,
+    backgroundColor: 'rgba(255,82,82,0.25)',
     justifyContent: 'center', alignItems: 'center',
   },
 
