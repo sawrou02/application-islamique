@@ -248,11 +248,11 @@ export default function MushafScreen() {
         onMomentumScrollEnd={onScroll}
         inverted
         renderItem={({ item: page }) => (
-          <View style={[styles.pageWrap, { height: PAGE_H }]}>
-            <Image source={{ uri: pageImageUrl(page) }} style={[styles.pageImage, { height: PAGE_H }]} resizeMode="contain" />
-            {/* Verse overlay on the page image */}
+          <View style={{ width: PAGE_W, height: PAGE_H, backgroundColor: '#FAF5E8' }}>
+            <Image source={{ uri: pageImageUrl(page) }} style={{ width: PAGE_W, height: PAGE_H }} resizeMode="contain" />
+            {/* Verse overlay - absolutely positioned on the image */}
             {(playing || currentAyahIdx > 0) && page === currentPage && (
-              <View style={styles.verseOverlay}>
+              <View style={[styles.verseOverlay, { top: PAGE_H * 0.38 }]}>
                 <View style={styles.verseOverlayInner}>
                   <View style={styles.ayahBadgeRow}>
                     <View style={styles.ayahBadge}>
@@ -380,11 +380,11 @@ const styles = StyleSheet.create({
   surahTitle: { fontSize: 18, fontWeight: '700', color: '#FFF' },
   pageInfo: { fontSize: 11, color: 'rgba(255,255,255,0.85)', marginTop: 1 },
 
-  pageWrap: { width: PAGE_W, backgroundColor: '#FAF5E8', justifyContent: 'center', alignItems: 'center' },
+  pageWrap: { width: PAGE_W, backgroundColor: '#FAF5E8' },
   pageImage: { width: PAGE_W },
 
   verseOverlay: {
-    position: 'absolute', top: '35%', left: 10, right: 10,
+    position: 'absolute', left: 10, right: 10,
   },
   verseOverlayInner: {
     backgroundColor: 'rgba(0,0,0,0.72)',
