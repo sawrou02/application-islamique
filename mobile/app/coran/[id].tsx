@@ -63,14 +63,7 @@ export default function MushafScreen() {
       .finally(() => setLoadingAyahs(false));
   }, [currentSurah]);
 
-  useFocusEffect(useCallback(() => { return () => { stopAudio(); }; }, []));
-
-  useEffect(() => {
-    const sub = AppState.addEventListener('change', (s: AppStateStatus) => {
-      if (s === 'background' || s === 'inactive') stopAudio();
-    });
-    return () => sub.remove();
-  }, []);
+  useFocusEffect(useCallback(() => { return () => {}; }, []));
 
   useEffect(() => {
     fetchSurahList().then(setSurahs).catch(() => {});
@@ -80,7 +73,7 @@ export default function MushafScreen() {
         if (r) { setReciter(r); reciterRef.current = r; }
       }
     });
-    Audio.setAudioModeAsync({ playsInSilentModeIOS: true, staysActiveInBackground: false }).catch(() => {});
+    Audio.setAudioModeAsync({ playsInSilentModeIOS: true, staysActiveInBackground: true, shouldDuckAndroid: false }).catch(() => {});
     return () => { stopAudio(); };
   }, []);
 
