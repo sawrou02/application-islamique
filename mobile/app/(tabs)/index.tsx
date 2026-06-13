@@ -280,14 +280,14 @@ export default function HomeScreen() {
         {/* ── Accès rapide : Quiz ── */}
         <TouchableOpacity
           style={styles.quizHeroCard}
-          onPress={() => { reset(); router.push(‘/(tabs)/quiz’); }}
+          onPress={() => { reset(); router.push('/(tabs)/quiz'); }}
           activeOpacity={0.88}
         >
           <View style={styles.quizHeroLeft}>
             <Text style={styles.quizHeroIcon}>❋</Text>
             <View>
-              <Text style={styles.quizHeroTitle}>{isAr ? ‘ابدأ الاختبار’ : lang === ‘en’ ? ‘Start Quiz’ : ‘Commencer le Quiz’}</Text>
-              <Text style={styles.quizHeroSub}>{isAr ? ‘اختبر معلوماتك الإسلامية’ : lang === ‘en’ ? ‘Test your Islamic knowledge’ : ‘Testez vos connaissances islamiques’}</Text>
+              <Text style={styles.quizHeroTitle}>{isAr ? 'ابدأ الاختبار' : lang === 'en' ? 'Start Quiz' : 'Commencer le Quiz'}</Text>
+              <Text style={styles.quizHeroSub}>{isAr ? 'اختبر معلوماتك الإسلامية' : lang === 'en' ? 'Test your Islamic knowledge' : 'Testez vos connaissances islamiques'}</Text>
             </View>
           </View>
           <Text style={styles.quizHeroArrow}>›</Text>
