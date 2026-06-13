@@ -30,6 +30,30 @@ const CATEGORY_COLORS: Record<string, { accent: string; bg: string }> = {
   salat_nabi:   { accent: '#827717', bg: '#F9FBE7' },
 };
 
+const SOURCE_NAMES: Record<string, string> = {
+  'مسلم': 'Sahîh Muslim',
+  'البخاري': 'Sahîh al-Bukhârî',
+  'البخاري ومسلم': 'Bukhârî & Muslim',
+  'متفق عليه': 'Bukhârî & Muslim',
+  'أبو داود': 'Sunan Abî Dâwûd',
+  'الترمذي': 'Sunan at-Tirmidhî',
+  'أحمد': 'Musnad Ahmad',
+  'ابن ماجة': 'Sunan Ibn Mâja',
+  'ابن ماجه': 'Sunan Ibn Mâja',
+  'النسائي': `Sunan an-Nasâ'i`,
+  'أبن السني': 'Ibn as-Sunni',
+  'الحاكم': 'Al-Mustadrak',
+  'سورة الإخلاص': 'Sourate Al-Ikhlâs (112)',
+  'سورة الناس': 'Sourate An-Nâs (114)',
+  'سورة الفلق': 'Sourate Al-Falaq (113)',
+  'سورة البقرة': 'Sourate Al-Baqara (2)',
+  'آية الكرسي': 'Ayat Al-Kursî (2:255)',
+};
+
+function formatSource(src: string): string {
+  return SOURCE_NAMES[src.trim()] || src;
+}
+
 function getAccent(id: string) {
   return CATEGORY_COLORS[id] || { accent: COLORS.primary, bg: '#E8F5E9' };
 }
@@ -79,7 +103,7 @@ function DhikrCard({ dhikr, index, total, accent, cardBg, isAr, lang }: CardProp
         {/* Source */}
         <View style={[styles.sourceRow, { backgroundColor: cardBg }]}>
           <Text style={styles.sourceIcon}>📖</Text>
-          <Text style={styles.sourceText}>{dhikr.source}</Text>
+          <Text style={styles.sourceText}>{formatSource(dhikr.source)}</Text>
         </View>
 
         {/* Counter — only if count > 1 */}
