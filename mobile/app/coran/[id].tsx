@@ -235,20 +235,17 @@ export default function MushafScreen() {
         )}
       />
 
-      {/* Verse overlay: floating badge when playing */}
-      {playing && currentAyahAr ? (
+      {/* Verse number badge only - no text */}
+      {playing && (
         <View style={styles.verseOverlay} pointerEvents="none">
-          <View style={styles.verseOverlayInner}>
-            <View style={styles.ayahBadgeRow}>
-              <View style={styles.ayahBadge}>
-                <Text style={styles.ayahBadgeText}>﴾ {currentAyahIdx + 1} / {totalAyahsInSurah} ﴿</Text>
-              </View>
-              {loadingAudio && <ActivityIndicator size="small" color="#FFD700" style={{ marginLeft: 8 }} />}
-            </View>
-            <Text style={styles.overlayAr} numberOfLines={4}>{currentAyahAr}</Text>
+          <View style={styles.ayahBadge}>
+            {loadingAudio
+              ? <ActivityIndicator size="small" color="#FFD700" />
+              : <Text style={styles.ayahBadgeText}>﴾ {currentAyahIdx + 1} ﴿</Text>
+            }
           </View>
         </View>
-      ) : null}
+      )}
 
       {/* Header overlay (top) */}
       <View style={styles.header} pointerEvents="box-none">
@@ -379,19 +376,16 @@ const styles = StyleSheet.create({
   pageInfo: { fontSize: 11, color: 'rgba(255,255,255,0.85)', marginTop: 1 },
 
   verseOverlay: {
-    position: 'absolute', bottom: 90, left: 12, right: 12, zIndex: 10,
+    position: 'absolute', bottom: 82, right: 16, zIndex: 10,
   },
-  verseOverlayInner: {
-    backgroundColor: 'rgba(0,0,0,0.78)',
-    borderRadius: 16, padding: 14,
-    borderWidth: 1.5, borderColor: 'rgba(255,215,0,0.4)',
-  },
-  ayahBadgeRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 8 },
+  ayahBadgeRow: { flexDirection: 'row', alignItems: 'center' },
   ayahBadge: {
-    backgroundColor: COLORS.primary, borderRadius: 20,
-    paddingHorizontal: 14, paddingVertical: 4,
+    backgroundColor: COLORS.primary, borderRadius: 24,
+    paddingHorizontal: 18, paddingVertical: 8,
+    shadowColor: '#000', shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.4, shadowRadius: 6, elevation: 8,
   },
-  ayahBadgeText: { fontSize: 14, fontWeight: '800', color: '#FFD700' },
+  ayahBadgeText: { fontSize: 18, fontWeight: '900', color: '#FFD700' },
   overlayAr: {
     fontSize: 20, color: '#FFFFFF', textAlign: 'right',
     writingDirection: 'rtl', lineHeight: 34, fontWeight: '500',
