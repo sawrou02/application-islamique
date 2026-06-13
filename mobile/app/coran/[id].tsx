@@ -265,9 +265,6 @@ export default function MushafScreen() {
                   {currentAyahAr ? (
                     <Text style={styles.overlayAr} numberOfLines={3}>{currentAyahAr}</Text>
                   ) : null}
-                  {!isAr && currentAyahFr ? (
-                    <Text style={styles.overlayFr} numberOfLines={2}>{currentAyahFr}</Text>
-                  ) : null}
                 </View>
               </View>
             )}
