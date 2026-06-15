@@ -136,7 +136,7 @@ export default function EvenementScreen() {
     const domaine = isChallenge ? todayChallenge.domaine : (event.quizDomaine || 'general');
     const nb = isChallenge ? todayChallenge.nb : 10;
     reset();
-    setMode('quotidien');
+    setMode(isChallenge ? 'thematique' : 'quotidien');
     setDomaine(domaine);
     setNb(nb);
     router.push('/quiz/setup/recap');
