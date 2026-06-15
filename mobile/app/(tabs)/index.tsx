@@ -394,13 +394,17 @@ export default function HomeScreen() {
 
         {/* ── Hadith du Jour ── */}
         <View style={styles.hadithCard}>
-          <Text style={styles.hadithLabel}>◉ {t('hadith_du_jour').toUpperCase()}</Text>
-          <Text style={styles.hadithAr}>{hadith.textAr}</Text>
-          {!isAr && <Text style={styles.hadithFr}>« {hadith.text} »</Text>}
+          <Text style={styles.hadithLabel}>
+            {isAr ? 'حديث اليوم' : 'Hadith du jour'}
+          </Text>
+          {!isAr && hadith.text && (
+            <Text style={styles.hadithFr}>« {hadith.text} »</Text>
+          )}
           {hadith.narrator && (
             <Text style={styles.hadithNarrator}>{hadith.narrator}</Text>
           )}
-          <Text style={styles.hadithSource}>— {hadith.source}</Text>
+          <Text style={styles.hadithAr}>{hadith.textAr}</Text>
+          <Text style={styles.hadithSource}>[{hadith.source}]</Text>
         </View>
       </ScrollView>
     </SafeAreaView>
@@ -785,51 +789,47 @@ const styles = StyleSheet.create({
 
   // Hadith
   hadithCard: {
-    backgroundColor: '#FFFBF0',
+    backgroundColor: '#FFFFFF',
     borderRadius: 18,
-    padding: 18,
-    borderLeftWidth: 4,
-    borderLeftColor: COLORS.gold,
-    shadowColor: COLORS.gold,
+    padding: 20,
+    shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.12,
-    shadowRadius: 8,
-    elevation: 2,
+    shadowOpacity: 0.08,
+    shadowRadius: 10,
+    elevation: 3,
     marginTop: 14,
   },
   hadithLabel: {
-    fontSize: 10,
+    fontSize: 17,
     fontWeight: '800',
-    color: COLORS.goldDark,
-    letterSpacing: 1.2,
-    marginBottom: 12,
-  },
-  hadithAr: {
-    fontSize: 18,
-    color: COLORS.arabicText,
-    textAlign: 'right',
-    writingDirection: 'rtl',
-    lineHeight: 30,
-    marginBottom: 10,
-    fontWeight: '500',
+    color: COLORS.gold,
+    marginBottom: 14,
   },
   hadithFr: {
-    fontSize: 13,
-    color: COLORS.textSecondary,
-    fontStyle: 'italic',
-    lineHeight: 20,
-    marginBottom: 8,
+    fontSize: 14,
+    color: '#333',
+    lineHeight: 22,
+    marginBottom: 12,
   },
   hadithNarrator: {
-    fontSize: 12,
-    color: COLORS.primary,
+    fontSize: 13,
+    color: '#555',
     fontStyle: 'italic',
+    marginBottom: 14,
+    lineHeight: 20,
+  },
+  hadithAr: {
+    fontSize: 20,
+    color: '#0077AA',
+    textAlign: 'right',
+    writingDirection: 'rtl',
+    lineHeight: 34,
+    marginBottom: 12,
     fontWeight: '500',
-    marginBottom: 4,
   },
   hadithSource: {
-    fontSize: 11,
-    color: COLORS.textLight,
+    fontSize: 13,
+    color: '#0077AA',
     fontWeight: '600',
   },
 });
