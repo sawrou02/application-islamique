@@ -124,7 +124,7 @@ export default function Qibla() {
             <Text style={[styles.bearingLabel, aligned && { color: ‘#FFF’, fontWeight: ‘800’ }]}>
               {aligned
                 ? (isAr ? ‘✓ أنت متجه نحو القبلة’ : lang === ‘en’ ? ‘✓ Aligned with the Qibla’ : ‘✓ Aligné avec la Qibla’)
-                : (isAr ? ‘وجّه الهاتف نحو الكعبة’ : lang === ‘en’ ? ‘Point your phone toward the Ka\’ba’ : ‘Oriente ton téléphone vers la Ka\’ba’)}
+                : (isAr ? ‘وجّه الهاتف نحو الكعبة’ : lang === ‘en’ ? "Point your phone toward the Ka’ba" : "Oriente ton téléphone vers la Ka’ba")}
             </Text>
             <Text style={styles.hint}>
               {isAr ? 'دقّق المعايرة بتحريك الهاتف في شكل ٨' : 'Calibre en bougeant ton téléphone en forme de 8.'}
