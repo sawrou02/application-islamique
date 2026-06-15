@@ -1,8 +1,9 @@
 import { useRef, useState, useCallback } from 'react';
 import {
   View, Text, StyleSheet, FlatList, TouchableOpacity,
-  Pressable, Dimensions, ViewToken, Vibration,
+  Pressable, Dimensions, ViewToken,
 } from 'react-native';
+import * as Haptics from 'expo-haptics';
 import { router, useLocalSearchParams } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { COLORS } from '../../constants/colors';
@@ -75,7 +76,11 @@ function DhikrCard({ dhikr, index, total, accent, cardBg, isAr, lang }: CardProp
 
   const tap = () => {
     const next = count >= dhikr.count ? 0 : count + 1;
-    Vibration.vibrate(next >= dhikr.count ? [0, 80, 60, 80] : 30);
+    if (next >= dhikr.count) {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    } else {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    }
     setCount(next);
   };
 
@@ -150,7 +155,7 @@ function CheckButton({ accent, isAr }: { accent: string; isAr: boolean }) {
   const [done, setDone] = useState(false);
   return (
     <Pressable
-      onPress={() => { Vibration.vibrate(done ? 30 : [0, 60, 40, 60]); setDone(d => !d); }}
+      onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium); setDone(d => !d); }}
       style={({ pressed }) => [
         styles.checkBtn,
         { borderColor: done ? '#2E7D32' : accent + '60', backgroundColor: done ? '#2E7D32' : accent + '12' },

@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
 import {
-  View, Text, StyleSheet, TouchableOpacity, ActivityIndicator, Vibration, Animated,
+  View, Text, StyleSheet, TouchableOpacity, ActivityIndicator, Animated,
 } from 'react-native';
+import * as Haptics from 'expo-haptics';
 import { router } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import * as Location from 'expo-location';
@@ -70,7 +71,7 @@ export default function Qibla() {
     if (isAligned && !wasAligned.current) {
       wasAligned.current = true;
       setAligned(true);
-      Vibration.vibrate([0, 200, 100, 200]);
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       Animated.sequence([
         Animated.timing(bgAnim, { toValue: 1, duration: 400, useNativeDriver: false }),
       ]).start();
