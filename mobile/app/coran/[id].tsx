@@ -53,7 +53,19 @@ export default function MushafScreen() {
   const currentSurah = surahFromPage(currentPage);
 
   useEffect(() => { reciterRef.current = reciter; }, [reciter]);
-  useEffect(() => { currentSurahRef.current = currentSurah; }, [currentSurah]);
+
+  useEffect(() => {
+    const prev = currentSurahRef.current;
+    currentSurahRef.current = currentSurah;
+    // Si on change de sourate en cours de lecture → relancer depuis verset 1
+    if (prev !== currentSurah && playingRef.current) {
+      soundRef.current?.unloadAsync().catch(() => {});
+      soundRef.current = null;
+      currentAyahRef.current = 0;
+      setCurrentAyahIdx(0);
+      playAyah(currentSurah, 0);
+    }
+  }, [currentSurah]);
 
   useEffect(() => {
     setLoadingAyahs(true);
@@ -74,7 +86,7 @@ export default function MushafScreen() {
       }
     });
     Audio.setAudioModeAsync({ playsInSilentModeIOS: true, staysActiveInBackground: true, shouldDuckAndroid: false }).catch(() => {});
-    return () => { stopAudio(); };
+    return () => {};
   }, []);
 
   const onScroll = (e: any) => {
