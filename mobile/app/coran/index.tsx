@@ -82,7 +82,7 @@ export default function CoranIndex() {
               <View style={{ flex: 1 }}>
                 <Text style={styles.surahName}>{item.englishName}</Text>
                 <Text style={styles.surahSub}>
-                  {item.englishNameTranslation} · {item.numberOfAyahs} {isAr ? 'آية' : 'versets'} · {item.revelationType === 'Meccan' ? '🕋' : '🕌'} {item.revelationType}
+                  {item.englishNameTranslation} · {item.numberOfAyahs} {isAr ? 'آية' : 'versets'} · {item.revelationType}
                 </Text>
               </View>
               <Text style={styles.surahAr}>{item.name}</Text>

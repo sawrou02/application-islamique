@@ -4,6 +4,7 @@ import {
 } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { COLORS } from '../constants/colors';
 import { getTodayEvent, getTodayChallenge } from '../constants/islamic';
 import { useQuizSetupStore } from '../store/quizSetupStore';
@@ -105,14 +106,15 @@ export default function EvenementScreen() {
   const { setMode, setDomaine, setNb, reset } = useQuizSetupStore();
 
   // Challenge uses its own domain info; event uses calendar event
-  const DOMAIN_LABELS: Record<string, { name: string; nameAr: string; icon: string; color: string }> = {
-    fiqh: { name: 'Fiqh', nameAr: 'فقه', icon: '⚖', color: '#1B5E20' },
-    aqida: { name: 'Aqida', nameAr: 'عقيدة', icon: '☪', color: '#1A237E' },
-    tafsir: { name: 'Tafsir / Coran', nameAr: 'تفسير', icon: '۩', color: '#4A148C' },
-    hadith: { name: 'Hadith', nameAr: 'حديث', icon: '◉', color: '#BF360C' },
-    sirah: { name: 'Sirah', nameAr: 'سيرة', icon: '✦', color: '#01579B' },
-    akhlaq: { name: 'Akhlaq', nameAr: 'أخلاق', icon: '✧', color: '#006064' },
-    general: { name: 'Général', nameAr: 'عام', icon: '۞', color: '#1B5E20' },
+  type DomainInfo = { name: string; nameAr: string; icon: keyof typeof MaterialCommunityIcons.glyphMap; color: string };
+  const DOMAIN_LABELS: Record<string, DomainInfo> = {
+    fiqh:    { name: 'Fiqh',          nameAr: 'فقه',    icon: 'scale-balance',        color: '#1B5E20' },
+    aqida:   { name: 'Aqida',         nameAr: 'عقيدة',  icon: 'moon-waxing-crescent', color: '#1A237E' },
+    tafsir:  { name: 'Tafsir / Coran',nameAr: 'تفسير',  icon: 'book-open-page-variant',color: '#4A148C' },
+    hadith:  { name: 'Hadith',        nameAr: 'حديث',   icon: 'book-open-variant',    color: '#BF360C' },
+    sirah:   { name: 'Sirah',         nameAr: 'سيرة',   icon: 'account-star',         color: '#01579B' },
+    akhlaq:  { name: 'Akhlaq',        nameAr: 'أخلاق',  icon: 'heart',                color: '#006064' },
+    general: { name: 'Général',       nameAr: 'عام',    icon: 'star-four-points',     color: '#1B5E20' },
   };
 
   const challengeDomainInfo = DOMAIN_LABELS[todayChallenge.domaine] || DOMAIN_LABELS['general'];
@@ -163,7 +165,10 @@ export default function EvenementScreen() {
           transform: [{ translateY: slideAnim }],
         }]}>
           <View style={[styles.heroIconWrap, { backgroundColor: `${heroColor}22` }]}>
-            <Text style={styles.heroIcon}>{heroIcon}</Text>
+            {isChallenge
+              ? <MaterialCommunityIcons name={challengeDomainInfo.icon} size={36} color={heroColor} />
+              : <Text style={styles.heroIcon}>{event.icon}</Text>
+            }
           </View>
           <Text style={styles.heroName}>{heroName}</Text>
           <Text style={styles.heroNameAr}>{heroNameAr}</Text>

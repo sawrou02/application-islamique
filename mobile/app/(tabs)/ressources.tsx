@@ -1,12 +1,15 @@
 import { View, Text, TouchableOpacity, StyleSheet, ScrollView } from 'react-native';
 import { router } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { COLORS } from '../../constants/colors';
 import { getCurrentLang } from '../../i18n';
 
-const RESOURCES = [
+type IconName = keyof typeof MaterialCommunityIcons.glyphMap;
+
+const RESOURCES: { icon: IconName; titleFr: string; titleAr: string; descFr: string; descAr: string; route: string; color: string; bg: string }[] = [
   {
-    icon: '📖',
+    icon: 'book-open-variant',
     titleFr: 'Saint Coran',
     titleAr: 'القرآن الكريم',
     descFr: 'Mushaf complet • 604 pages • Audio par verset',
@@ -16,7 +19,7 @@ const RESOURCES = [
     bg: '#E8F5E9',
   },
   {
-    icon: '🤲',
+    icon: 'hands-pray',
     titleFr: 'Adhkâr',
     titleAr: 'الأذكار',
     descFr: 'Invocations du matin, du soir et du quotidien',
@@ -26,7 +29,7 @@ const RESOURCES = [
     bg: '#EDE7F6',
   },
   {
-    icon: '🕌',
+    icon: 'mosque',
     titleFr: 'Horaires de prière',
     titleAr: 'مواقيت الصلاة',
     descFr: 'Heures de prière selon votre position',
@@ -36,7 +39,7 @@ const RESOURCES = [
     bg: '#E3F2FD',
   },
   {
-    icon: '🕋',
+    icon: 'compass',
     titleFr: 'Direction de la Qibla',
     titleAr: 'اتجاه القبلة',
     descFr: 'Boussole pour trouver la direction de la Mecque',
@@ -46,7 +49,7 @@ const RESOURCES = [
     bg: '#FBE9E7',
   },
   {
-    icon: '🔍',
+    icon: 'magnify',
     titleFr: 'Recherche',
     titleAr: 'بحث',
     descFr: 'Rechercher dans toutes les questions islamiques',
@@ -56,7 +59,7 @@ const RESOURCES = [
     bg: '#ECEFF1',
   },
   {
-    icon: '☆',
+    icon: 'account-star',
     titleFr: 'Sahaba',
     titleAr: 'الصحابة',
     descFr: 'Biographies des compagnons du Prophète ﷺ',
@@ -91,7 +94,7 @@ export default function RessourcesScreen() {
             activeOpacity={0.85}
           >
             <View style={[styles.iconWrap, { backgroundColor: item.bg }]}>
-              <Text style={styles.icon}>{item.icon}</Text>
+              <MaterialCommunityIcons name={item.icon} size={28} color={item.color} />
             </View>
             <View style={styles.cardText}>
               <Text style={[styles.cardTitle, { color: item.color }]}>
@@ -102,7 +105,7 @@ export default function RessourcesScreen() {
                 {isAr ? item.descAr : item.descFr}
               </Text>
             </View>
-            <Text style={[styles.arrow, { color: item.color }]}>›</Text>
+            <MaterialCommunityIcons name="chevron-right" size={22} color={item.color} />
           </TouchableOpacity>
         ))}
       </ScrollView>
@@ -133,10 +136,8 @@ const styles = StyleSheet.create({
     width: 56, height: 56, borderRadius: 28,
     justifyContent: 'center', alignItems: 'center',
   },
-  icon: { fontSize: 28 },
   cardText: { flex: 1 },
   cardTitle: { fontSize: 17, fontWeight: '800' },
   cardTitleAr: { fontSize: 14, color: COLORS.arabicText, marginTop: 2 },
   cardDesc: { fontSize: 12, color: COLORS.textSecondary, marginTop: 4, lineHeight: 18 },
-  arrow: { fontSize: 28, fontWeight: '300' },
 });

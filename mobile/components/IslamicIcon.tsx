@@ -1,74 +1,56 @@
-import { Text, TextStyle, StyleProp } from 'react-native';
-
-/**
- * IslamicIcon — Remplace les icônes Ionicons par des symboles Unicode
- * (islamiques, géométriques, typographiques) pour donner un caractère
- * calligraphique à l'interface.
- *
- * Tailles et couleurs équivalentes à Ionicons (size en px, color hex).
- */
+import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { StyleProp, TextStyle } from 'react-native';
 
 export type IslamicIconName =
-  // Sémantique
   | 'close' | 'check' | 'check-circle' | 'close-circle'
   | 'back' | 'next' | 'forward' | 'down' | 'up'
-  // Navigation
   | 'home' | 'quiz' | 'multi' | 'profile' | 'leaderboard'
-  // Actions
   | 'play' | 'add' | 'enter' | 'share' | 'refresh' | 'logout'
-  // Contenu
   | 'book' | 'layers' | 'help' | 'language' | 'mail'
-  // Statut
   | 'star' | 'flame' | 'trending' | 'time' | 'award'
   | 'flag' | 'lock' | 'settings' | 'notification' | 'info'
   | 'trophy' | 'people' | 'person' | 'crescent';
 
-// Mapping nom -> symbole Unicode
-const SYMBOLS: Record<IslamicIconName, string> = {
-  // Sémantique
-  close: '✕',          // ✕
-  check: '✓',          // ✓
-  'check-circle': '✔', // ✔
-  'close-circle': '✖', // ✖
-  back: '‹',           // ‹
-  next: '›',           // ›
-  forward: '›',
-  down: '⌄',
-  up: '⌃',
-  // Navigation
-  home: '۞',           // ۞
-  quiz: '❋',           // ❋
-  multi: '✦',          // ✦
-  profile: '◈',        // ◈
-  leaderboard: '★',    // ★
-  // Actions
-  play: '▶',           // ▶
-  add: '➕',            // ➕
-  enter: '↵',          // ↵
-  share: '⧉',          // ⧉
-  refresh: '⟳',        // ⟳
-  logout: '⇥',         // ⇥
-  // Contenu
-  book: '✬',           // ✬ (étoile-livre)
-  layers: '⧉',         // ⧉
-  help: '⍰',           // ⍰
-  language: ' أب',
-  mail: '✉',           // ✉
-  // Statut
-  star: '★',           // ★
-  flame: '✷',          // ✷
-  trending: '↗',       // ↗
-  time: '⧗',           // ⧗
-  award: '✧',          // ✧
-  flag: '⚑',           // ⚑
-  lock: '⊕',           // ⊕
-  settings: '⚙',       // ⚙
-  notification: '◉',   // ◉
-  info: 'ⓘ',           // ⓘ
-  trophy: '♕',         // ♕ (couronne)
-  people: '⛂',         // ⛂
-  person: '◈',         // ◈
-  crescent: '☪',       // ☪
+const ICONS: Record<IslamicIconName, keyof typeof MaterialCommunityIcons.glyphMap> = {
+  close:         'close',
+  check:         'check',
+  'check-circle':'check-circle',
+  'close-circle':'close-circle',
+  back:          'arrow-left',
+  next:          'arrow-right',
+  forward:       'arrow-right',
+  down:          'chevron-down',
+  up:            'chevron-up',
+  home:          'home-variant',
+  quiz:          'head-question-outline',
+  multi:         'account-group',
+  profile:       'account-circle',
+  leaderboard:   'trophy',
+  play:          'play',
+  add:           'plus',
+  enter:         'login',
+  share:         'share-variant',
+  refresh:       'refresh',
+  logout:        'logout',
+  book:          'book-open-variant',
+  layers:        'layers-triple',
+  help:          'help-circle',
+  language:      'translate',
+  mail:          'email',
+  star:          'star',
+  flame:         'fire',
+  trending:      'trending-up',
+  time:          'clock-outline',
+  award:         'medal',
+  flag:          'flag',
+  lock:          'lock',
+  settings:      'cog',
+  notification:  'bell',
+  info:          'information',
+  trophy:        'trophy',
+  people:        'account-group',
+  person:        'account',
+  crescent:      'moon-waxing-crescent',
 };
 
 interface Props {
@@ -78,27 +60,9 @@ interface Props {
   style?: StyleProp<TextStyle>;
 }
 
-export function IslamicIcon({ name, size = 18, color = '#1B5E20', style }: Props) {
-  const symbol = SYMBOLS[name as IslamicIconName] ?? '❖'; // ❖ fallback
-  // Compense le rendu vertical des glyphes Unicode (ligne de base flottante)
-  const lineHeight = size * 1.05;
-  return (
-    <Text
-      allowFontScaling={false}
-      style={[
-        {
-          fontSize: size,
-          lineHeight,
-          color,
-          textAlign: 'center',
-          includeFontPadding: false,
-        },
-        style,
-      ]}
-    >
-      {symbol}
-    </Text>
-  );
+export function IslamicIcon({ name, size = 18, color = '#1B5E20' }: Props) {
+  const iconName = (ICONS[name as IslamicIconName] ?? 'circle') as keyof typeof MaterialCommunityIcons.glyphMap;
+  return <MaterialCommunityIcons name={iconName} size={size} color={color} />;
 }
 
 export default IslamicIcon;

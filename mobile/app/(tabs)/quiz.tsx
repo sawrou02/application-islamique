@@ -4,6 +4,7 @@ import {
 } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { COLORS } from '../../constants/colors';
 import { t } from '../../i18n';
 
@@ -54,7 +55,7 @@ export default function QuizHome() {
         <Text style={styles.bismi}>﷽</Text>
 
         <View style={styles.crest}>
-          <Text style={styles.crestIcon}>✦</Text>
+          <MaterialCommunityIcons name="head-question" size={48} color="#FFD700" />
         </View>
 
         <Text style={styles.title}>Quiz du Savoir</Text>
@@ -70,26 +71,26 @@ export default function QuizHome() {
             activeOpacity={0.85}
             onPress={() => router.push('/quiz/setup/mode')}
           >
-            <Text style={styles.startIcon}>▶</Text>
+            <MaterialCommunityIcons name="play" size={20} color="#1B5E20" />
             <Text style={styles.startTxt}>{t('commencer_quiz')}</Text>
-            <Text style={styles.startArrow}>›</Text>
+            <MaterialCommunityIcons name="chevron-right" size={20} color="#1B5E20" />
           </TouchableOpacity>
         </Animated.View>
 
         <View style={styles.featureRow}>
-          <Feature icon="❋" label="5 modes" />
-          <Feature icon="✧" label="7 sciences" />
-          <Feature icon="◆" label="5 niveaux" />
+          <Feature icon="layers-triple" label="5 modes" />
+          <Feature icon="book-open-variant" label="7 sciences" />
+          <Feature icon="signal" label="5 niveaux" />
         </View>
       </Animated.View>
     </SafeAreaView>
   );
 }
 
-function Feature({ icon, label }: { icon: string; label: string }) {
+function Feature({ icon, label }: { icon: keyof typeof MaterialCommunityIcons.glyphMap; label: string }) {
   return (
     <View style={styles.feat}>
-      <Text style={styles.featIcon}>{icon}</Text>
+      <MaterialCommunityIcons name={icon} size={20} color="rgba(255,255,255,0.9)" />
       <Text style={styles.featLbl}>{label}</Text>
     </View>
   );

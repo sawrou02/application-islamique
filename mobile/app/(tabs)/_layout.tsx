@@ -1,13 +1,7 @@
-import { Text } from 'react-native';
 import { Tabs } from 'expo-router';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { COLORS } from '../../constants/colors';
 import { t } from '../../i18n';
-
-function TabIcon({ symbol, color }: { symbol: string; color: string }) {
-  return (
-    <Text style={{ fontSize: 22, color, lineHeight: 26 }}>{symbol}</Text>
-  );
-}
 
 export default function TabsLayout() {
   return (
@@ -40,42 +34,42 @@ export default function TabsLayout() {
         name="index"
         options={{
           title: t('accueil'),
-          tabBarIcon: ({ color }) => <TabIcon symbol="۞" color={color} />,
+          tabBarIcon: ({ color }) => <MaterialCommunityIcons name="home-variant" size={24} color={color} />,
         }}
       />
       <Tabs.Screen
         name="quiz"
         options={{
           title: t('quiz'),
-          tabBarIcon: ({ color }) => <TabIcon symbol="❋" color={color} />,
+          tabBarIcon: ({ color }) => <MaterialCommunityIcons name="head-question-outline" size={24} color={color} />,
         }}
       />
       <Tabs.Screen
         name="multi"
         options={{
           title: t('multi'),
-          tabBarIcon: ({ color }) => <TabIcon symbol="✦" color={color} />,
+          tabBarIcon: ({ color }) => <MaterialCommunityIcons name="account-group" size={24} color={color} />,
         }}
       />
       <Tabs.Screen
         name="ressources"
         options={{
           title: 'Ressources',
-          tabBarIcon: ({ color }) => <TabIcon symbol="📚" color={color} />,
+          tabBarIcon: ({ color }) => <MaterialCommunityIcons name="bookshelf" size={24} color={color} />,
         }}
       />
       <Tabs.Screen
         name="classement"
         options={{
           title: t('classement'),
-          tabBarIcon: ({ color }) => <TabIcon symbol="★" color={color} />,
+          tabBarIcon: ({ color }) => <MaterialCommunityIcons name="trophy" size={24} color={color} />,
         }}
       />
       <Tabs.Screen
         name="profil"
         options={{
           title: t('profil'),
-          tabBarIcon: ({ color }) => <TabIcon symbol="◈" color={color} />,
+          tabBarIcon: ({ color }) => <MaterialCommunityIcons name="account-circle" size={24} color={color} />,
         }}
       />
     </Tabs>
