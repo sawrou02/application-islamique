@@ -91,7 +91,6 @@ export default function RootLayout() {
       <SafeAreaProvider>
         <StatusBar style="light" backgroundColor="#1B5E20" />
         <View style={{ flex: 1 }}>
-          <QuranMiniPlayer />
           <OfflineBanner visible={!isOnline} />
           <Stack screenOptions={{ headerShown: false }}>
             <Stack.Screen name="index" />
@@ -110,6 +109,7 @@ export default function RootLayout() {
             <Stack.Screen name="search" />
             <Stack.Screen name="sahaba" />
           </Stack>
+          <QuranMiniPlayer />
         </View>
       </SafeAreaProvider>
     </GestureHandlerRootView>
