@@ -11,7 +11,7 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { IslamicIcon } from '../../components/IslamicIcon';
 import { COLORS } from '../../constants/colors';
 import { getCurrentLang } from '../../i18n';
-import { fetchSurahList, fetchSurah, SurahMeta, Ayah } from '../../services/quran';
+import { fetchSurahList, fetchSurah, fetchPageStart, SurahMeta, Ayah } from '../../services/quran';
 import {
   SURAH_PAGE, TOTAL_PAGES, surahFromPage, pageImageUrl,
   RECITERS, ayahGlobalNumber, ayahAudioUrl, Reciter,
@@ -47,25 +47,34 @@ export default function MushafScreen() {
   const currentAyahRef = useRef(0);
   const currentSurahRef = useRef(initialSurah);
   const reciterRef = useRef(reciter);
+  const autoScrollRef = useRef(false);
 
   const lang = getCurrentLang();
   const isAr = lang === 'ar';
   const currentSurah = surahFromPage(currentPage);
 
   useEffect(() => { reciterRef.current = reciter; }, [reciter]);
+  useEffect(() => { currentSurahRef.current = currentSurah; }, [currentSurah]);
 
+  // Quand on change de page en cours de lecture → suivre l'audio sur cette page
   useEffect(() => {
-    const prev = currentSurahRef.current;
-    currentSurahRef.current = currentSurah;
-    // Si on change de sourate en cours de lecture → relancer depuis verset 1
-    if (prev !== currentSurah && playingRef.current) {
+    if (!playingRef.current) return;
+    // Ignorer si le changement de page vient du défilement automatique de l'audio
+    if (autoScrollRef.current) { autoScrollRef.current = false; return; }
+    let cancelled = false;
+    fetchPageStart(currentPage).then(start => {
+      if (cancelled || !start || !playingRef.current) return;
+      // Déjà en train de lire ce verset ? ne rien faire
+      if (start.surah === currentSurahRef.current && start.ayahIdx === currentAyahRef.current) return;
       soundRef.current?.unloadAsync().catch(() => {});
       soundRef.current = null;
-      currentAyahRef.current = 0;
-      setCurrentAyahIdx(0);
-      playAyah(currentSurah, 0);
-    }
-  }, [currentSurah]);
+      currentSurahRef.current = start.surah;
+      currentAyahRef.current = start.ayahIdx;
+      setCurrentAyahIdx(start.ayahIdx);
+      playAyah(start.surah, start.ayahIdx);
+    });
+    return () => { cancelled = true; };
+  }, [currentPage]);
 
   useEffect(() => {
     setLoadingAyahs(true);
@@ -128,6 +137,7 @@ export default function MushafScreen() {
       setCurrentAyahIdx(0);
       const nextPage = SURAH_PAGE[nextSurah];
       if (nextPage) {
+        autoScrollRef.current = true;
         listRef.current?.scrollToIndex({ index: nextPage - 1, animated: true });
         setCurrentPage(nextPage);
       }
@@ -161,6 +171,24 @@ export default function MushafScreen() {
     setPlaying(true);
     setLoadingAudio(true);
     await playAyah(currentSurahRef.current, currentAyahRef.current);
+    setLoadingAudio(false);
+  };
+
+  // Tap sur la page → lance la lecture depuis le 1er verset de cette page
+  const playFromPage = async (page: number) => {
+    setLoadingAudio(true);
+    const start = await fetchPageStart(page);
+    await stopAudio();
+    playingRef.current = true;
+    setPlaying(true);
+    if (start) {
+      currentSurahRef.current = start.surah;
+      currentAyahRef.current = start.ayahIdx;
+      setCurrentAyahIdx(start.ayahIdx);
+      await playAyah(start.surah, start.ayahIdx);
+    } else {
+      await playAyah(currentSurahRef.current, currentAyahRef.current);
+    }
     setLoadingAudio(false);
   };
 
@@ -234,9 +262,13 @@ export default function MushafScreen() {
         inverted
         style={{ flex: 1 }}
         renderItem={({ item: page }) => (
-          <View style={{ width: PAGE_W, flex: 1, backgroundColor: '#FAF5E8' }}>
+          <TouchableOpacity
+            activeOpacity={0.9}
+            onPress={() => playFromPage(page)}
+            style={{ width: PAGE_W, flex: 1, backgroundColor: '#FAF5E8' }}
+          >
             <Image source={{ uri: pageImageUrl(page) }} style={{ width: PAGE_W, flex: 1 }} resizeMode="contain" />
-          </View>
+          </TouchableOpacity>
         )}
       />
 

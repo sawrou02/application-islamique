@@ -88,6 +88,22 @@ export async function fetchSurah(num: number): Promise<SurahFull> {
   return full;
 }
 
+// Renvoie le 1er verset d'une page : { surah, ayahIdx } (ayahIdx commence à 0)
+export async function fetchPageStart(page: number): Promise<{ surah: number; ayahIdx: number } | null> {
+  const cached = await fromCache<{ surah: number; ayahIdx: number }>(`page_start_${page}`);
+  if (cached) return cached;
+  try {
+    const res = await fetch(`${API}/page/${page}/quran-uthmani`);
+    const json = await res.json();
+    const ayahs = json?.data?.ayahs;
+    if (!ayahs || !ayahs.length) return null;
+    const first = ayahs[0];
+    const result = { surah: first.surah.number, ayahIdx: (first.numberInSurah || 1) - 1 };
+    await toCache(`page_start_${page}`, result);
+    return result;
+  } catch { return null; }
+}
+
 export async function fetchSurahTafsir(num: number): Promise<Ayah[]> {
   const cached = await fromCache<Ayah[]>(`quran_tafsir_${num}`);
   if (cached) return cached;
