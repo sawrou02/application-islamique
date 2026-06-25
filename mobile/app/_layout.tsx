@@ -11,6 +11,7 @@ import { loadLang, setLang, type Lang } from '../i18n';
 import { useNetworkStatus } from '../hooks/useNetworkStatus';
 import { useQuizStore } from '../store/quizStore';
 import { OfflineBanner } from '../components/OfflineBanner';
+import { QuranMiniPlayer } from '../components/QuranMiniPlayer';
 import * as Notifications from 'expo-notifications';
 import {
   loadPrayerPrefs, schedulePrayerNotifications,
@@ -90,6 +91,7 @@ export default function RootLayout() {
       <SafeAreaProvider>
         <StatusBar style="light" backgroundColor="#1B5E20" />
         <View style={{ flex: 1 }}>
+          <QuranMiniPlayer />
           <OfflineBanner visible={!isOnline} />
           <Stack screenOptions={{ headerShown: false }}>
             <Stack.Screen name="index" />

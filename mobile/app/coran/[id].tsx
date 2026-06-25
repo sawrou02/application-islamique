@@ -17,6 +17,7 @@ import {
   RECITERS, ayahGlobalNumber, ayahAudioUrl, Reciter,
   SURAH_AYAH_COUNT,
 } from '../../data/quran-meta';
+import { useQuranAudioStore } from '../../store/quranAudioStore';
 
 const { width, height } = Dimensions.get('window');
 const PAGE_W = width;
@@ -36,6 +37,7 @@ export default function MushafScreen() {
   const [paused, setPaused] = useState(false);
   const [loadingAudio, setLoadingAudio] = useState(false);
   const [currentAyahIdx, setCurrentAyahIdx] = useState(0);
+  const audioStore = useQuranAudioStore();
   const [ayahs, setAyahs] = useState<Ayah[]>([]);
   const [ayahsFr, setAyahsFr] = useState<Ayah[]>([]);
   const [loadingAyahs, setLoadingAyahs] = useState(false);
@@ -86,6 +88,12 @@ export default function MushafScreen() {
 
   useFocusEffect(useCallback(() => { return () => {}; }, []));
 
+  // Enregistrer les contrôles dans le store global pour la mini-barre
+  useEffect(() => {
+    audioStore.registerControls(pauseResume, stopAudio);
+    return () => { audioStore.unregisterControls(); };
+  }, []);
+
   useEffect(() => {
     fetchSurahList().then(setSurahs).catch(() => {});
     AsyncStorage.getItem(RECITER_KEY).then(id => {
@@ -124,6 +132,8 @@ export default function MushafScreen() {
     soundRef.current = null;
     setPlaying(false);
     setPaused(false);
+    audioStore.setPlaying(false);
+    audioStore.setPaused(false);
   };
 
   const playAyah = async (surah: number, ayahIdx: number) => {
@@ -147,6 +157,7 @@ export default function MushafScreen() {
 
     currentAyahRef.current = ayahIdx;
     setCurrentAyahIdx(ayahIdx);
+    audioStore.setAyah(ayahIdx);
 
     const globalNum = ayahGlobalNumber(surah, ayahIdx + 1);
     const url = ayahAudioUrl(reciterRef.current.cdnId, globalNum);
@@ -169,6 +180,8 @@ export default function MushafScreen() {
     await stopAudio();
     playingRef.current = true;
     setPlaying(true);
+    audioStore.setPlaying(true);
+    audioStore.setPaused(false);
     setLoadingAudio(true);
     await playAyah(currentSurahRef.current, currentAyahRef.current);
     setLoadingAudio(false);
@@ -196,11 +209,13 @@ export default function MushafScreen() {
     if (!playingRef.current) return;
     if (pausedRef.current) {
       pausedRef.current = false; setPaused(false);
+      audioStore.setPaused(false);
       try { await soundRef.current?.playAsync(); } catch {
         playAyah(currentSurahRef.current, currentAyahRef.current);
       }
     } else {
       pausedRef.current = true; setPaused(true);
+      audioStore.setPaused(true);
       try { await soundRef.current?.pauseAsync(); } catch {}
     }
   };
@@ -244,6 +259,13 @@ export default function MushafScreen() {
   };
 
   const surahMeta = surahs.find(s => s.number === currentSurah);
+
+  // Sync nom de sourate dans le store global
+  useEffect(() => {
+    if (surahMeta) {
+      audioStore.setSurah(currentSurah, surahMeta.englishName, SURAH_AYAH_COUNT[currentSurah] || 0);
+    }
+  }, [currentSurah, surahMeta]);
   const currentAyahAr = ayahs[currentAyahIdx]?.text || '';
   const totalAyahsInSurah = SURAH_AYAH_COUNT[currentSurah] || 0;
 
